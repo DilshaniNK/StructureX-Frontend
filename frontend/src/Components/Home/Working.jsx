@@ -1,7 +1,7 @@
 import React from 'react'
 import {motion} from 'framer-motion'
 import {slideUpVariants, zoomInVariants} from './animation'
-import {planning} from '../export'
+import {planning} from '../../export'
 
 const Working = () => {
   return (

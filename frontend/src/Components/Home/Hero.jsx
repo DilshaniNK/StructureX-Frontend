@@ -1,6 +1,6 @@
 import React from 'react'
-import heroimg from '../assets/heroimg.png'
-import backgroundImage from '../assets/homeimg.webp'
+import heroimg from '../../assets/heroimg.png'
+import backgroundImage from '../../assets/homeimg.webp'
 import {motion} from 'framer-motion'
 import {slideUpVariants, zoomInVariants} from './animation'
 const Hero = () => {

@@ -1,7 +1,7 @@
 import React from 'react'
 import {motion} from 'framer-motion'
 import {slideUpVariants, zoomInVariants} from './animation'
-import {clients} from '../export'
+import {clients} from '../../export'
 
 const Testimonials = () => {
   return (

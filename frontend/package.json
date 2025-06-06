@@ -15,6 +15,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
+    "react-router-dom": "^7.6.2",
     "react-scroll": "^1.9.3"
   },
   "devDependencies": {
@@ -28,6 +29,8 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "postcss": "^8.5.4",
+    "prettier": "^3.5.3",
+    "prettier-plugin-tailwindcss": "^0.6.12",
     "tailwindcss": "^4.1.8",
     "vite": "^6.3.5"
   }

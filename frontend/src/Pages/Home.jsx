@@ -11,7 +11,9 @@ import Working from '../Components/Home/Working'
 
 export default function LandingPage() {
   return (
-    <div>
+    <div style={{
+      backgroundColor: 'rgb(45, 42, 42)'
+    }}>
       <Header/>
       <Hero/>
       <About/>

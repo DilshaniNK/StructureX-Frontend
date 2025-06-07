@@ -1,4 +1,4 @@
-import {useRef,useState} from "react";
+import {useEffect, useRef,useState} from "react";
 import { Outlet } from 'react-router-dom'
 // npm install @uidotdev/usehooks
 import {useMediaQuery} from "@uidotdev/usehooks"
@@ -6,12 +6,23 @@ import {useMediaQuery} from "@uidotdev/usehooks"
 import { Sidebar } from "./SideBar";
 import { Header } from "./Header";
 import {cn} from "../../Utils/cn";
+import {UseClickOutside} from "../../Hooks/UseClickOutside"
 
 const  Layout = () => {
     const isDesktopDevice = useMediaQuery("(min-width:768px)");
-    const [collapsed,setCollapsed] = useState(true);
+    const [collapsed,setCollapsed] = useState(!isDesktopDevice);
 
     const SidebarRef = useRef(null);
+
+    useEffect(() => {
+        setCollapsed(!isDesktopDevice);
+    }, [isDesktopDevice]);
+
+    UseClickOutside([SidebarRef], () => {
+        if (!isDesktopDevice && !collapsed) {
+            setCollapsed(true);
+        }
+    });
 
     return ( 
         <div className = 'min-h-screen bg-slate-100 transition-colors dark:bg-slate-950'>

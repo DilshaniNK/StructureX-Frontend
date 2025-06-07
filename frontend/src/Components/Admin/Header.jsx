@@ -18,7 +18,7 @@ export const Header = ({collapsed, setCollapsed}) => {
                 </div>
             </div>
             <div className="flex items-center gap-x-3">
-                <button className="btn-ghost size-10" onClick={() => {setTheme(theme === "light" ? "dark" : "light");}}>
+                <button className="btn-ghost size-10" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
                     <Sun size={20} className="dark:hidden"/>
                     <Moon size={20} className="hidden dark:block"/>
                 </button>

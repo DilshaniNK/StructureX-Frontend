@@ -11,7 +11,7 @@ const initialState = {
 }
 
 // Create the React context with the initial state as default value
-const ThemeProviderContext = createContext(initialState)
+export const ThemeProviderContext = createContext(initialState)
 
 // ThemeProvider component - manages theme state and applies it to the DOM
 export function ThemeProvider({

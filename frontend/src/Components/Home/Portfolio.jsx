@@ -16,7 +16,8 @@ const Portfolio = () => {
      
       <motion.div
         initial="hidden"
-        // whileInView="visible"
+        //this is from dilshani Brach
+        whileInView="visible"
         variants={slideUpVariants}
         className='py-[60px] flex flex-col justify-center items-center 
         gap-[20px] !mt-[20px]'>

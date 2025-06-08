@@ -7,7 +7,7 @@ import DashboardPage from '../Components/Admin/Dashboard/Page'
 
 export default function Admin() {
   return (
-    <ThemeProvider storageKey='theme'>
+    <ThemeProvider>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<DashboardPage />} />

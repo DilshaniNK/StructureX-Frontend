@@ -1,5 +1,4 @@
 import { createContext, useEffect, useState } from "react";
-
 import PropTypes from "prop-types";
 
 const initialState = {
@@ -9,8 +8,15 @@ const initialState = {
 
 export const ThemeProviderContext = createContext(initialState);
 
-export function ThemeProvider({ children, defaultTheme = "system", storageKey = "vite-ui-theme", ...props }) {
-    const [theme, setTheme] = useState(() => localStorage.getItem(storageKey) || defaultTheme);
+export function ThemeProvider({ 
+    children, 
+    defaultTheme = "system", 
+    storageKey = "vite-ui-theme", 
+    ...props 
+}) {
+    const [theme, setTheme] = useState(() => 
+        localStorage.getItem(storageKey) || defaultTheme
+    );
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -18,8 +24,9 @@ export function ThemeProvider({ children, defaultTheme = "system", storageKey = 
         root.classList.remove("light", "dark");
 
         if (theme === "system") {
-            const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-
+            const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+                .matches ? "dark" : "light";
+            
             root.classList.add(systemTheme);
             return;
         }
@@ -29,9 +36,9 @@ export function ThemeProvider({ children, defaultTheme = "system", storageKey = 
 
     const value = {
         theme,
-        setTheme: (theme) => {
-            localStorage.setItem(storageKey, theme);
-            setTheme(theme);
+        setTheme: (newTheme) => {
+            localStorage.setItem(storageKey, newTheme); // ✅ FIXED: Store the NEW theme value
+            setTheme(newTheme);
         },
     };
 

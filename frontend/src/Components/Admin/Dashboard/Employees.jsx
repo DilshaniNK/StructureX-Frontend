@@ -181,7 +181,7 @@ const EmployeeManagement = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Employee Management</h1>
+            <h1 className="text-3xl font-bold text-[#FAAD00] mb-2">Employee Management</h1>
             <p className="text-gray-400">Manage all system employees and their roles</p>
           </div>
           <button onClick={handleAddEmployee} className="bg-gradient-to-r from-yellow-500 to-yellow-400 hover:from-yellow-600 hover:to-yellow-500 text-gray-900 px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg">

@@ -7,6 +7,7 @@ import Layout from '../Components/Admin/Layout';
 import DashboardPage from '../Components/Admin/Dashboard/Page'
 import EmployeesPage from '../Components/Admin/Dashboard/Employees'
 import AddEmployeesPage from '../Components/Admin/Dashboard/AddEmployees'
+import ProjectOverview from '../Components/Admin/Dashboard/ProjectOverview'
 
 export default function Admin() {
   return (
@@ -18,8 +19,7 @@ export default function Admin() {
           <Route path="reports" element={<h1 className="title">Reports</h1>} />
           <Route path="employees" element={<EmployeesPage/>} />
           <Route path="add-employee" element={<AddEmployeesPage/>} />
-          <Route path="verified-customers" element={<h1 className="title">Verified Customers</h1>} />
-          <Route path="products" element={<h1 className="title">Products</h1>} />
+          <Route path="projects" element={<ProjectOverview/>} />
           <Route path="new-product" element={<h1 className="title">New Product</h1>} />
           <Route path="inventory" element={<h1 className="title">Inventory</h1>} />
           <Route path="settings" element={<h1 className="title">Settings</h1>} />

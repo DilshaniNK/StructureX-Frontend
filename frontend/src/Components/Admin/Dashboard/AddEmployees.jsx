@@ -132,7 +132,7 @@ const AddEmployeeForm = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Add New Employee</h1>
+              <h1 className="text-3xl font-bold text-[#FAAD00] mb-2">Add New Employee</h1>
               <p className="text-gray-400">Fill in the details to add a new employee to the system</p>
             </div>
             <button

@@ -45,23 +45,23 @@ export const navbarLinks = [
         ],
     },
     {
-        title: "Products",
+        title: "Projects",
         links: [
             {
-                label: "Products",
+                label: "Project Overview",
                 icon: Package,
-                path: "/admin/products",
+                path: "/admin/projects",
             },
-            {
-                label: "New product",
-                icon: PackagePlus,
-                path: "/admin/new-product",
-            },
-            {
-                label: "Inventory",
-                icon: ShoppingBag,
-                path: "/admin/inventory",
-            },
+            // {
+            //     label: "New product",
+            //     icon: PackagePlus,
+            //     path: "/admin/new-product",
+            // },
+            // {
+            //     label: "Inventory",
+            //     icon: ShoppingBag,
+            //     path: "/admin/inventory",
+            // },
         ],
     },
     {

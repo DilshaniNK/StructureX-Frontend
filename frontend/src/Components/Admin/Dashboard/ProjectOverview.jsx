@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Eye, FileText, Users, BarChart3, Calendar, MapPin, DollarSign, Clock, CheckCircle, AlertCircle, XCircle, ArrowLeft } from 'lucide-react';
+import { Eye, FileText, Users, BarChart3, Calendar, MapPin, DollarSign, Clock, CheckCircle, AlertCircle, XCircle, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ProjectOverviewDashboard = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   // Sample project data
   const projects = [
@@ -81,16 +83,67 @@ const ProjectOverviewDashboard = () => {
       location: 'Austin, TX',
       documents: ['Educational Framework.pdf', 'Student Portal Wireframes.pdf'],
       description: 'Comprehensive LMS with virtual classroom and assessment tools'
+    },
+    {
+      id: 'PRJ-006',
+      clientId: 'CLI-006',
+      clientName: 'RetailMax Corp',
+      title: 'Inventory Management System',
+      status: 'completed',
+      progress: 100,
+      budget: '$78,900',
+      startDate: '2023-08-01',
+      endDate: '2024-01-15',
+      assignedOfficers: ['Alex Johnson', 'Maria Garcia'],
+      location: 'Miami, FL',
+      documents: ['System Manual.pdf', 'Training Guide.pdf'],
+      description: 'Real-time inventory tracking and automated reorder system'
+    },
+    {
+      id: 'PRJ-007',
+      clientId: 'CLI-007',
+      clientName: 'SmartHome Tech',
+      title: 'IoT Control Platform',
+      status: 'pending',
+      progress: 15,
+      budget: '$112,000',
+      startDate: '2024-04-01',
+      endDate: '2024-10-31',
+      assignedOfficers: ['Chris Brown', 'Amanda Wilson'],
+      location: 'Seattle, WA',
+      documents: ['IoT Architecture.pdf', 'Security Protocols.docx'],
+      description: 'Centralized IoT device management and automation platform'
+    },
+    {
+      id: 'PRJ-008',
+      clientId: 'CLI-008',
+      clientName: 'Media Solutions Pro',
+      title: 'Content Management System',
+      status: 'ongoing',
+      progress: 80,
+      budget: '$95,500',
+      startDate: '2024-02-15',
+      endDate: '2024-08-30',
+      assignedOfficers: ['Ryan Davis', 'Sophie Turner'],
+      location: 'Los Angeles, CA',
+      documents: ['Content Strategy.pdf', 'API Documentation.pdf'],
+      description: 'Multi-channel content management and distribution system'
     }
   ];
 
+  // Pagination calculations
+  const totalPages = Math.ceil(projects.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProjects = projects.slice(startIndex, endIndex);
+
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed': return 'text-green-400 bg-green-400/10';
-      case 'ongoing': return 'text-[#FAAD00] bg-[#FAAD00]/10';
-      case 'pending': return 'text-blue-400 bg-blue-400/10';
-      case 'on-hold': return 'text-red-400 bg-red-400/10';
-      default: return 'text-gray-400 bg-gray-400/10';
+      case 'completed': return 'text-green-400 border-green-400';
+      case 'ongoing': return 'text-[#FAAD00] border-[#FAAD00]';
+      case 'pending': return 'text-blue-400 border-blue-400';
+      case 'on-hold': return 'text-red-400 border-red-400';
+      default: return 'text-gray-400 border-gray-400';
     }
   };
 
@@ -139,7 +192,7 @@ const ProjectOverviewDashboard = () => {
               <h2 className="text-2xl font-bold text-white mb-2">{selectedProject.title}</h2>
               <p className="text-gray-300">{selectedProject.description}</p>
             </div>
-            <div className={`px-3 py-1 rounded-full text-sm flex items-center gap-2 ${getStatusColor(selectedProject.status)}`}>
+            <div className={`px-3 py-1 rounded-full text-sm flex items-center gap-2 border ${getStatusColor(selectedProject.status)}`}>
               {getStatusIcon(selectedProject.status)}
               {selectedProject.status.charAt(0).toUpperCase() + selectedProject.status.slice(1)}
             </div>
@@ -358,7 +411,7 @@ const ProjectOverviewDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {projects.map((project, index) => (
+              {currentProjects.map((project, index) => (
                 <tr key={project.id} className="border-b border-gray-700 hover:bg-gray-700/30 transition-colors">
                   <td className="p-4">
                     <span className="font-mono text-[#FAAD00] font-semibold">{project.id}</span>
@@ -376,7 +429,7 @@ const ProjectOverviewDashboard = () => {
                     </div>
                   </td>
                   <td className="p-4">
-                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${getStatusColor(project.status)}`}>
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm border ${getStatusColor(project.status)}`}>
                       {getStatusIcon(project.status)}
                       {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
                     </div>
@@ -408,6 +461,80 @@ const ProjectOverviewDashboard = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="bg-gray-800 px-6 py-4 border-t border-gray-700">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-400">
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, projects.length)} of {projects.length} results
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">Rows per page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1 rounded text-sm transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-[#FAAD00] text-gray-900 font-semibold'
+                          : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

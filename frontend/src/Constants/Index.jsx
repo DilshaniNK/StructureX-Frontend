@@ -1,5 +1,5 @@
 //npm install lucide-react
-import { ChartColumn, Home, NotepadText, Package, PackagePlus, Settings, ShoppingBag, UserCheck, UserPlus, Users } from "lucide-react";
+import { Bell, BellDot, Book, ChartColumn, Home, NewspaperIcon, NotepadText, Package, PackagePlus, Settings, ShoppingBag, UserCheck, UserCircleIcon, UserPlus, Users } from "lucide-react";
 import ProfileImage from "../assets/ProfileImage.jpg";
 import ProductImage from "../assets/ProductImage.jpg"
 
@@ -65,12 +65,32 @@ export const navbarLinks = [
         ],
     },
     {
-        title: "Settings",
+        title: "Profile",
         links: [
             {
-                label: "Settings",
-                icon: Settings,
-                path: "/admin/settings",
+                label: "Profile",
+                icon: UserCircleIcon,
+                path: "/admin/profile", 
+            },
+        ],
+    },
+    {
+        title: "System",
+        links: [
+            {
+                label: "Publish projects",
+                icon: NewspaperIcon,
+                path: "/admin/publish",  
+            },
+        ],
+    },
+    {
+        title: "Notification",
+        links: [
+            {
+                label: "Notification",
+                icon: BellDot,
+                path: "/admin/notification",  
             },
         ],
     },

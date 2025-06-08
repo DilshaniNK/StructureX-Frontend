@@ -8,6 +8,8 @@ import DashboardPage from '../Components/Admin/Dashboard/Page'
 import EmployeesPage from '../Components/Admin/Dashboard/Employees'
 import AddEmployeesPage from '../Components/Admin/Dashboard/AddEmployees'
 import ProjectOverview from '../Components/Admin/Dashboard/ProjectOverview'
+import AdminProfile from '../Components/Admin/Profile'
+import Notification from '../Components/Admin/Notification'
 
 export default function Admin() {
   return (
@@ -20,9 +22,8 @@ export default function Admin() {
           <Route path="employees" element={<EmployeesPage/>} />
           <Route path="add-employee" element={<AddEmployeesPage/>} />
           <Route path="projects" element={<ProjectOverview/>} />
-          <Route path="new-product" element={<h1 className="title">New Product</h1>} />
-          <Route path="inventory" element={<h1 className="title">Inventory</h1>} />
-          <Route path="settings" element={<h1 className="title">Settings</h1>} />
+          <Route path="profile" element={<AdminProfile/>} />
+          <Route path="notification" element={<Notification/>} />
         </Route>
       </Routes>
     </ThemeProvider>

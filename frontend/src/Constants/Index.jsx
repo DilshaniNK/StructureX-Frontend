@@ -25,23 +25,23 @@ export const navbarLinks = [
         ],
     },
     {
-        title: "Customers",
+        title: "Employees",
         links: [
             {
-                label: "Customers",
+                label: "Employees",
                 icon: Users,
-                path: "/admin/customers",
+                path: "/admin/employees",
             },
             {
-                label: "New customer",
+                label: "Add Employee",
                 icon: UserPlus,
-                path: "/admin/new-customer",
+                path: "/admin/add-employee",
             },
-            {
-                label: "Verified customers",
-                icon: UserCheck,
-                path: "/admin/verified-customers",
-            },
+            // {
+            //     label: "Verified customers",
+            //     icon: UserCheck,
+            //     path: "/admin/verified-customers",
+            // },
         ],
     },
     {

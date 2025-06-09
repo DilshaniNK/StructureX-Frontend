@@ -1,5 +1,5 @@
 //npm install lucide-react
-import { ChartColumn, Home, NotepadText, Package, PackagePlus, Settings, ShoppingBag, UserCheck, UserPlus, Users } from "lucide-react";
+import { Bell, BellDot, Book, ChartColumn, Home, NewspaperIcon, NotepadText, Package, PackagePlus, Settings, ShoppingBag, UserCheck, UserCircleIcon, UserPlus, Users } from "lucide-react";
 import ProfileImage from "../assets/ProfileImage.jpg";
 import ProductImage from "../assets/ProductImage.jpg"
 
@@ -25,52 +25,72 @@ export const navbarLinks = [
         ],
     },
     {
-        title: "Customers",
+        title: "Employees",
         links: [
             {
-                label: "Customers",
+                label: "Employees",
                 icon: Users,
-                path: "/admin/customers",
+                path: "/admin/employees",
             },
             {
-                label: "New customer",
+                label: "Add Employee",
                 icon: UserPlus,
-                path: "/admin/new-customer",
+                path: "/admin/add-employee",
             },
-            {
-                label: "Verified customers",
-                icon: UserCheck,
-                path: "/admin/verified-customers",
-            },
+            // {
+            //     label: "Verified customers",
+            //     icon: UserCheck,
+            //     path: "/admin/verified-customers",
+            // },
         ],
     },
     {
-        title: "Products",
+        title: "Projects",
         links: [
             {
-                label: "Products",
+                label: "Project Overview",
                 icon: Package,
-                path: "/admin/products",
+                path: "/admin/projects",
             },
+            // {
+            //     label: "New product",
+            //     icon: PackagePlus,
+            //     path: "/admin/new-product",
+            // },
+            // {
+            //     label: "Inventory",
+            //     icon: ShoppingBag,
+            //     path: "/admin/inventory",
+            // },
+        ],
+    },
+    {
+        title: "Profile",
+        links: [
             {
-                label: "New product",
-                icon: PackagePlus,
-                path: "/admin/new-product",
-            },
-            {
-                label: "Inventory",
-                icon: ShoppingBag,
-                path: "/admin/inventory",
+                label: "Profile",
+                icon: UserCircleIcon,
+                path: "/admin/profile", 
             },
         ],
     },
     {
-        title: "Settings",
+        title: "System",
         links: [
             {
-                label: "Settings",
-                icon: Settings,
-                path: "/admin/settings",
+                label: "Publish projects",
+                icon: NewspaperIcon,
+                path: "/admin/publish",  
+            },
+        ],
+    },
+    {
+        title: "Notification",
+        links: [
+            {
+                label: "Notification",
+                icon: BellDot,
+                path: "/admin/notification",  
             },
         ],
     },

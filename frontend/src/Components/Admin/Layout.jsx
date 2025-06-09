@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom'
 // npm install @uidotdev/usehooks
 import {useMediaQuery} from "@uidotdev/usehooks"
 
-import { Sidebar } from "./SideBar";
+import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import {cn} from "../../Utils/cn";
 import {UseClickOutside} from "../../Hooks/UseClickOutside"

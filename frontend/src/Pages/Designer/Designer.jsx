@@ -27,7 +27,7 @@ export default function Home() {
       />
       
       <div className="pt-20 p-8 ml-18">
-        Hello
+        Designer Page
       </div>
     </div>
   );

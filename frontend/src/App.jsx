@@ -12,7 +12,7 @@ import FO_Labors from './Pages/Financial_officer/Labors'
 import FO_Calendar from './Pages/Financial_officer/Calender'
 
 import Home from './Pages/Home'
-import Admin from './Pages/Admin'
+import Admin from './Pages/Admin/Admin'
 import Designer from './Pages/Designer/Designer'
 
 const App = () => {
@@ -20,7 +20,7 @@ const App = () => {
     <>
       <Router>
         <Routes>
-          
+          <Route>
             <Route path="/" element={<Home/>}/>
             <Route path="/admin/*" element={<Admin/>}/>
             <Route path="/example/*" element={<Example/>}/>
@@ -30,7 +30,7 @@ const App = () => {
             <Route path="/financial_officer/project_details" element={<FO_ProjectDetails/>}/>
             <Route path="/designer/*" element={<Designer/>}/>
             <Route path="/financial_officer/calendar" element={<FO_Calendar/>}/>
-          
+          </Route>
         </Routes>
       </Router>
     </>

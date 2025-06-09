@@ -21,7 +21,7 @@ export default function Home() {
       />
       <Sidebar 
         userRole={userRole} 
-        activeItem="home"
+        activeItem="dashboard"
         onNavigate={handleSidebarNavigate}
       />
       

@@ -1,5 +1,5 @@
 import React from 'react';
-import ProfileImg from "../../assets/ProfileImage.jpg";
+import ProfileImg from "../../../assets/ProfileImage.jpg";
 
 import { 
   User, 

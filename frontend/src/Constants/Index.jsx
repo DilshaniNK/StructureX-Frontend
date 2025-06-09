@@ -1,7 +1,8 @@
 //npm install lucide-react
-import { Bell, BellDot, Book, ChartColumn, Home, NewspaperIcon, NotepadText, Package, PackagePlus, Settings, ShoppingBag, UserCheck, UserCircleIcon, UserPlus, Users } from "lucide-react";
+import { Bell, BellDot, Book, ChartColumn, HelpingHand, Home, NewspaperIcon, NotepadText, Package, PackagePlus, Settings, ShoppingBag, UserCheck, UserCircleIcon, UserPlus, Users } from "lucide-react";
 import ProfileImage from "../assets/ProfileImage.jpg";
 import ProductImage from "../assets/ProductImage.jpg"
+import { Helpers } from "react-scroll";
 
 export const navbarLinks = [
     {
@@ -78,9 +79,19 @@ export const navbarLinks = [
         title: "System",
         links: [
             {
-                label: "Publish projects",
+                label: "Publish Projects",
                 icon: NewspaperIcon,
                 path: "/admin/publish",  
+            },
+        ],
+    },
+    {
+        title: "Support",
+        links: [
+            {
+                label: "Contact Support",
+                icon: HelpingHand,
+                path: "/admin/contact_support",  
             },
         ],
     },

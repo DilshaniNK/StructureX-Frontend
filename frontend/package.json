@@ -17,10 +17,7 @@
     "@uidotdev/usehooks": "^2.4.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.15.0",
-<<<<<<< HEAD
     "jspdf": "^3.0.1",
-=======
->>>>>>> 7b2873ce07db44bd575beae29f958db04435def2
     "lucide-react": "^0.513.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -43,7 +40,7 @@
     "postcss": "^8.5.4",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.12",
-    "tailwindcss": "^4.1.8",
+    "tailwindcss": "^3.3.5",
     "vite": "^6.3.5"
   }
 }

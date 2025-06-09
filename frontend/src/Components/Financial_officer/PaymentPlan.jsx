@@ -90,131 +90,132 @@ export default function PaymentPlanCreator() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6  rounded-xl bg-white mb-5">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Payment Plan Creator</h2>
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 rounded-xl bg-white mb-5 overflow-x-auto">
+  <h2 className="text-2xl font-bold mb-4 text-gray-800">Payment Plan Creator</h2>
 
-      {installments.map((inst, index) => (
-        <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 items-center">
-          <input
-            type="date"
-            value={inst.dueDate}
-            onChange={(e) => handleInstallmentChange(index, 'dueDate', e.target.value)}
-            className="border p-2 rounded"
-            disabled={isSaved}
-          />
-          <input
-            type="text"
-            value={inst.milestone}
-            onChange={(e) => handleInstallmentChange(index, 'milestone', e.target.value)}
-            className="border p-2 rounded"
-            placeholder="Milestone"
-            disabled={isSaved}
-          />
-          <input
-            type="number"
-            value={inst.amount}
-            onChange={(e) => handleInstallmentChange(index, 'amount', e.target.value)}
-            className="border p-2 rounded"
-            placeholder="Amount"
-            disabled={isSaved}
-          />
-          <select
-            value={inst.status}
-            onChange={(e) => handleInstallmentChange(index, 'status', e.target.value)}
-            className="border p-2 rounded"
-            disabled={isSaved}
-          >
-            <option>Pending</option>
-            <option>Paid</option>
-            <option>Overdue</option>
-          </select>
-          {!isSaved && (
-            <button
-              onClick={() => handleRemoveInstallment(index)}
-              className="text-red-600 text-xl font-bold hover:text-red-800"
-              title="Remove"
-            >
-              <RemoveCircleIcon />
-            </button>
-          )}
-        </div>
-      ))}
-
+  {installments.map((inst, index) => (
+    <div key={index} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-4 items-center">
+      <input
+        type="date"
+        value={inst.dueDate}
+        onChange={(e) => handleInstallmentChange(index, 'dueDate', e.target.value)}
+        className="border p-2 rounded w-full"
+        disabled={isSaved}
+      />
+      <input
+        type="text"
+        value={inst.milestone}
+        onChange={(e) => handleInstallmentChange(index, 'milestone', e.target.value)}
+        className="border p-2 rounded w-full"
+        placeholder="Milestone"
+        disabled={isSaved}
+      />
+      <input
+        type="number"
+        value={inst.amount}
+        onChange={(e) => handleInstallmentChange(index, 'amount', e.target.value)}
+        className="border p-2 rounded w-full"
+        placeholder="Amount"
+        disabled={isSaved}
+      />
+      <select
+        value={inst.status}
+        onChange={(e) => handleInstallmentChange(index, 'status', e.target.value)}
+        className="border p-2 rounded w-full"
+        disabled={isSaved}
+      >
+        <option>Pending</option>
+        <option>Paid</option>
+        <option>Overdue</option>
+      </select>
       {!isSaved && (
         <button
-          onClick={handleAddInstallment}
-          className="bg-green-500 text-white px-4 py-2 rounded mb-4 hover:bg-green-600 transition"
+          onClick={() => handleRemoveInstallment(index)}
+          className="text-red-600 text-xl font-bold hover:text-red-800 justify-self-start"
+          title="Remove"
         >
-          + Add Installment
+          <RemoveCircleIcon />
         </button>
       )}
-
-      <h3 className="text-xl font-semibold mb-2">Terms & Conditions</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <input
-          type="text"
-          value={terms.latePenalty}
-          onChange={(e) => handleTermChange('latePenalty', e.target.value)}
-          className="border p-2 rounded"
-          placeholder="Late Payment Penalty"
-          disabled={isSaved}
-        />
-        <input
-          type="text"
-          value={terms.earlyDiscount}
-          onChange={(e) => handleTermChange('earlyDiscount', e.target.value)}
-          className="border p-2 rounded"
-          placeholder="Early Payment Discount"
-          disabled={isSaved}
-        />
-        <input
-          type="text"
-          value={terms.cancellation}
-          onChange={(e) => handleTermChange('cancellation', e.target.value)}
-          className="border p-2 rounded"
-          placeholder="Cancellation Policy"
-          disabled={isSaved}
-        />
-        <input
-          type="text"
-          value={terms.paymentMethod}
-          onChange={(e) => handleTermChange('paymentMethod', e.target.value)}
-          className="border p-2 rounded"
-          placeholder="Payment Method"
-          disabled={isSaved}
-        />
-      </div>
-
-      <div className="flex gap-4 mb-4">
-        {!isSaved && (
-          <button
-            onClick={handleSavePlan}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-          >
-            Save
-          </button>
-        )}
-        {isSaved && (
-          <button
-            onClick={handleUpdatePlan}
-            className="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600"
-          >
-            Update
-          </button>
-        )}
-        <button
-          onClick={handleDeletePlan}
-          className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600"
-        >
-          Delete
-        </button>
-        <button
-          onClick={handleDownload}
-          className="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700"
-        >
-          Download 
-        </button>
-      </div>
     </div>
+  ))}
+
+  {!isSaved && (
+    <button
+      onClick={handleAddInstallment}
+      className="bg-green-500 text-white px-4 py-2 rounded mb-4 hover:bg-green-600 transition w-full sm:w-auto"
+    >
+      + Add Installment
+    </button>
+  )}
+
+  <h3 className="text-xl font-semibold mb-2">Terms & Conditions</h3>
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+    <input
+      type="text"
+      value={terms.latePenalty}
+      onChange={(e) => handleTermChange('latePenalty', e.target.value)}
+      className="border p-2 rounded w-full"
+      placeholder="Late Payment Penalty"
+      disabled={isSaved}
+    />
+    <input
+      type="text"
+      value={terms.earlyDiscount}
+      onChange={(e) => handleTermChange('earlyDiscount', e.target.value)}
+      className="border p-2 rounded w-full"
+      placeholder="Early Payment Discount"
+      disabled={isSaved}
+    />
+    <input
+      type="text"
+      value={terms.cancellation}
+      onChange={(e) => handleTermChange('cancellation', e.target.value)}
+      className="border p-2 rounded w-full"
+      placeholder="Cancellation Policy"
+      disabled={isSaved}
+    />
+    <input
+      type="text"
+      value={terms.paymentMethod}
+      onChange={(e) => handleTermChange('paymentMethod', e.target.value)}
+      className="border p-2 rounded w-full"
+      placeholder="Payment Method"
+      disabled={isSaved}
+    />
+  </div>
+
+  <div className="flex flex-col sm:flex-row gap-4 mb-4">
+    {!isSaved && (
+      <button
+        onClick={handleSavePlan}
+        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full sm:w-auto"
+      >
+        Save
+      </button>
+    )}
+    {isSaved && (
+      <button
+        onClick={handleUpdatePlan}
+        className="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600 w-full sm:w-auto"
+      >
+        Update
+      </button>
+    )}
+    <button
+      onClick={handleDeletePlan}
+      className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 w-full sm:w-auto"
+    >
+      Delete
+    </button>
+    <button
+      onClick={handleDownload}
+      className="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700 w-full sm:w-auto"
+    >
+      Download
+    </button>
+  </div>
+</div>
+
   );
 }

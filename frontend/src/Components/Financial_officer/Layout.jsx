@@ -26,7 +26,7 @@ const Layout = ({ children }) => {
     { path: '/financial_officer/projects', name: 'Projects', icon: <FolderIcon /> },
     { path: '/financial_officer/payments', name: 'Payments', icon: <PaymentIcon /> },
     { path: '/financial_officer/calendar', name: 'Calendar', icon: <CalendarTodayIcon /> },
-    { path: '/financial_officer/labors', name: 'Labors', icon: <EngineeingIcon /> },
+    { path: '/financial_officer/labors', name: 'Daily Labors', icon: <EngineeingIcon /> },
     { path: '/financial_officer/reports', name: 'Reports', icon: <AssessmentIcon /> },
     { path: '/financial_officer/settings', name: 'Settings', icon: <SettingsIcon /> },
   ];

@@ -10,7 +10,7 @@ import FO_Projects from './Pages/Financial_officer/Projects'
 import FO_ProjectDetails from './Pages/Financial_officer/ProjectDetails'
 import FO_Labors from './Pages/Financial_officer/Labors'
 import FO_Calendar from './Pages/Financial_officer/Calender'
-
+import FO_Payments from './Pages/Financial_officer/Payments'
 import Home from './Pages/Home'
 import Admin from './Pages/Admin/Admin'
 import Designer from './Pages/Designer/Designer'

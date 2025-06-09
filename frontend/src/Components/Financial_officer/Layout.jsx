@@ -12,6 +12,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import SettingsIcon from '@mui/icons-material/Settings';
+import EngineeingIcon from '@mui/icons-material/Engineering';
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true); // by default sidebar is open
@@ -25,7 +26,7 @@ const Layout = ({ children }) => {
     { path: '/financial_officer/projects', name: 'Projects', icon: <FolderIcon /> },
     { path: '/financial_officer/payments', name: 'Payments', icon: <PaymentIcon /> },
     { path: '/financial_officer/calendar', name: 'Calendar', icon: <CalendarTodayIcon /> },
-    { path: '/financial_officer/pay-plans', name: 'Pay Plans', icon: <MonetizationOnIcon /> },
+    { path: '/financial_officer/labors', name: 'Daily Labors', icon: <EngineeingIcon /> },
     { path: '/financial_officer/reports', name: 'Reports', icon: <AssessmentIcon /> },
     { path: '/financial_officer/settings', name: 'Settings', icon: <SettingsIcon /> },
   ];
@@ -81,7 +82,7 @@ const Layout = ({ children }) => {
             {sidebarOpen ? <CloseIcon /> : <MenuIcon />}
           </button>
 
-          <h1 className="text-xl font-semibold">Financial Officer Dashboard</h1>
+          
 
           <div className="flex items-center space-x-4">
             <div className="relative">

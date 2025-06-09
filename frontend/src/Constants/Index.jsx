@@ -91,7 +91,7 @@ export const navbarLinks = [
             {
                 label: "Contact Support",
                 icon: HelpingHand,
-                path: "/admin/contact_support",  
+                path: "/admin/contact-support",  
             },
         ],
     },

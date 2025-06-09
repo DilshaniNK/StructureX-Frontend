@@ -10,15 +10,25 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.1.1",
     "@tailwindcss/vite": "^4.1.8",
+    "@uidotdev/usehooks": "^2.4.1",
+    "clsx": "^2.1.1",
     "framer-motion": "^12.15.0",
+<<<<<<< HEAD
     "jspdf": "^3.0.1",
+=======
+>>>>>>> 7b2873ce07db44bd575beae29f958db04435def2
     "lucide-react": "^0.513.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
+    "react-router-dom": "^7.6.2",
     "react-scroll": "^1.9.3",
-    "recharts": "^2.15.3"
+    "recharts": "^2.15.3",
+    "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
@@ -31,6 +41,8 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "postcss": "^8.5.4",
+    "prettier": "^3.5.3",
+    "prettier-plugin-tailwindcss": "^0.6.12",
     "tailwindcss": "^4.1.8",
     "vite": "^6.3.5"
   }

@@ -19,7 +19,7 @@ const About = () => {
         <motion.h1
         variants={slideUpVariants}
         className='text-white uppercase text-[40px] font-bold '>
-            Structer X
+            Structura X
         </motion.h1>
         <div className='w-[120px] h-[6px] bg-yellow-500 '></div>
             <p className='text-3xl italic text-gray-50 mt-[60px]'>Lorem ipsum dolor sit amet consectetur adipisicing elit. Velit, accusantium!</p>

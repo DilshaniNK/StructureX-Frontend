@@ -2,21 +2,25 @@ import React from 'react'
 import {BrowserRouter as Router,Routes,Route} from "react-router-dom";
 
 
+
 import Home from './Pages/Home'
 import Admin from './Pages/Admin'
 import FinancialOfficer from './Pages/FinancialOfficer'
+
 
 const App = () => {
   return (
     <>
       <Router>
         <Routes>
-          
+          <Route>
             <Route path="/" element={<Home/>}/>
             <Route path="/admin/*" element={<Admin/>}/>
+
             <Route path="/financial_officer/*" element={<FinancialOfficer/>}/>
             
           
+
         </Routes>
       </Router>
     </>

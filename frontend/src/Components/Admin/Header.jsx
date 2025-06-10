@@ -15,7 +15,7 @@ export const Header = ({ collapsed, setCollapsed }) => {
 
     // Handler for bell icon click
     const handleNotificationClick = () => {
-        navigate("/admin/notifications");
+        navigate("/admin/notification");
     };
 
     return (

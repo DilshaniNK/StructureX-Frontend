@@ -7,7 +7,7 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import Layout from '../../Components/Financial_officer/Layout';
+
 
 const locales = { 'en-US': enUS };
 
@@ -84,7 +84,7 @@ const CalendarView = () => {
   };
 
   return (
-    <Layout>
+    <div>
     <div className="p-4 max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Payment Calendar</h2>
 
@@ -129,7 +129,7 @@ const CalendarView = () => {
         </div>
       )}
     </div>
-    </Layout>
+    </div>
   );
 };
 

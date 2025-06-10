@@ -31,6 +31,14 @@ const Sidebar = ({
       { id: 'completed', label: 'Completed Projects', icon: BadgeCheck , path: '/designer/completed', badge: null },
       { id: 'notification', label: 'Notifications', icon: Bell, path: '/designer/notifications', badge: '12' },
       { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/designer/chat', badge: '5' }
+    ],
+    FinancialOfficer: [
+      { id: 'home', label: 'Home', icon: Home, path: '/financial_officer/home', badge: null },
+      { id: 'projects', label: 'Projects', icon: Rocket, path: '/financial_officer/projects'},
+      { id: 'payments', label: 'Payments', icon: Loader, path: '/financial_officer/payments', badge: null },
+      { id: 'calendar', label: 'Calendar', icon: BadgeCheck , path: '/financial_officer/calendar', badge: null },
+      { id: 'daily labors', label: 'Daily Labors', icon: Bell, path: '/financial_officer/daily_labors', badge: '12' },
+      { id: 'settings', label: 'Settings', icon: MessageSquare, path: '/financial_officer/settings', badge: '5' }
     ]
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Layout from "../../Components/Financial_officer/Layout";
+
 
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
@@ -51,7 +51,7 @@ const ProjectsPage = () => {
   });
 
   return (
-    <Layout>
+    <div>
       <div>
         <h1 className="text-center justify-center align-middle text-3xl mb-15">Ongoing Projects</h1>
         
@@ -155,7 +155,7 @@ const ProjectsPage = () => {
           </tbody>
         </table>
       </div>
-    </Layout>
+    </div>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Layout from '../../Components/Financial_officer/Layout';
+
 
 
 const defaultRates = {
@@ -70,7 +70,7 @@ export default function LaborCharges() {
   };
 
   return (
-    <Layout>
+    <div>
       <h1 className="text-center justify-center align-middle text-3xl mb-15">Today's Labors</h1>
 
       <div className="max-w-5xl mx-auto p-4">
@@ -160,6 +160,6 @@ export default function LaborCharges() {
             </div>
           ))}
       </div>
-    </Layout>
+    </div>
   );
 }

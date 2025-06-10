@@ -5,7 +5,7 @@ import {BrowserRouter as Router,Routes,Route} from "react-router-dom";
 
 
 import Example from './Pages/Example'
-import FinancialOfficer from './Pages/FinancialOfficer'
+import Financial_officer from './Pages/FinancialOfficer'
 
 import Home from './Pages/Home'
 import Admin from './Pages/Admin/Admin'
@@ -19,7 +19,7 @@ const App = () => {
           <Route>
             <Route path="/" element={<Home/>}/>
             <Route path="/admin/*" element={<Admin/>}/>
-            <Route path="/financial_officer/*" element={<FinancialOfficer/>}/>
+            <Route path="/financial_officer/*" element={<Financial_officer/>}/>
             
           
 

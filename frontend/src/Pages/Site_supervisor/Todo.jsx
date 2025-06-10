@@ -1,9 +1,10 @@
 import React from 'react'
+import KanbanBoard from '../../Components/Site_supervisor/KanbanBoard'
 
 const Todo = () => {
   return (
     <div>
-      task managemnet
+      <KanbanBoard/>
     </div>
   )
 }

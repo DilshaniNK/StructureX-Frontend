@@ -1,51 +1,97 @@
 import PropTypes from "prop-types";
 import { Bell, ChevronsLeft, Moon, Search, Sun } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../Hooks/UseTheme";
 import ProfileImg from "../../assets/ProfileImage.jpg";
 
-export const Header = ({collapsed, setCollapsed}) => {
-    const {theme, setTheme} = useTheme();
+export const Header = ({ collapsed, setCollapsed }) => {
+    const { theme, setTheme } = useTheme();
+    const navigate = useNavigate();
+
+    // Handler for profile image click
+    const handleProfileClick = () => {
+        navigate("/admin/profile");
+    };
+
+    // Handler for bell icon click
+    const handleNotificationClick = () => {
+        navigate("/admin/notification");
+    };
 
     return (
-        <header className="relative z-10 flex h-[60px] items-center justify-between bg-white px-4 border-b border-slate-200 transition-all duration-300 dark:bg-black dark:border-slate-700">
-            <div className="flex items-center gap-x-3">
-                <button 
-                    className="flex items-center justify-center size-10 rounded-lg text-slate-600 hover:bg-[#FAAD00]/5 hover:text-[#FAAD00] dark:text-slate-300 dark:hover:bg-[#FFC746]/5 dark:hover:text-[#FFC746] transition-all duration-300" 
+        <div className="flex items-center justify-between h-16 px-4 bg-black shadow-sm border-b border-gray-800">
+            {/* Left Section - Collapse Button, StructuaX, and Search */}
+            <div className="flex items-center space-x-4">
+                <button
                     onClick={() => setCollapsed(!collapsed)}
+                    className="p-2 rounded-lg hover:bg-gray-700 transition-colors duration-200"
                 >
                     <ChevronsLeft 
                         size={20} 
-                        className={`transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`}
+                        className={`text-gray-300 hover:text-white transition-all duration-200 ${
+                            collapsed ? 'rotate-180' : ''
+                        }`} 
                     />
                 </button>
-                <div className="relative flex items-center">
-                    <Search size={18} className="absolute left-3 text-slate-400 dark:text-slate-500"/>
-                    <input 
-                        type="text" 
-                        name="search" 
-                        id="search" 
-                        placeholder="Search..." 
-                        className="pl-10 pr-4 py-2 w-64 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FAAD00] hover:border-slate-300 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 dark:focus:border-[#FFC746] dark:hover:border-slate-600"
+
+                {/* Search Bar */}
+                <div className="relative">
+                    <Search 
+                        size={18} 
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        className="w-80 pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400 hover:bg-gray-700 transition-colors duration-200"
                     />
                 </div>
             </div>
-            <div className="flex items-center gap-x-3">
-                <button 
-                    className="flex items-center justify-center size-10 rounded-lg text-slate-600 hover:bg-[#FAAD00]/5 hover:text-[#FAAD00] dark:text-slate-300 dark:hover:bg-[#FFC746]/5 dark:hover:text-[#FFC746] transition-all duration-300" 
+
+            {/* Right Section - Icons and Profile */}
+            <div className="flex items-center space-x-4">
+                {/* Theme Toggle Button */}
+                {/* <button
                     onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+                    className="p-2 rounded-lg hover:bg-gray-700 transition-colors duration-200"
                 >
-                    {/* <Sun size={20} className="dark:hidden"/>
-                    <Moon size={20} className="hidden dark:block"/> */}
+                    {theme === "light" ? (
+                        <Moon size={20} className="text-gray-300 hover:text-white transition-colors duration-200" />
+                    ) : (
+                        <Sun size={20} className="text-gray-300 hover:text-white transition-colors duration-200" />
+                    )}
+                </button> */}
+
+                {/* Notification Bell Button */}
+                <button
+                    onClick={handleNotificationClick}
+                    className="relative p-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 group"
+                >
+                    <Bell 
+                        size={20} 
+                        className="text-gray-300 group-hover:text-white transition-colors duration-200" 
+                    />
+                    {/* Optional notification badge */}
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                        3
+                    </span>
                 </button>
-                <button className="flex items-center justify-center size-10 rounded-lg text-slate-600 relative hover:bg-[#FAAD00]/5 hover:text-[#FAAD00] dark:text-slate-300 dark:hover:bg-[#FFC746]/5 dark:hover:text-[#FFC746] transition-all duration-300">
-                    <Bell size={20} />
-                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-[#FAAD00] rounded-full dark:bg-[#FFC746]"></span>
-                </button>
-                <button className="size-10 overflow-hidden rounded-full ring-2 ring-slate-200 hover:ring-[#FAAD00] dark:ring-slate-700 dark:hover:ring-[#FFC746] transition-all duration-300">
-                    <img src={ProfileImg} alt="profile image" className="size-full object-cover"/>
+
+                {/* Profile Image Button */}
+                <button
+                    onClick={handleProfileClick}
+                    className="relative group ml-2"
+                >
+                    <img
+                        src={ProfileImg}
+                        alt="Profile"
+                        className="w-8 h-8 rounded-full object-cover border-2 border-gray-600 hover:border-gray-400 transition-colors duration-200"
+                    />
+                    {/* Online status indicator */}
+                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-black rounded-full"></span>
                 </button>
             </div>
-        </header>
+        </div>
     );
 };
 

@@ -3,7 +3,6 @@ import PropTypes from "prop-types";
 import { NavLink } from "react-router-dom";
 import { navbarLinks } from "../../Constants/Index";
 import { cn } from '../../Utils/cn';
-import logo from '../../assets/logo.png';
 
 export const Sidebar = forwardRef(({ collapsed }, ref) => {
     return (

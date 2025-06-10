@@ -24,25 +24,25 @@ const Dashboard = () => {
 
           {/* Summary Cards */}
           <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px] bg-white p-6 rounded-lg shadow-md text-center  hover:bg-black hover:text-amber-500 ">
+            <div className="flex-1 min-w-[200px] border-amber-500 border-2 bg-white p-6 rounded-lg shadow-md text-center  hover:bg-black hover:text-amber-500 ">
               <HomeWorkIcon />
               <h3 className="text-lg font-semibold mb-2">Ongoing Projects</h3>
               <p className="text-3xl font-bold text-amber-500">12</p>
             </div>
 
-            <div className="flex-1 min-w-[200px] bg-white p-6 rounded-lg shadow-md text-center hover:bg-black hover:text-amber-500  ">
+            <div className="flex-1 min-w-[200px] border-amber-500 border-2 bg-white p-6 rounded-lg shadow-md text-center hover:bg-black hover:text-amber-500  ">
               <MoreHorizIcon />
               <h3 className="text-lg font-semibold mb-2 ">Pending Approvals</h3>
               <p className="text-3xl font-bold text-amber-500 ">5</p>
             </div>
 
-            <div className="flex-1 min-w-[200px] bg-white p-6 rounded-lg shadow-md text-center  hover:bg-black hover:text-amber-500 ">
+            <div className="flex-1 min-w-[200px] border-amber-500 border-2 bg-white p-6 rounded-lg shadow-md text-center  hover:bg-black hover:text-amber-500 ">
               <MoneyIcon />
               <h3 className="text-lg font-semibold mb-2">Pending Payments</h3>
               <p className="text-3xl font-bold text-amber-500">5</p>
             </div>
 
-            <div className="flex-1 min-w-[200px] bg-white p-6 rounded-lg shadow-md text-center  hover:bg-black hover:text-amber-500 ">
+            <div className="flex-1 min-w-[200px] border-amber-500 border-2 bg-white p-6 rounded-lg shadow-md text-center  hover:bg-black hover:text-amber-500 ">
               <EngineeingIcon />
               <h3 className="text-lg font-semibold mb-2">Today's Workers</h3>
               <p className="text-3xl font-bold text-amber-500">35</p>

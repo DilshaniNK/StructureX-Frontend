@@ -1,33 +1,67 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom';
-//https://planner5d.com/use/free-floor-plan-creator
-import Navbar from '../../Components/Employee/Navbar'
-import Sidebar from '../../Components/Employee/Sidebar' 
+import React, { useState } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import Navbar from '../../Components/Employee/Navbar';
+import Sidebar from '../../Components/Employee/Sidebar';
+import Main from '../Designer/Home';
+import ProjectInitializer from '../Designer/ProjectInitialize';
+import OngoingProjects from '../Designer/OngoingProjects';
+import Chat from '../Designer/Chat';
+import CompletedProjects from '../Designer/CompletedProjects';
+import Notification from '../../Components/Employee/Notification'
 
 export default function Home() {
-  const userRole = 'Designer'; // Change this based on your user's actual role
-  const userName = 'John Doe'; // Get this from your user context/state
-
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const userRole = 'Designer';
+  const userName = 'John Doe';
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSidebarNavigate = (id, path) => {
-    navigate(path); // This will navigate when a Sidebar item is clicked
+    navigate(path);
+  };
+
+  // Determine active item based on current path
+  const getActiveItem = () => {
+    const path = location.pathname;
+    if (path.includes('/designer/home') || path === '/') return 'home';
+    if (path.includes('/designer/initialize')) return 'initialize';
+    if (path.includes('/designer/ongoing')) return 'ongoing';
+    if (path.includes('/designer/completed')) return 'completed';
+    if (path.includes('/designer/chat')) return 'chat';
+    if (path.includes('/designer/notifications')) return 'notifications';
+    return 'home'; // default
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Navbar 
         userRole={userRole}
         userName={userName}
-      />
-      <Sidebar 
-        userRole={userRole} 
-        activeItem="overview"
-        onNavigate={handleSidebarNavigate}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
       />
       
-      <div className="pt-20 p-8 ml-18">
-        Hello
+      <Sidebar 
+        userRole={userRole}
+        activeItem={getActiveItem()}
+        onNavigate={handleSidebarNavigate}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
+      
+      {/* Main content area - adjusted for sidebar */}
+      <div className="pt-16 ml-20 transition-all duration-300">
+        <div className="p-6">
+          <Routes>
+            <Route path="/" element={<Main />} />
+            <Route path="/home" element={<Main />} />
+            <Route path="/initialize" element={<ProjectInitializer />} />
+            <Route path="/ongoing" element={<OngoingProjects />} />
+            <Route path="/completed" element={<CompletedProjects />} />
+            <Route path="/notifications" element={<Notification/>} />
+            <Route path="/chat" element={<Chat/>} />
+          </Routes>
+        </div>
       </div>
     </div>
   );

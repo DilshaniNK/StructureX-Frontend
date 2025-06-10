@@ -29,7 +29,7 @@ const Sidebar = ({
       { id: 'initialize', label: 'Project Initialization', icon: Rocket, path: '/designer/initialize'},
       { id: 'ongoing', label: 'Ongoing Projects', icon: Loader, path: '/designer/ongoing', badge: null },
       { id: 'completed', label: 'Completed Projects', icon: BadgeCheck , path: '/designer/completed', badge: null },
-      { id: 'notification', label: 'Notifications', icon: Bell, path: '/notifications', badge: '12' },
+      { id: 'notification', label: 'Notifications', icon: Bell, path: '/designer/notifications', badge: '12' },
       { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/designer/chat', badge: '5' }
     ]
   };

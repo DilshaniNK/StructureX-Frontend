@@ -7,6 +7,7 @@ import ProjectInitializer from '../Designer/ProjectInitialize';
 import OngoingProjects from '../Designer/OngoingProjects';
 import Chat from '../Designer/Chat';
 import CompletedProjects from '../Designer/CompletedProjects';
+import Notification from '../../Components/Employee/Notification'
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -27,7 +28,7 @@ export default function Home() {
     if (path.includes('/designer/ongoing')) return 'ongoing';
     if (path.includes('/designer/completed')) return 'completed';
     if (path.includes('/designer/chat')) return 'chat';
-    if (path.includes('/notifications')) return 'notifications';
+    if (path.includes('/designer/notifications')) return 'notifications';
     return 'home'; // default
   };
 
@@ -57,7 +58,7 @@ export default function Home() {
             <Route path="/initialize" element={<ProjectInitializer />} />
             <Route path="/ongoing" element={<OngoingProjects />} />
             <Route path="/completed" element={<CompletedProjects />} />
-            <Route path="/notifications" element={<div className="p-8"><h1 className="text-2xl font-bold">Notifications</h1><p>This is the notifications page.</p></div>} />
+            <Route path="/notifications" element={<Notification/>} />
             <Route path="/chat" element={<Chat/>} />
           </Routes>
         </div>

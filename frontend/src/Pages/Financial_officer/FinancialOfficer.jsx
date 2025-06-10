@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import Navbar from '../Components/Employee/Navbar';
-import Sidebar from '../Components/Employee/Sidebar';
+import Navbar from '../../Components/Employee/Navbar';
+import Sidebar from '../../Components/Employee/Sidebar';
 
-import Dashboard from './Financial_officer/Dashboard';
-import Projects from './Financial_officer/Projects'
-import ProjectDetails from './Financial_officer/ProjectDetails';
-import Calendar from './Financial_officer/Calender';
-import Labors from './Financial_officer/Labors';
-import Payments from './Financial_officer/Payments';
+import Dashboard from './Dashboard';
+import Projects from './Projects'
+import ProjectDetails from './ProjectDetails';
+import Calendar from './Calender';
+import Labors from './Labors';
+import Payments from './Payments';
 
 export default function Financial_officer() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

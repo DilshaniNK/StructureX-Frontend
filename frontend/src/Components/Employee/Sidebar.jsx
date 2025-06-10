@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { 
-  Home, Users, BarChart3, Clipboard, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut
+  Home, Users, BarChart3, Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader
 } from 'lucide-react';
 
 const Sidebar = ({ 
@@ -25,11 +25,12 @@ const Sidebar = ({
       { id: 'settings', label: 'Settings', icon: Settings, path: '/settings', badge: null }
     ],
     Designer: [
-      { id: 'home', label: 'Home', icon: Home, path: '/admin/profile', badge: null },
-      { id: 'projects', label: 'Projects', icon: Clipboard, path: '/projects', badge: '3' },
-      { id: 'resources', label: 'Resources', icon: BookOpen, path: '/resources', badge: null },
-      { id: 'notifications', label: 'Notifications', icon: Bell, path: '/notifications', badge: '12' },
-      { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/chat', badge: '5' }
+      { id: 'home', label: 'Home', icon: Home, path: '/designer/home', badge: null },
+      { id: 'initialize', label: 'Project Initialization', icon: Rocket, path: '/designer/initialize'},
+      { id: 'ongoing', label: 'Ongoing Projects', icon: Loader, path: '/designer/ongoing', badge: null },
+      { id: 'completed', label: 'Completed Projects', icon: BadgeCheck , path: '/designer/completed', badge: null },
+      { id: 'notification', label: 'Notifications', icon: Bell, path: '/notifications', badge: '12' },
+      { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/designer/chat', badge: '5' }
     ]
   };
 

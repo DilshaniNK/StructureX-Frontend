@@ -11,6 +11,7 @@ import Labors from './Labors';
 import Materials from './Materials';
 import Inventory from './Inventory';
 import Todo from './Todo';
+import Calendar from './Calendar';
 
 export default function SiteSupervisor() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -34,6 +35,7 @@ export default function SiteSupervisor() {
     if (path.includes('/site_supervisor/labors')) return 'labors';
     if (path.includes('/site_supervisor/materials')) return 'materials';
     if (path.includes('/site_supervisor/inventory')) return 'inventory';
+    if (path.includes('/site_supervisor/calendar')) return 'calendar';
     return 'home'; // default
   };
 
@@ -65,6 +67,7 @@ export default function SiteSupervisor() {
             <Route path="/progress" element={<Progress />} />
             <Route path="/labors" element={<Labors/>} />
             <Route path="/to-do" element={<Todo/>} />
+            <Route path="/calendar" element={<Calendar/>} />
             <Route path="/materials" element={<Materials/>} />
             <Route path="/inventory" element={<Inventory/>} />
           </Routes>

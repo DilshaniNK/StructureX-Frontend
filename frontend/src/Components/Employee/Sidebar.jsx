@@ -57,6 +57,7 @@ const Sidebar = ({
       { id: 'materials', label: 'Materials', icon: Materials, path: '/site_supervisor/materials', badge: '12' },
       { id: 'inventory', label: 'Inventory', icon: Inventory, path: '/site_supervisor/inventory', badge: '5' },
       { id: 'to do', label: 'To-Do', icon: TodoList, path: '/site_supervisor/to-do', badge: '5' },
+      { id: 'calendar', label: 'Calendar', icon: Calendar , path: '/site_supervisor/calendar', badge: null },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/site_supervisor/settings', badge: '5' }
     ]
   };

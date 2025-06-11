@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import {FaXmark, FaBars } from 'react-icons/fa6'
-import { Link } from 'react-scroll'
+import { Link, scroller } from 'react-scroll' // Import scroller
 import LoginForm from '../Employee/LoginForm'
 
 const Header = () => {
@@ -23,6 +23,16 @@ const Header = () => {
     setIsLoginOpen(false);
   }
 
+  // Add this function to handle navigation to contact section
+  const navigateToContact = () => {
+    scroller.scrollTo('contact', {
+      duration: 800,
+      delay: 0,
+      smooth: 'easeInOutQuart',
+      offset: -100
+    });
+  }
+
   const navItems=[
     {
       link: 'Home' , path: 'home'
@@ -43,8 +53,8 @@ const Header = () => {
 
   return (
     <>
-      <nav className='w-full flex bg-white justify-between items-center gap-1 lg:px-16 px-6     
-       py-4 sticky top-0 z-50 '>
+      <nav className='w-full flex bg-white justify-between items-center gap-1 lg:px-16 px-6
+            py-4 sticky top-0 z-50 '>
         <h1 className='text-black md:text-4xl text-3xl font-bold font-rubik '>Structura
           <span className='text-yellow-500 italic '>X</span>
         </h1>
@@ -105,8 +115,13 @@ const Header = () => {
          </div>
      </nav>
 
-     {/* Login Form Modal */}
-     {isLoginOpen && <LoginForm onClose={closeLogin} />}
+     {/* Login Form Modal - Pass the navigation function */}
+     {isLoginOpen && (
+       <LoginForm 
+         onClose={closeLogin} 
+         onNavigateToContact={navigateToContact}
+       />
+     )}
     </>
   )
 }

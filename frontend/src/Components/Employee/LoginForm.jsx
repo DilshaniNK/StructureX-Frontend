@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { FaXmark, FaEye, FaEyeSlash, FaUser, FaLock } from 'react-icons/fa6'
+import { X, Eye, EyeOff, User, Lock, ChevronDown, ChevronUp } from 'lucide-react'
 
-const LoginForm = ({ onClose }) => {
+const LoginForm = ({ onClose, onNavigateToContact }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -9,6 +9,7 @@ const LoginForm = ({ onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showAccountRequest, setShowAccountRequest] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -74,6 +75,23 @@ const LoginForm = ({ onClose }) => {
     }
   };
 
+  const toggleAccountRequest = () => {
+    setShowAccountRequest(!showAccountRequest);
+  };
+
+  const handleContactFormClick = () => {
+    // Close the login form first
+    onClose();
+    
+    // Use the navigation function passed from Header
+    if (onNavigateToContact) {
+      // Small delay to ensure modal is closed before scrolling
+      setTimeout(() => {
+        onNavigateToContact();
+      }, 100);
+    }
+  };
+
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -89,26 +107,27 @@ const LoginForm = ({ onClose }) => {
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">StructuraX Login</h2>
-            <p className="text-gray-600 text-sm mt-1">Access your authorized account</p>
+            <h1 className='text-black md:text-4xl text-3xl font-bold font-rubik '>Structura
+              <span className='text-yellow-500 italic '>X</span>
+            </h1>
           </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 hover:bg-gray-100 rounded-full"
           >
-            <FaXmark className="text-xl" />
+            <X className="text-xl" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Form Content */}
+        <div className="p-6 space-y-6">
           {/* Email Field */}
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-semibold text-gray-700 block">
               Username / Email
             </label>
             <div className="relative">
-              <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="email"
                 id="email"
@@ -132,7 +151,7 @@ const LoginForm = ({ onClose }) => {
               Password
             </label>
             <div className="relative">
-              <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="password"
@@ -151,7 +170,7 @@ const LoginForm = ({ onClose }) => {
                 onClick={togglePasswordVisibility}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
               >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
             {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
@@ -166,14 +185,15 @@ const LoginForm = ({ onClose }) => {
               />
               <span className="ml-2 text-sm text-gray-600">Remember me</span>
             </label>
-            <a href="#" className="text-sm text-yellow-500 hover:text-yellow-600 font-semibold">
+            <button className="text-sm text-yellow-500 hover:text-yellow-600 font-semibold">
               Forgot password?
-            </a>
+            </button>
           </div>
 
           {/* Submit Button */}
           <button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             disabled={isLoading}
             className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 transform ${
               isLoading
@@ -191,41 +211,46 @@ const LoginForm = ({ onClose }) => {
             )}
           </button>
 
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+          {/* Expandable Account Request Section */}
+          <div className="space-y-3">
+            {/* Divider with Clickable Text */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <button
+                  type="button"
+                  onClick={toggleAccountRequest}
+                  className="px-2 bg-white text-yellow-500 hover:text-yellow-600 font-semibold transition-colors duration-200 flex items-center space-x-1"
+                >
+                  <span>Need an account?</span>
+                  {showAccountRequest ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
+              </div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Need an account?</span>
-            </div>
-          </div>
 
-          {/* Contact Information */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-2">Request Account Access</h4>
-            <p className="text-sm text-gray-600 mb-3">
-              For new projects or account creation, please contact our officers:
-            </p>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center">
-                <span className="font-medium text-gray-700 w-16">Phone:</span>
-                <span className="text-gray-600">+94 11 234 5678</span>
-              </div>
-              <div className="flex items-center">
-                <span className="font-medium text-gray-700 w-16">Email:</span>
-                <span className="text-gray-600">accounts@structurax.lk</span>
-              </div>
-              <div className="flex items-center">
-                <span className="font-medium text-gray-700 w-16">Office:</span>
-                <span className="text-gray-600">Mon-Fri, 8:00 AM - 5:00 PM</span>
+            {/* Expandable Account Request Information */}
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+              showAccountRequest ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            }`}>
+              <div className="bg-yellow-50  rounded-lg p-4">
+                <div className="mt-3 pt-3 border-t border-yellow-300">
+                  <p className="text-sm text-gray-600">
+                    For account creation, contact via{' '}
+                    <button
+                      type="button"
+                      onClick={handleContactFormClick}
+                      className="text-yellow-500 hover:text-yellow-600 font-semibold underline transition-colors duration-200"
+                    >
+                      contact form
+                    </button>
+                  </p>
+                </div>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-3">
-              * Accounts are created by authorized officers for clients and project staff.
-            </p>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -2,8 +2,7 @@
 import React from 'react'
 import { useState } from 'react';
 import ArrowDropDownCircleIcon from '@mui/icons-material/ArrowDropDownCircle';
-import { FaArrowAltCircleDown } from 'react-icons/fa';
-import Layout from '../../Components/Financial_officer/Layout';
+
 import PaymentPlanCreator from '../../Components/Financial_officer/PaymentPlan';
 import PersonIcon from '@mui/icons-material/Person';
 import PaymentsIcon from '@mui/icons-material/Payments';
@@ -26,7 +25,7 @@ const ProjectDetails = () => {
     
       
   return (
-    <Layout>
+    <div>
     <div className='p-8'>
         <h1 className="text-3xl font-bold text-black mb-6" >Housing Complex - "Green Meadows Residency"</h1>
         <p>A premium gated community consisting of 250 modern apartments with eco-friendly infrastructure, solar power integration, 
@@ -215,7 +214,7 @@ const ProjectDetails = () => {
         )}
       </div>
     </div>
-    </Layout>
+    </div>
   )
 }
 

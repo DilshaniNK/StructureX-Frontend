@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Upload, User, Building, FileText, Link, Save, ArrowLeft, Plus, X } from 'lucide-react';
+import { Calendar,User, Building, FileText, Link, Save, ArrowLeft, Plus, X } from 'lucide-react';
 
 export default function ProjectInitialization() {
   const [formData, setFormData] = useState({

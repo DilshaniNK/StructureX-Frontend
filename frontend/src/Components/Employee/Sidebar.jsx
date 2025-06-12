@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import Projects from '@mui/icons-material/FolderOpenOutlined';
+import Payments from '@mui/icons-material/ReceiptOutlined';
+import Labors from '@mui/icons-material/Groups2Outlined';
+import Calendar from '@mui/icons-material/CalendarMonthOutlined';
+import Materials from '@mui/icons-material/HandymanOutlined';
+import Inventory from '@mui/icons-material/Inventory2Outlined';
+import TodoList from '@mui/icons-material/ListAltOutlined';
+
+
 import { 
   Home, Users, BarChart3, Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader
 } from 'lucide-react';
@@ -31,6 +40,25 @@ const Sidebar = ({
       { id: 'completed', label: 'Completed Projects', icon: BadgeCheck , path: '/designer/completed', badge: null },
       { id: 'notification', label: 'Notifications', icon: Bell, path: '/designer/notifications', badge: '12' },
       { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/designer/chat', badge: '5' }
+    ],
+    FinancialOfficer: [
+      { id: 'home', label: 'Home', icon: Home, path: '/financial_officer/home', badge: null },
+      { id: 'projects', label: 'Projects', icon: Projects, path: '/financial_officer/projects'},
+      { id: 'payments', label: 'Payments', icon: Payments, path: '/financial_officer/payments', badge: null },
+      { id: 'calendar', label: 'Calendar', icon: Calendar , path: '/financial_officer/calendar', badge: null },
+      { id: 'daily labors', label: 'Daily Labors', icon: Labors, path: '/financial_officer/daily_labors', badge: '12' },
+      { id: 'settings', label: 'Settings', icon: Settings, path: '/financial_officer/settings', badge: '5' }
+    ],
+    SiteSupervisor: [
+      { id: 'home', label: 'Home', icon: Home, path: '/site_supervisor/home', badge: null },
+      { id: 'projects', label: 'Projects', icon: Projects, path: '/site_supervisor/projects'},
+      { id: 'labors', label: 'Labors', icon: Labors, path: '/site_supervisor/labors', badge: null },
+      { id: 'progress', label: 'Progress', icon: BadgeCheck , path: '/site_supervisor/progress', badge: null },
+      { id: 'materials', label: 'Materials', icon: Materials, path: '/site_supervisor/materials', badge: '12' },
+      { id: 'inventory', label: 'Inventory', icon: Inventory, path: '/site_supervisor/inventory', badge: '5' },
+      { id: 'to do', label: 'To-Do', icon: TodoList, path: '/site_supervisor/to-do', badge: '5' },
+      { id: 'calendar', label: 'Calendar', icon: Calendar , path: '/site_supervisor/calendar', badge: null },
+      { id: 'settings', label: 'Settings', icon: Settings, path: '/site_supervisor/settings', badge: '5' }
     ]
   };
 
@@ -127,7 +155,7 @@ const Sidebar = ({
                     onMouseEnter={() => setHoveredItem(item.id)}
                     onMouseLeave={() => setHoveredItem(null)}
                     className={`group w-full flex items-center rounded-xl text-left transition-all duration-300 ${
-                        isExpanded ? 'px-4 py-4 justify-between' : 'px-3 py-3 justify-center'
+                        isExpanded ? 'px-4  justify-between' : 'px-3  justify-center'
                     } ${
                         isActive
                         ? 'bg-gradient-to-r from-[#FAAD00] to-[#FAAD00]/90 text-white shadow-lg shadow-[#FAAD00]/25 scale-105'

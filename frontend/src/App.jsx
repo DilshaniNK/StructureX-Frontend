@@ -1,5 +1,5 @@
 import React from 'react'
-import {BrowserRouter as Router,Routes,Route} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 
 
@@ -10,6 +10,7 @@ import FinancialOfficer from './Pages/FinancialOfficer'
 import Home from './Pages/Home'
 import Admin from './Pages/Admin/Admin'
 import Designer from './Pages/Designer/Designer'
+import ProjectManager from './Pages/ProjectManager/ProjectManager'
 
 const App = () => {
   return (
@@ -17,15 +18,15 @@ const App = () => {
       <Router>
         <Routes>
           <Route>
-            <Route path="/" element={<Home/>}/>
-            <Route path="/admin/*" element={<Admin/>}/>
-            <Route path="/financial_officer/*" element={<FinancialOfficer/>}/>
-            
-          
+            <Route path="/" element={<Home />} />
+            <Route path="/admin/*" element={<Admin />} />
+            <Route path="/financial_officer/*" element={<FinancialOfficer />} />
 
-            <Route path="/example/*" element={<Example/>}/>
-            <Route path="/designer/*" element={<Designer/>}/>
-            
+            <Route path="/project_manager/*" element={<ProjectManager/>} />
+
+            <Route path="/example/*" element={<Example />} />
+            <Route path="/designer/*" element={<Designer />} />
+
           </Route>
         </Routes>
       </Router>

@@ -50,7 +50,7 @@ const ProjectDetails = () => {
 
   return (
     <div>
-      <ProjDetails project={sampleProject} userRole="financialOfficer" />
+      <ProjDetails project={sampleProject} userRole="siteSupervisor" />
     </div>
   );
 };

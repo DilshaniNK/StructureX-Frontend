@@ -12,6 +12,8 @@ import AdminProfile from '../../Components/Admin/Dashboard/Profile'
 import Notification from '../../Components/Admin/Dashboard/Notification'
 import Publish from '../../Components/Admin/Dashboard/Publish'
 import Support from '../../Components/Admin/Dashboard/Support'
+import Reports from '../../Components/Admin/Dashboard/Reports'
+import Analytics from '../../Components/Admin/Dashboard/Analatics'
 
 export default function Admin() {
   return (
@@ -19,8 +21,8 @@ export default function Admin() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<DashboardPage />} />
-          <Route path="analytics" element={<h1 className="title">Analytics</h1>} />
-          <Route path="reports" element={<h1 className="title">Reports</h1>} />
+          <Route path="analytics" element={<Analytics/>} />
+          <Route path="reports" element={<Reports/>} />
           <Route path="employees" element={<EmployeesPage/>} />
           <Route path="add-employee" element={<AddEmployeesPage/>} />
           <Route path="projects" element={<ProjectOverview/>} />

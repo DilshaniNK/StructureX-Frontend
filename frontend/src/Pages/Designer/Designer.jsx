@@ -50,7 +50,7 @@ export default function Home() {
       />
       
       {/* Main content area - adjusted for sidebar */}
-      <div className="pt-16 ml-20 transition-all duration-300">
+      <div className="pt-15 ml-20 transition-all duration-300">
         <div className="p-6">
           <Routes>
             <Route path="/" element={<Main />} />

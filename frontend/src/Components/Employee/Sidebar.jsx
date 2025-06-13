@@ -11,7 +11,8 @@ import TodoList from '@mui/icons-material/ListAltOutlined';
 
 
 import { 
-  Home, Users, BarChart3, Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader
+  Home, Users, BarChart3,ChartSpline ,BookmarkCheck ,ClipboardPenLine ,UserRoundSearch , Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader,
+  icons
 } from 'lucide-react';
 
 const Sidebar = ({ 
@@ -41,6 +42,17 @@ const Sidebar = ({
       { id: 'notification', label: 'Notifications', icon: Bell, path: '/designer/notifications', badge: '12' },
       { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/designer/chat', badge: '5' }
     ],
+
+    Project_Manager : [
+      {id: 'home', label: 'Home', icon: Home, path: '/project_manager/home', badge: null},
+      {id: 'dailyupdates', label: 'Daily Updates', icon: Rocket, path:'/project_manager/dailyupdates', badge: null},
+      {id: 'financialstatus', label: 'Financial Status', icon : Loader,path:'/project_manager/financialstatus', badge: null},
+      {id: 'materials', label: 'Materials', icon: BadgeCheck, path:'/project_manager/materials', badge: null},
+      {id: 'projectprogress', label: 'Project Progress', icon: ChartSpline , path: '/project_manager/projectprogress', badge:null},
+      {id: 'sitevisitlogs', label: 'Site Visit Logs', icon: BookmarkCheck, path: '/project_manager/sitevisitlogs', badge:null},
+      {id: 'todolist', label: 'Todo List', icon: ClipboardPenLine, path: '/project_manager/todolist', badge:null},
+      {id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/project_manager/chat', badge:null},
+
     FinancialOfficer: [
       { id: 'home', label: 'Home', icon: Home, path: '/financial_officer/home', badge: null },
       { id: 'projects', label: 'Projects', icon: Projects, path: '/financial_officer/projects'},
@@ -59,6 +71,7 @@ const Sidebar = ({
       { id: 'to do', label: 'To-Do', icon: TodoList, path: '/site_supervisor/to-do', badge: '5' },
       { id: 'calendar', label: 'Calendar', icon: Calendar , path: '/site_supervisor/calendar', badge: null },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/site_supervisor/settings', badge: '5' }
+
     ]
   };
 

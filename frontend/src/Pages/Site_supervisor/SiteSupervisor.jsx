@@ -11,7 +11,7 @@ import Labors from './Labors';
 import Materials from './Materials';
 import Inventory from './Inventory';
 import Todo from './Todo';
-import Calendar from './Calendar';
+import S_calendar from './Calendar';
 
 export default function SiteSupervisor() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -29,13 +29,13 @@ export default function SiteSupervisor() {
     const path = location.pathname;
     if (path.includes('/site_supervisor/home') || path === '/') return 'home';
     if (path.includes('/site_supervisor/projects')) return 'projects';
-    if (path.includes('/site_supervisor/project_details')) return 'prohect_details';
+    if (path.includes('/site_supervisor/project_details')) return 'project_details';
     if (path.includes('/site_supervisor/to-do')) return 'to do';
     if (path.includes('/site_supervisor/progress')) return 'progress';
     if (path.includes('/site_supervisor/labors')) return 'labors';
     if (path.includes('/site_supervisor/materials')) return 'materials';
     if (path.includes('/site_supervisor/inventory')) return 'inventory';
-    if (path.includes('/site_supervisor/calendar')) return 'calendar';
+    if (path.includes('/site_supervisor/calendar')) return 'S_calendar';
     return 'home'; // default
   };
 
@@ -67,7 +67,7 @@ export default function SiteSupervisor() {
             <Route path="/progress" element={<Progress />} />
             <Route path="/labors" element={<Labors/>} />
             <Route path="/to-do" element={<Todo/>} />
-            <Route path="/calendar" element={<Calendar/>} />
+            <Route path="/calendar" element={<S_calendar/>} />
             <Route path="/materials" element={<Materials/>} />
             <Route path="/inventory" element={<Inventory/>} />
           </Routes>

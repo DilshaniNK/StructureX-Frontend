@@ -49,7 +49,7 @@ export default function KanbanBoard() {
       <h1 className="text-3xl font-bold mb-6 text-center">Manage Your Tasks here</h1>
 
       {/* Task Input */}
-      <div className="max-w-md mx-auto mb-8 p-4 bg-white rounded shadow">
+      <div className="max-w-md mx-auto mb-8 p-4 bg-white rounded-2xl shadow">
         <input
           type="text"
           placeholder="Task name"

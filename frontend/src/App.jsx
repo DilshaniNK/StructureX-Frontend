@@ -1,30 +1,37 @@
 import React from 'react'
-import {BrowserRouter as Router,Routes,Route} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-//financial officer pages
-import FO_Dashboard from './Pages/Financial_officer/Dashboard'
-import FO_Projects from './Pages/Financial_officer/Projects'
-import FO_ProjectDetails from './Pages/Financial_officer/ProjectDetails'
-import FO_Labors from './Pages/Financial_officer/Labors'
-import FO_Calendar from './Pages/Financial_officer/Calender'
+
+
+
+import Example from './Pages/Example'
+import FinancialOfficer from './Pages/Financial_officer/FinancialOfficer'
+import SiteSupervisor from './Pages/Site_supervisor/SiteSupervisor';
 
 import Home from './Pages/Home'
-import Admin from './Pages/Admin'
+import Admin from './Pages/Admin/Admin'
+import Designer from './Pages/Designer/Designer'
+import ProjectManager from './Pages/ProjectManager/ProjectManager'
+import Supplier from './Pages/Supplier/Supplier'
 
 const App = () => {
   return (
     <>
       <Router>
         <Routes>
-          
-            <Route path="/" element={<Home/>}/>
-            <Route path="/admin/*" element={<Admin/>}/>
-            <Route path="/financial_officer/dashboard" element={<FO_Dashboard/>}/>
-            <Route path="/financial_officer/projects" element={<FO_Projects/>}/>
-            <Route path="/financial_officer/labors" element={<FO_Labors/>}/>
-            <Route path="/financial_officer/project_details" element={<FO_ProjectDetails/>}/>
-            <Route path="/financial_officer/calendar" element={<FO_Calendar/>}/>
-          
+          <Route>
+
+            <Route path="/" element={<Home />} />
+            <Route path="/admin/*" element={<Admin />} />
+            <Route path="/financial_officer/*" element={<FinancialOfficer />} />
+            <Route path="/project_manager/*" element={<ProjectManager/>} />
+            <Route path="/site_supervisor/*" element={<SiteSupervisor/>}/>
+            <Route path="/example/*" element={<Example/>}/>
+            <Route path="/designer/*" element={<Designer/>}/>
+            <Route path="/supplier/*" element={<Supplier/>}/>
+            
+
+          </Route>
         </Routes>
       </Router>
     </>

@@ -10,8 +10,26 @@ import {
   Clock,
   FileText
 } from 'lucide-react';
-
+import { useNavigate } from 'react-router-dom';
+ 
 const Home = () => {
+  const navigate = useNavigate();
+
+  const handleViewClick = () => {
+    navigate('/project_manager/projectprogress');
+    };
+    const handlerequest = () =>{
+      navigate('/project_manager/materials');
+    };
+    const handletodolist = () =>{
+      navigate('/project_manager/todolist');
+    };
+    const handleSiteUpdate = () =>{
+      navigate('/project_manager/dailyupdates');
+    };
+    const handleprojectdetails = () =>{
+      navigate('../../Components/Employee/ProjDetails');
+    };
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -88,7 +106,7 @@ const Home = () => {
                 </div>
                 <span className="text-sm text-gray-600">75%</span>
               </div> */}
-              <button className="mt-4 sm:mt-0 px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
+              <button onClick={handleViewClick} className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
 
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -102,7 +120,7 @@ const Home = () => {
                 </div>
                 <span className="text-sm text-gray-600">45%</span>
               </div> */}
-              <button className="mt-4 sm:mt-0 px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
+              <button onClick={handleViewClick} className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
 
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -116,53 +134,69 @@ const Home = () => {
                 </div>
                 <span className="text-sm text-gray-600">60%</span>
               </div> */}
-              <button className="mt-4 sm:mt-0 px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
+              <button onClick={handleViewClick} className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
           </div>
         </div>
 
         {/* Recent Activity */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Projects Detilas</h2>
           <div className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="text-green-600" size={16} />
-              </div>
+           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <p className="text-sm text-gray-900">Foundation work completed for Tower A</p>
-                <p className="text-xs text-gray-500">2 hours ago</p>
+                <h3 className="font-medium text-gray-900">Residential Towers</h3>
+                <p className="text-sm text-gray-600">Due: June 30, 2025</p>
               </div>
+              {/* <div className="text-right">
+                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
+                  <div className="bg-secondary-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+                </div>
+                <span className="text-sm text-gray-600">45%</span>
+              </div> */}
+              <button onClick={handleprojectdetails}  className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
 
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="text-orange-600" size={16} />
-              </div>
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <p className="text-sm text-gray-900">Low inventory alert: Steel beams</p>
-                <p className="text-xs text-gray-500">4 hours ago</p>
+                <h3 className="font-medium text-gray-900">Residential Towers</h3>
+                <p className="text-sm text-gray-600">Due: June 30, 2025</p>
               </div>
+              {/* <div className="text-right">
+                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
+                  <div className="bg-secondary-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+                </div>
+                <span className="text-sm text-gray-600">45%</span>
+              </div> */}
+              <button  className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
 
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Calendar className="text-blue-600" size={16} />
-              </div>
+           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <p className="text-sm text-gray-900">Site inspection scheduled for tomorrow</p>
-                <p className="text-xs text-gray-500">6 hours ago</p>
+                <h3 className="font-medium text-gray-900">Residential Towers</h3>
+                <p className="text-sm text-gray-600">Due: June 30, 2025</p>
               </div>
+              {/* <div className="text-right">
+                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
+                  <div className="bg-secondary-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+                </div>
+                <span className="text-sm text-gray-600">45%</span>
+              </div> */}
+              <button  className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
 
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Clock className="text-yellow-600" size={16} />
-              </div>
+           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <p className="text-sm text-gray-900">Payment due in 3 days: $45,000</p>
-                <p className="text-xs text-gray-500">1 day ago</p>
+                <h3 className="font-medium text-gray-900">Residential Towers</h3>
+                <p className="text-sm text-gray-600">Due: June 30, 2025</p>
               </div>
+              {/* <div className="text-right">
+                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
+                  <div className="bg-secondary-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+                </div>
+                <span className="text-sm text-gray-600">45%</span>
+              </div> */}
+              <button  className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
           </div>
         </div>
@@ -172,22 +206,22 @@ const Home = () => {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
+          <button onClick={handlerequest} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left cursor-pointer ">
             <Package className="text-primary-600 mb-2" size={24} />
             <h3 className="font-medium text-gray-900">Request Materials</h3>
             <p className="text-sm text-gray-600">Submit new material requests</p>
           </button>
 
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
+          <button onClick={handletodolist} className="p-4 border cursor-pointer border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
             <Calendar className="text-secondary-600 mb-2" size={24} />
-            <h3 className="font-medium text-gray-900">Schedule Visit</h3>
+            <h3 className="font-medium text-gray-900">To do List</h3>
             <p className="text-sm text-gray-600">Plan site inspections</p>
           </button>
 
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
+          <button onClick={handleSiteUpdate} className="p-4 border cursor-pointer border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
             <FileText className="text-accent-600 mb-2" size={24} />
             <h3 className="font-medium text-gray-900">Daily Report</h3>
-            <p className="text-sm text-gray-600">Submit today's updates</p>
+            <p className="text-sm text-gray-600">See today's updates</p>
           </button>
         </div>
       </div>

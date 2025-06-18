@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import Projects from '@mui/icons-material/FolderOpenOutlined';
 import Payments from '@mui/icons-material/ReceiptOutlined';
@@ -8,11 +8,10 @@ import Calendar from '@mui/icons-material/CalendarMonthOutlined';
 import Materials from '@mui/icons-material/HandymanOutlined';
 import Inventory from '@mui/icons-material/Inventory2Outlined';
 import TodoList from '@mui/icons-material/ListAltOutlined';
-
+// ADDED this import
 
 import { 
-  Home, Users, BarChart3,ChartSpline ,BookmarkCheck ,ClipboardPenLine ,UserRoundSearch , Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader,
-  icons
+  Home, Users, BarChart3,ChartSpline ,BookmarkCheck ,ClipboardPenLine ,UserRoundSearch , Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader, FileText, Truck, Package, Receipt, icons
 } from 'lucide-react';
 
 const Sidebar = ({ 
@@ -25,6 +24,7 @@ const Sidebar = ({
   const [isDesktopHovered, setIsDesktopHovered] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const menuItems = {
     Example: [
@@ -58,7 +58,7 @@ const Sidebar = ({
       { id: 'projects', label: 'Projects', icon: Projects, path: '/financial_officer/projects'},
       { id: 'payments', label: 'Payments', icon: Payments, path: '/financial_officer/payments', badge: null },
       { id: 'calendar', label: 'Calendar', icon: Calendar , path: '/financial_officer/calendar', badge: null },
-      { id: 'daily labors', label: 'Daily Labors', icon: Labors, path: '/financial_officer/daily_labors', badge: '12' },
+      { id: 'daily_labors', label: 'Daily Labors', icon: Labors, path: '/financial_officer/daily_labors', badge: '12' },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/financial_officer/settings', badge: '5' }
     ],
     SiteSupervisor: [
@@ -72,6 +72,16 @@ const Sidebar = ({
       { id: 'calendar', label: 'Calendar', icon: Calendar , path: '/site_supervisor/calendar', badge: null },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/site_supervisor/settings', badge: '5' }
 
+    ],
+    Supplier: [
+      { id: 'home', label: 'Home', icon: Home, path: '/supplier/home', badge: null },
+      { id: 'catalogue', label: 'Product Catalogue', icon: Projects, path: '/supplier/catalogue'},
+      { id: 'quotations', label: 'Quotations', icon: FileText, path: '/supplier/quotations', badge: null },
+      { id: 'orders', label: 'Material Orders', icon: Materials, path: '/supplier/orders', badge: '12' },
+      { id: 'delivery', label: 'Delivery Information', icon: Truck, path: '/supplier/delivery', badge: '5' },
+      { id: 'payments', label: 'Payments', icon: Payments, path: '/supplier/payments', badge: '12' },
+      { id: 'shistory', label: 'Supply History', icon: Package, path: '/supplier/shistory', badge: '5' },
+      { id: 'invoices', label: 'Invoices', icon: Receipt, path: '/supplier/invoices', badge: '5' }
     ]
   };
 
@@ -255,7 +265,7 @@ const Sidebar = ({
         }`}>
           <div className="text-center">
             <p className="text-xs text-gray-500 font-medium">StructuraX v2.0</p>
-            <p className="text-xs text-gray-400">© 2024 All rights reserved</p>
+            <p className="text-xs text-gray-400">© 2025 All rights reserved</p>
           </div>
         </div>
       </aside>

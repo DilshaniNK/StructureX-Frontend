@@ -7,7 +7,7 @@ import ProjectInitializer from '../Designer/ProjectInitialize';
 import OngoingProjects from '../Designer/OngoingProjects';
 import Chat from '../Designer/Chat';
 import CompletedProjects from '../Designer/CompletedProjects';
-import Notification from '../../Components/Employee/Notification'
+import Notification from '../../Components/Employee/Profile'
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

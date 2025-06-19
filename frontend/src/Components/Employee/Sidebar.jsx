@@ -53,6 +53,7 @@ const Sidebar = ({
       {id: 'todolist', label: 'Todo List', icon: ClipboardPenLine, path: '/project_manager/todolist', badge:null},
       {id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/project_manager/chat', badge:null},
     ],
+
     FinancialOfficer: [
       { id: 'home', label: 'Home', icon: Home, path: '/financial_officer/home', badge: null },
       { id: 'projects', label: 'Projects', icon: Projects, path: '/financial_officer/projects'},

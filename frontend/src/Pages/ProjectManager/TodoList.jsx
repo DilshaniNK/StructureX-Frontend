@@ -293,8 +293,8 @@ const TodoList = () => {
 
       {/* Add Task Form Modal */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0  backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Task</h3>
             <form className="space-y-4">
               <div>
@@ -360,7 +360,7 @@ const TodoList = () => {
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-primary-500 text-white rounded-lg py-2 hover:bg-primary-600 transition-colors"
+                  className="flex-1 bg-primary-500 bg-amber-400 text-black rounded-lg py-2 hover:bg-primary-600 transition-colors"
                 >
                   Add Task
                 </button>

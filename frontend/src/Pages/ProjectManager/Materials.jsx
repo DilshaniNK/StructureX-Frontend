@@ -14,8 +14,8 @@ const Materials = () => {
       quantity: 45,
       unit: 'pieces',
       minQuantity: 20,
+      projectName: 'Down Flow',
       lastUpdated: '2024-11-20',
-      status: 'In Stock',
       supplier: 'Steel Corp Ltd'
     },
     {
@@ -25,8 +25,8 @@ const Materials = () => {
       quantity: 8,
       unit: 'pallets',
       minQuantity: 15,
+      projectName: 'Down Flow',
       lastUpdated: '2024-11-19',
-      status: 'Low Stock',
       supplier: 'BuildRight Materials'
     },
     {
@@ -36,8 +36,8 @@ const Materials = () => {
       quantity: 250,
       unit: 'meters',
       minQuantity: 100,
+      projectName: 'Down Flow',
       lastUpdated: '2024-11-18',
-      status: 'In Stock',
       supplier: 'ElectroSupply Co'
     },
     {
@@ -47,8 +47,8 @@ const Materials = () => {
       quantity: 5,
       unit: 'bundles',
       minQuantity: 10,
+      projectName: 'Down Flow',
       lastUpdated: '2024-11-17',
-      status: 'Critical',
       supplier: 'PlumbPro Materials'
     },
     {
@@ -58,8 +58,8 @@ const Materials = () => {
       quantity: 120,
       unit: 'bags',
       minQuantity: 50,
+      projectName: 'Down Flow',
       lastUpdated: '2024-11-16',
-      status: 'In Stock',
       supplier: 'CementMax Inc'
     }
   ];
@@ -70,8 +70,8 @@ const Materials = () => {
       material: 'Steel Beams',
       quantity: 25,
       unit: 'pieces',
+      projectName: 'Down Flow',
       requestDate: '2024-11-15',
-      status: 'Approved',
       expectedDelivery: '2024-11-25'
     },
     {
@@ -79,44 +79,44 @@ const Materials = () => {
       material: 'Concrete Blocks',
       quantity: 20,
       unit: 'pallets',
+      projectName: 'Down Flow',
       requestDate: '2024-11-14',
-      status: 'Pending',
       expectedDelivery: 'TBD'
     }
   ];
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'In Stock':
-        return 'text-green-600 bg-green-100';
-      case 'Low Stock':
-        return 'text-yellow-600 bg-yellow-100';
-      case 'Critical':
-        return 'text-red-600 bg-red-100';
-      default:
-        return 'text-gray-600 bg-gray-100';
-    }
-  };
+  // const getStatusColor = (status) => {
+  //   switch (status) {
+  //     case 'In Stock':
+  //       return 'text-green-600 bg-green-100';
+  //     case 'Low Stock':
+  //       return 'text-yellow-600 bg-yellow-100';
+  //     case 'Critical':
+  //       return 'text-red-600 bg-red-100';
+  //     default:
+  //       return 'text-gray-600 bg-gray-100';
+  //   }
+  // };
 
-  const getRequestStatusColor = (status) => {
-    switch (status) {
-      case 'Approved':
-        return 'text-green-600 bg-green-100';
-      case 'Pending':
-        return 'text-yellow-600 bg-yellow-100';
-      case 'Rejected':
-        return 'text-red-600 bg-red-100';
-      default:
-        return 'text-gray-600 bg-gray-100';
-    }
-  };
+  // const getRequestStatusColor = (status) => {
+  //   switch (status) {
+  //     case 'Approved':
+  //       return 'text-green-600 bg-green-100';
+  //     case 'Pending':
+  //       return 'text-yellow-600 bg-yellow-100';
+  //     case 'Rejected':
+  //       return 'text-red-600 bg-red-100';
+  //     default:
+  //       return 'text-gray-600 bg-gray-100';
+  //   }
+  // };
 
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         material.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || 
-                         (filterStatus === 'low' && (material.status === 'Low Stock' || material.status === 'Critical')) ||
-                         (filterStatus === 'instock' && material.status === 'In Stock');
+      material.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === 'all' ||
+      (filterStatus === 'low' && (material.status === 'Low Stock' || material.status === 'Critical')) ||
+      (filterStatus === 'instock' && material.status === 'In Stock');
     return matchesSearch && matchesFilter;
   });
 
@@ -128,13 +128,13 @@ const Materials = () => {
           <h1 className="text-3xl font-bold text-gray-900">Materials Management</h1>
           <p className="text-gray-600 mt-2">Monitor inventory levels and manage material requests</p>
         </div>
-        <button
+        {/* <button
           onClick={() => setShowRequestForm(true)}
           className="mt-4 sm:mt-0 px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center"
         >
           <Plus size={20} className="mr-2" />
           Request Materials
-        </button>
+        </button> */}
       </div>
 
       {/* Quick Stats */}
@@ -194,6 +194,32 @@ const Materials = () => {
         </div>
       </div>
 
+      {/* Request History */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Requests</h2>
+        <div className="space-y-4">
+          {requests.map((request) => (
+            <div key={request.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg">
+              <div>
+                <h3 className="font-medium text-gray-900">{request.material}</h3>
+                <p className="text-sm text-gray-600">
+                  {request.quantity} {request.unit} • Requested: {request.requestDate}
+                </p>
+              </div>
+              <div className="text-right">
+                <button
+                  onClick={() => setShowRequestForm(true)}
+                  className="mt-4 sm:mt-0 px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center"
+                >
+                  <Plus size={20} className="mr-2" />
+                  Request Materials
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Search and Filter */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -236,10 +262,10 @@ const Materials = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th> */}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -256,9 +282,8 @@ const Materials = () => {
                     <div className="text-sm text-gray-500">Min: {material.minQuantity}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(material.status)}`}>
-                      {material.status}
-                    </span>
+                    {material.projectName}
+
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-600">
                     {material.supplier}
@@ -266,7 +291,7 @@ const Materials = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-gray-600">
                     {material.lastUpdated}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  {/* <td className="px-6 py-4 whitespace-nowrap">
                     <button className="text-primary-600 hover:text-primary-800 text-sm font-medium mr-4">
                       Update
                     </button>
@@ -278,7 +303,7 @@ const Materials = () => {
                         Request
                       </button>
                     )}
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>
@@ -286,37 +311,20 @@ const Materials = () => {
         </div>
       </div>
 
-      {/* Request History */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Requests</h2>
-        <div className="space-y-4">
-          {requests.map((request) => (
-            <div key={request.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">{request.material}</h3>
-                <p className="text-sm text-gray-600">
-                  {request.quantity} {request.unit} • Requested: {request.requestDate}
-                </p>
-              </div>
-              <div className="text-right">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRequestStatusColor(request.status)}`}>
-                  {request.status}
-                </span>
-                <p className="text-sm text-gray-500 mt-1">
-                  Expected: {request.expectedDelivery}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Request Form Modal */}
       {showRequestForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Request Materials</h3>
             <form className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input
+                  type="date"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder=""
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Material</label>
                 <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
@@ -336,20 +344,12 @@ const Materials = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="e.g., pieces, pallets, meters"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
                 <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                  <option>Low</option>
-                  <option>Medium</option>
-                  <option>High</option>
-                  <option>Critical</option>
+                  <option>Down Flow</option>
+                  <option>Medium House</option>
+                  <option>High Park</option>
+                  <option>Home Land</option>
                 </select>
               </div>
               <div>
@@ -363,7 +363,7 @@ const Materials = () => {
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-primary-500 text-white rounded-lg py-2 hover:bg-primary-600 transition-colors"
+                  className="flex-1 bg-primary-500 bg-amber-400 text-gray-900 rounded-lg py-2 hover:bg-primary-600 transition-colors"
                 >
                   Submit Request
                 </button>

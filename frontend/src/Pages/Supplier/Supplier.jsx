@@ -11,6 +11,7 @@ import Payments from './Payments';
 import Invoices from './Invoices';
 import Quotations from './Quotations';
 import Shistory from './Shistory';
+import Messages from './Messages';
 
 export default function Supplier() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -34,6 +35,7 @@ export default function Supplier() {
     if (path.includes('/supplier/invoices')) return 'invoices';
     if (path.includes('/supplier/quotations')) return 'quotations';
     if (path.includes('/supplier/shistory')) return 'shistory';
+    if (path.includes('/supplier/messages')) return 'messages';
     return 'dashboard'; // default
   };
 
@@ -65,6 +67,7 @@ export default function Supplier() {
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/quotations" element={<Quotations/>} /> 
             <Route path="/shistory" element={<Shistory/>} />
+            <Route path="/messages" element={<Messages/>} />
           </Routes>  
         </div>
       </div>

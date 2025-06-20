@@ -80,9 +80,10 @@ const Sidebar = ({
       { id: 'quotations', label: 'Quotations', icon: FileText, path: '/supplier/quotations', badge: null },
       { id: 'orders', label: 'Material Orders', icon: Materials, path: '/supplier/orders', badge: '12' },
       { id: 'delivery', label: 'Delivery Information', icon: Truck, path: '/supplier/delivery', badge: '5' },
-      { id: 'payments', label: 'Payments', icon: Payments, path: '/supplier/payments', badge: '12' },
+      { id: 'payments', label: 'Payments', icon: Payments, path: '/supplier/payments', badge: '10' },
       { id: 'shistory', label: 'Supply History', icon: Package, path: '/supplier/shistory', badge: '5' },
-      { id: 'invoices', label: 'Invoices', icon: Receipt, path: '/supplier/invoices', badge: '5' }
+      { id: 'invoices', label: 'Invoices', icon: Receipt, path: '/supplier/invoices', badge: null },
+      { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/supplier/messages', badge: null }
     ]
   };
 

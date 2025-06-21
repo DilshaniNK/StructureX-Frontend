@@ -12,6 +12,7 @@ import Home from './Pages/Home'
 import Admin from './Pages/Admin/Admin'
 import Designer from './Pages/Designer/Designer'
 import ProjectManager from './Pages/ProjectManager/ProjectManager'
+import LegalOfficer from './Pages/LegalOfficer/LegalOfficer';
 
 const App = () => {
   return (
@@ -27,7 +28,7 @@ const App = () => {
             <Route path="/site_supervisor/*" element={<SiteSupervisor/>}/>
             <Route path="/example/*" element={<Example/>}/>
             <Route path="/designer/*" element={<Designer/>}/>
-            
+            <Route path="/legal_officer/*" element={<LegalOfficer/>}/>
 
           </Route>
         </Routes>

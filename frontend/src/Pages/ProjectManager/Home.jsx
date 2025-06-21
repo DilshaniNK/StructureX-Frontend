@@ -28,7 +28,7 @@ const Home = () => {
       navigate('/project_manager/dailyupdates');
     };
     const handleprojectdetails = () =>{
-      navigate('../../Components/Employee/ProjDetails');
+      navigate('/project_manager/projectdetails');
     };
   return (
     <div className="space-y-8">

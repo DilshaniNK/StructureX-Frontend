@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Search, Filter, Download, Eye, FileText, Image, ExternalLink, Calendar, User, Hash, CheckCircle } from 'lucide-react';
+import { Search, Filter, Download, Eye, FileText, Image, ExternalLink, Calendar, User, Hash, CheckCircle, Sparkles, ChevronDown } from 'lucide-react';
 
 const CompletedProjects = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [sortBy, setSortBy] = useState('completion_date');
   const [selectedProject, setSelectedProject] = useState(null);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   // Mock data for completed projects
   const completedProjects = [
@@ -82,70 +83,83 @@ const CompletedProjects = () => {
     if (!project) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-800">Project Details</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-xl font-bold"
-            >
-              ×
-            </button>
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-8 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Project Details</h2>
+                <p className="text-lg text-gray-600">Complete project information</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
+              >
+                <span className="text-2xl">×</span>
+              </button>
+            </div>
           </div>
           
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Hash className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm text-gray-500">Project ID</p>
-                    <p className="font-semibold">{project.id}</p>
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              <div className="space-y-6">
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl">
+                  <div className="flex items-center space-x-3">
+                    <Hash className="w-6 h-6 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-blue-700">Project ID</p>
+                      <p className="text-lg font-bold text-blue-900">{project.id}</p>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="text-sm text-gray-500">Client</p>
-                    <p className="font-semibold">{project.clientName}</p>
-                    <p className="text-sm text-gray-600">ID: {project.clientId}</p>
+                <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-2xl">
+                  <div className="flex items-center space-x-3">
+                    <User className="w-6 h-6 text-green-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-green-700">Client</p>
+                      <p className="text-lg font-bold text-green-900">{project.clientName}</p>
+                      <p className="text-sm text-green-600">ID: {project.clientId}</p>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <Calendar className="w-5 h-5 text-purple-600" />
-                  <div>
-                    <p className="text-sm text-gray-500">Duration</p>
-                    <p className="font-semibold">{project.startDate} to {project.completionDate}</p>
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-2xl">
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="w-6 h-6 text-purple-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-purple-700">Duration</p>
+                      <p className="text-lg font-bold text-purple-900">{project.startDate} to {project.completionDate}</p>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="text-sm text-gray-500">Status</p>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {project.status}
-                    </span>
+              <div className="space-y-6">
+                <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-2xl">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-green-700">Status</p>
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 border border-green-200">
+                        {project.status}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
-                <div>
-                  <p className="text-sm text-gray-500 mb-2">Project Type</p>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                <div className="p-4 bg-gradient-to-r from-[#FAAD00]/10 to-yellow-100 rounded-2xl">
+                  <p className="text-sm font-semibold text-yellow-700 mb-2">Project Type</p>
+                  <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-[#FAAD00] to-yellow-500 text-white shadow-lg">
                     {project.projectType}
                   </span>
                 </div>
                 
-                <div>
-                  <p className="text-sm text-gray-500 mb-2">Rating</p>
+                <div className="p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-2xl">
+                  <p className="text-sm font-semibold text-yellow-700 mb-3">Rating</p>
                   <div className="flex space-x-1">
                     {[...Array(5)].map((_, i) => (
-                      <span key={i} className={`text-lg ${i < project.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
+                      <span key={i} className={`text-2xl ${i < project.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
                         ★
                       </span>
                     ))}
@@ -154,22 +168,27 @@ const CompletedProjects = () => {
               </div>
             </div>
             
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Project Description</h3>
-              <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{project.description}</p>
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <Sparkles className="w-5 h-5 mr-2 text-[#FAAD00]" />
+                Project Description
+              </h3>
+              <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl">
+                <p className="text-gray-700 leading-relaxed">{project.description}</p>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center">
-                  <Image className="w-4 h-4 mr-2" />
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl">
+                <h4 className="font-bold text-blue-900 mb-4 flex items-center">
+                  <Image className="w-5 h-5 mr-2" />
                   Images ({project.designFiles.images.length})
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {project.designFiles.images.map((image, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm truncate">{image}</span>
-                      <button className="text-blue-600 hover:text-blue-800">
+                    <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100 hover:shadow-md transition-shadow">
+                      <span className="text-sm font-medium text-gray-700 truncate">{image}</span>
+                      <button className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1 rounded">
                         <Eye className="w-4 h-4" />
                       </button>
                     </div>
@@ -177,16 +196,16 @@ const CompletedProjects = () => {
                 </div>
               </div>
               
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center">
-                  <FileText className="w-4 h-4 mr-2" />
+              <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl">
+                <h4 className="font-bold text-green-900 mb-4 flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
                   PDFs ({project.designFiles.pdfs.length})
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {project.designFiles.pdfs.map((pdf, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm truncate">{pdf}</span>
-                      <button className="text-blue-600 hover:text-blue-800">
+                    <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-100 hover:shadow-md transition-shadow">
+                      <span className="text-sm font-medium text-gray-700 truncate">{pdf}</span>
+                      <button className="text-green-600 hover:text-green-800 hover:bg-green-50 p-1 rounded">
                         <Download className="w-4 h-4" />
                       </button>
                     </div>
@@ -194,16 +213,16 @@ const CompletedProjects = () => {
                 </div>
               </div>
               
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center">
-                  <ExternalLink className="w-4 h-4 mr-2" />
+              <div className="p-6 bg-gradient-to-br from-[#FAAD00]/10 to-yellow-100 rounded-2xl">
+                <h4 className="font-bold text-yellow-900 mb-4 flex items-center">
+                  <ExternalLink className="w-5 h-5 mr-2" />
                   Design Links
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {project.designFiles.links.map((link, index) => (
                     <button
                       key={index}
-                      className="w-full p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 text-sm text-left truncate"
+                      className="w-full p-3 bg-gradient-to-r from-[#FAAD00] to-yellow-500 text-white rounded-lg hover:from-yellow-500 hover:to-[#FAAD00] transition-all text-sm font-medium shadow-lg hover:shadow-xl"
                       onClick={() => window.open(link, '_blank')}
                     >
                       Open Design Tool
@@ -219,88 +238,133 @@ const CompletedProjects = () => {
   };
 
   return (
-    <div className="pt-20 p-8 ml-18 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Completed Projects</h1>
-          <p className="text-gray-600">View and manage your successfully completed design projects</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-white via-[#FAAD00]/5 to-white shadow-lg border-b border-gray-100">
+        <div className="px-8 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-[#FAAD00] rounded-xl shadow-lg">
+                  <CheckCircle className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
+                    Completed Projects
+                  </h1>
+                  <p className="text-xl text-gray-600">View and manage your successfully completed design projects</p>
+                </div>
+              </div>
+            </div>
+            <div className="text-lg text-gray-500 bg-gradient-to-r from-[#FAAD00]/10 to-yellow-100 px-6 py-3 rounded-2xl border border-yellow-200">
+              <span className="font-semibold text-[#FAAD00]">{completedProjects.length}</span> completed projects
+            </div>
+          </div>
         </div>
+      </div>
 
+      {/* Search and Filters Section */}
+      <div className="px-8 py-8 bg-gradient-to-r from-white to-gray-50 border-b border-gray-100">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Search Bar */}
+          <div className="relative flex-1">
+            <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
+            <input
+              type="text"
+              placeholder="Search by project ID, client name, or project type..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-16 pr-6 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#FAAD00]/20 focus:border-[#FAAD00] outline-none transition-all duration-300 text-lg"
+            />
+          </div>
+          
+          {/* Filter Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              className="flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-[#FAAD00] to-yellow-500 text-white rounded-2xl hover:from-[#FAAD00]/90 hover:to-yellow-500/90 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl text-lg"
+            >
+              <Filter className="w-5 h-5" />
+              <span>Filter Projects</span>
+              <ChevronDown className="w-5 h-5" />
+            </button>
+            
+            {showFilterDropdown && (
+              <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 z-10 overflow-hidden">
+                <div className="py-2">
+                  {['all', 'residential', 'commercial', 'villa'].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        setFilterType(type);
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`block w-full text-left px-6 py-4 text-base font-medium transition-all duration-200 ${
+                        filterType === type 
+                          ? 'bg-gradient-to-r from-[#FAAD00]/10 to-yellow-500/10 text-[#FAAD00] border-l-4 border-[#FAAD00]' 
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {type === 'all' ? 'All Types' : `${type.charAt(0).toUpperCase() + type.slice(1)}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Sort Dropdown */}
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="appearance-none bg-white border-2 border-gray-200 rounded-2xl px-6 py-4 pr-12 focus:ring-4 focus:ring-[#FAAD00]/20 focus:border-[#FAAD00] outline-none transition-all font-semibold text-gray-700"
+            >
+              <option value="completion_date">Sort by Completion Date</option>
+              <option value="project_id">Sort by Project ID</option>
+              <option value="client_name">Sort by Client Name</option>
+            </select>
+            <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+      </div>
+
+      <div className="px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Completed</p>
+                <p className="text-sm font-semibold text-gray-600 mb-1">Total Completed</p>
                 <p className="text-3xl font-bold text-green-600">{completedProjects.length}</p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+              <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                <CheckCircle className="w-7 h-7 text-white" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">This Month</p>
+                <p className="text-sm font-semibold text-gray-600 mb-1">This Month</p>
                 <p className="text-3xl font-bold text-blue-600">2</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-blue-600" />
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Calendar className="w-7 h-7 text-white" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg Rating</p>
-                <p className="text-3xl font-bold text-yellow-600">4.7</p>
+                <p className="text-sm font-semibold text-gray-600 mb-1">Avg Rating</p>
+                <p className="text-3xl font-bold text-[#FAAD00]">4.7</p>
               </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <span className="text-yellow-600 text-xl">★</span>
+              <div className="w-14 h-14 bg-gradient-to-br from-[#FAAD00] to-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white text-2xl">★</span>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Search and Filter Bar */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search by project ID, client name, or project type..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex gap-3">
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">All Types</option>
-                <option value="residential">Residential</option>
-                <option value="commercial">Commercial</option>
-                <option value="villa">Villa</option>
-              </select>
-              
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="completion_date">Sort by Completion Date</option>
-                <option value="project_id">Sort by Project ID</option>
-                <option value="client_name">Sort by Client Name</option>
-              </select>
             </div>
           </div>
         </div>
@@ -308,39 +372,39 @@ const CompletedProjects = () => {
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredProjects.map((project) => (
-            <div key={project.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+            <div key={project.id} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{project.clientName}</h3>
-                    <p className="text-sm text-gray-500">ID: {project.id}</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">{project.clientName}</h3>
+                    <p className="text-sm text-gray-500 font-medium">ID: {project.id}</p>
                   </div>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 border border-green-200">
                     Completed
                   </span>
                 </div>
                 
-                <div className="space-y-3 mb-4">
+                <div className="space-y-3 mb-6">
                   <div className="flex items-center text-sm text-gray-600">
-                    <User className="w-4 h-4 mr-2" />
-                    Client ID: {project.clientId}
+                    <User className="w-4 h-4 mr-3 text-blue-500" />
+                    <span className="font-medium">Client ID: {project.clientId}</span>
                   </div>
                   
                   <div className="flex items-center text-sm text-gray-600">
-                    <Hash className="w-4 h-4 mr-2" />
-                    {project.projectType}
+                    <Hash className="w-4 h-4 mr-3 text-purple-500" />
+                    <span className="font-medium">{project.projectType}</span>
                   </div>
                   
                   <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Completed: {project.completionDate}
+                    <Calendar className="w-4 h-4 mr-3 text-green-500" />
+                    <span className="font-medium">Completed: {project.completionDate}</span>
                   </div>
                   
                   <div className="flex items-center">
-                    <span className="text-sm text-gray-600 mr-2">Rating:</span>
+                    <span className="text-sm text-gray-600 mr-3 font-medium">Rating:</span>
                     <div className="flex space-x-1">
                       {[...Array(5)].map((_, i) => (
-                        <span key={i} className={`text-sm ${i < project.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
+                        <span key={i} className={`text-lg ${i < project.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
                           ★
                         </span>
                       ))}
@@ -348,17 +412,17 @@ const CompletedProjects = () => {
                   </div>
                 </div>
                 
-                <p className="text-sm text-gray-700 mb-4 line-clamp-2">{project.description}</p>
+                <p className="text-sm text-gray-700 mb-4 line-clamp-2 leading-relaxed">{project.description}</p>
                 
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <span>{project.designFiles.images.length} Images</span>
-                  <span>{project.designFiles.pdfs.length} PDFs</span>
-                  <span>{project.designFiles.links.length} Links</span>
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-4 bg-gray-50 p-3 rounded-xl">
+                  <span className="font-medium">{project.designFiles.images.length} Images</span>
+                  <span className="font-medium">{project.designFiles.pdfs.length} PDFs</span>
+                  <span className="font-medium">{project.designFiles.links.length} Links</span>
                 </div>
                 
                 <button
                   onClick={() => setSelectedProject(project)}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="w-full bg-gradient-to-r from-[#FAAD00] to-yellow-500 text-white py-3 px-4 rounded-xl hover:from-yellow-500 hover:to-[#FAAD00] transition-all font-semibold shadow-lg hover:shadow-xl"
                 >
                   View Details
                 </button>
@@ -368,11 +432,11 @@ const CompletedProjects = () => {
         </div>
 
         {filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
               <CheckCircle className="w-12 h-12 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No completed projects found</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">No completed projects found</h3>
             <p className="text-gray-500">Try adjusting your search or filter criteria</p>
           </div>
         )}

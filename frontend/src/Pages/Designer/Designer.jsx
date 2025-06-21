@@ -7,7 +7,7 @@ import ProjectInitializer from '../Designer/ProjectInitialize';
 import OngoingProjects from '../Designer/OngoingProjects';
 import Chat from '../Designer/Chat';
 import CompletedProjects from '../Designer/CompletedProjects';
-import Notification from '../../Components/Employee/Notification'
+import Notification from '../../Components/Employee/Profile'
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -50,7 +50,7 @@ export default function Home() {
       />
       
       {/* Main content area - adjusted for sidebar */}
-      <div className="pt-16 ml-20 transition-all duration-300">
+      <div className="pt-15 ml-20 transition-all duration-300">
         <div className="p-6">
           <Routes>
             <Route path="/" element={<Main />} />

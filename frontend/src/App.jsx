@@ -10,6 +10,8 @@ import FinancialOfficer from './Pages/FinancialOfficer'
 import Home from './Pages/Home'
 import Admin from './Pages/Admin/Admin'
 import Designer from './Pages/Designer/Designer'
+import QS from './Pages/QS/QS'
+import SQS from './Pages/SQS/SQS'
 
 const App = () => {
   return (
@@ -20,6 +22,9 @@ const App = () => {
             <Route path="/" element={<Home/>}/>
             <Route path="/admin/*" element={<Admin/>}/>
             <Route path="/financial_officer/*" element={<FinancialOfficer/>}/>
+            <Route path="/qs/*" element={<QS/>}/>
+            <Route path="/sqs/*" element={<SQS/>}/>
+
             
           
 

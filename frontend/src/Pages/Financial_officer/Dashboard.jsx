@@ -1,5 +1,7 @@
 import React from 'react';
-import Layout from '../../Components/Financial_officer/Layout';
+import { useNavigate } from 'react-router-dom';
+
+
 import CalenderCard from '../../Components/Financial_officer/CalenderCard';
 import EngineeingIcon from '@mui/icons-material/Engineering';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
@@ -9,9 +11,15 @@ import LaborPieChart from '../../Components/Financial_officer/LaborPieChart';
 import MoneyIcon from '@mui/icons-material/Money';
 
 const Dashboard = () => {
+  
   return (
-    <Layout>
-      <div className="flex flex-col lg:flex-row gap-10">
+
+    <div>
+      
+      
+      <div className="pt-20 p-8 ml-18">
+        
+<div className="flex flex-col lg:flex-row gap-10">
        
         <div className="flex-1">
           
@@ -98,8 +106,13 @@ const Dashboard = () => {
           
             
         </div>
-    </Layout>
+      </div>
+    </div>
+
+    
+    
   );
 };
 
 export default Dashboard;
+

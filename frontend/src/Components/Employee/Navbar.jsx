@@ -3,6 +3,8 @@ import {
   Bell, ChevronDown, User, MessageSquare, Settings, AlertTriangle, CheckCircle, Menu, X
 } from 'lucide-react';
 
+import name from '../../assets/name.png'; // Adjust the path as necessary
+
 const Navbar = ({ 
   userRole = 'Designer', 
   userName = 'John Doe',
@@ -100,10 +102,7 @@ const Navbar = ({
         </button>
 
         <div className="flex items-center">
-          <h1 className='text-black md:text-4xl text-3xl font-bold font-sans'>
-            Structura
-            <span className='text-[#FAAD00] italic'>X</span>
-          </h1>
+          <img src={name} alt="Logo" className="w-auto h-12 mr-2" /> 
         </div>
       </div>
         

@@ -28,7 +28,6 @@ const DesignerHome = () => {
       title: 'Luxury Apartment Complex',
       dueDate: '2024-07-15',
       priority: 'high',
-      progress: 65,
       specialNote: 'Client requested specific lighting requirements for the main lobby area. Need to coordinate with electrical team for proper implementation. The design includes modern LED fixtures with smart controls.',
       createdDate: '2024-01-15'
     },
@@ -40,7 +39,6 @@ const DesignerHome = () => {
       title: 'Eco-Friendly Office Building',
       dueDate: '2024-08-20',
       priority: 'medium',
-      progress: 30,
       specialNote: 'LEED certification required. Focus on sustainable materials and energy-efficient design. All materials must be locally sourced where possible.',
       createdDate: '2024-02-10'
     },
@@ -52,7 +50,6 @@ const DesignerHome = () => {
       title: 'Victorian Style Renovation',
       completedDate: '2024-05-30',
       priority: 'low',
-      progress: 100,
       specialNote: 'Historical preservation guidelines were followed strictly. All original architectural elements were preserved and restored to their former glory.',
       createdDate: '2024-01-05'
     },
@@ -64,7 +61,6 @@ const DesignerHome = () => {
       title: 'Smart Home Integration',
       dueDate: '2024-07-25',
       priority: 'high',
-      progress: 80,
       specialNote: 'IoT integration required for all major systems including lighting, HVAC, security, and entertainment systems. Full automation capabilities needed.',
       createdDate: '2024-02-20'
     },
@@ -76,7 +72,6 @@ const DesignerHome = () => {
       title: 'Shopping Mall Renovation',
       dueDate: '2024-09-15',
       priority: 'medium',
-      progress: 45,
       specialNote: 'Project includes food court redesign and new escalator installation. Focus on improving customer flow and creating modern shopping experience.',
       createdDate: '2024-03-01'
     },
@@ -88,7 +83,6 @@ const DesignerHome = () => {
       title: 'Executive Office Redesign',
       completedDate: '2024-04-18',
       priority: 'high',
-      progress: 100,
       specialNote: 'Completed executive suite with premium finishes and state-of-the-art conference facilities. Client extremely satisfied with the results.',
       createdDate: '2023-12-15'
     }
@@ -280,7 +274,6 @@ const DesignerHome = () => {
                   <th className="px-8 py-6 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Status</th>
                   <th className="px-8 py-6 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Timeline</th>
                   <th className="px-8 py-6 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Priority</th>
-                  <th className="px-8 py-6 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Progress</th>
                   <th className="px-8 py-6 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Notes</th>
                   <th className="px-8 py-6 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -322,23 +315,6 @@ const DesignerHome = () => {
                       <span className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-bold ${getPriorityColor(project.priority)}`}>
                         {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
                       </span>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="w-full">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-bold text-gray-700">{project.progress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-1000 ${
-                              project.type === 'completed' 
-                                ? 'bg-gradient-to-r from-green-500 to-green-600' 
-                                : 'bg-gradient-to-r from-[#FAAD00] to-yellow-500'
-                            }`}
-                            style={{ width: `${project.progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
                     </td>
                     <td className="px-8 py-6">
                       <button

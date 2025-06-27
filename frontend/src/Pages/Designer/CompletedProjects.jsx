@@ -239,29 +239,6 @@ const CompletedProjects = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-white via-[#FAAD00]/5 to-white shadow-lg border-b border-gray-100">
-        <div className="px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-[#FAAD00] rounded-xl shadow-lg">
-                  <CheckCircle className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
-                    Completed Projects
-                  </h1>
-                  <p className="text-xl text-gray-600">View and manage your successfully completed design projects</p>
-                </div>
-              </div>
-            </div>
-            <div className="text-lg text-gray-500 bg-gradient-to-r from-[#FAAD00]/10 to-yellow-100 px-6 py-3 rounded-2xl border border-yellow-200">
-              <span className="font-semibold text-[#FAAD00]">{completedProjects.length}</span> completed projects
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Search and Filters Section */}
       <div className="px-8 py-8 bg-gradient-to-r from-white to-gray-50 border-b border-gray-100">

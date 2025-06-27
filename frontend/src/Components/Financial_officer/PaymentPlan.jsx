@@ -149,41 +149,7 @@ export default function PaymentPlanCreator() {
     </button>
   )}
 
-  <h3 className="text-xl font-semibold mb-2">Terms & Conditions</h3>
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-    <input
-      type="text"
-      value={terms.latePenalty}
-      onChange={(e) => handleTermChange('latePenalty', e.target.value)}
-      className="border p-2 rounded w-full"
-      placeholder="Late Payment Penalty"
-      disabled={isSaved}
-    />
-    <input
-      type="text"
-      value={terms.earlyDiscount}
-      onChange={(e) => handleTermChange('earlyDiscount', e.target.value)}
-      className="border p-2 rounded w-full"
-      placeholder="Early Payment Discount"
-      disabled={isSaved}
-    />
-    <input
-      type="text"
-      value={terms.cancellation}
-      onChange={(e) => handleTermChange('cancellation', e.target.value)}
-      className="border p-2 rounded w-full"
-      placeholder="Cancellation Policy"
-      disabled={isSaved}
-    />
-    <input
-      type="text"
-      value={terms.paymentMethod}
-      onChange={(e) => handleTermChange('paymentMethod', e.target.value)}
-      className="border p-2 rounded w-full"
-      placeholder="Payment Method"
-      disabled={isSaved}
-    />
-  </div>
+  
 
   <div className="flex flex-col sm:flex-row gap-4 mb-4">
     {!isSaved && (

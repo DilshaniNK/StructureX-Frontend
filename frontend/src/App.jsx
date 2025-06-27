@@ -13,6 +13,7 @@ import Admin from './Pages/Admin/Admin'
 import Designer from './Pages/Designer/Designer'
 import ProjectManager from './Pages/ProjectManager/ProjectManager'
 import Supplier from './Pages/Supplier/Supplier'
+import ProjectOwner from './Pages/ProjectOwner/ProjectOwner'
 
 const App = () => {
   return (
@@ -29,7 +30,7 @@ const App = () => {
             <Route path="/example/*" element={<Example/>}/>
             <Route path="/designer/*" element={<Designer/>}/>
             <Route path="/supplier/*" element={<Supplier/>}/>
-            
+            <Route path="/project_owner/*" element={<ProjectOwner/>}/>
 
           </Route>
         </Routes>

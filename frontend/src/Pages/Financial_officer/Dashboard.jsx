@@ -1,5 +1,6 @@
-import React from 'react';
+import React,{useState,useEffect} from 'react';
 import CostBarChart from '../../Components/Financial_officer/CostBarChart';
+import axios from 'axios';
 
 import { 
   Building2, 
@@ -64,10 +65,30 @@ const LaborPieChart = () => (
 
 const Dashboard = () => {
 
+  const [projects, setProjects] = useState([]);
+  const [activeCount, setActiveCount] = useState(0);
+
+  useEffect(() => {
+    axios.get("http://localhost:8086/api/v1/financial_officer")
+ // Replace with your API endpoint
+      .then((response) => {
+        setProjects(response.data);
+
+        setActiveCount(response.data.filter(p => p.status === "Active").length);
+       
+      })
+      .catch((err) => {
+        console.error("Error fetching projects:", err);
+        
+      });
+  }, []);
+
+   
+
   const summaryCards = [
     {
       title: "Ongoing Projects",
-      value: "12",
+      value: activeCount,
       icon: Building2,
       trend: "+2 from last month",
       color: "blue",

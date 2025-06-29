@@ -160,10 +160,10 @@ const SiteVisitLogs = () => {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        {/* <div>
           <h1 className="text-3xl font-bold text-gray-900">Site Visit Logs</h1>
           <p className="text-gray-600 mt-2">Record and track all site visits and inspections</p>
-        </div>
+        </div> */}
         <div className="flex space-x-3 mt-4 sm:mt-0">
           <button
             onClick={generateReport}

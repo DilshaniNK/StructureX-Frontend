@@ -33,7 +33,7 @@ const mockProject = {
 const Projectdetails = () => {
     return (
         <>
-         <ProjectDetails project={mockProject} userRole="Project_Manager" />
+         <ProjectDetails project={mockProject} userRole="ProjectManager" />
         </>
     )
 }

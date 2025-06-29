@@ -34,10 +34,11 @@ const App = () => {
             <Route path="/example/*" element={<Example />} />
             <Route path="/designer/*" element={<Designer />} />
             <Route path="/legalofficer/*" element={<LegalOfficer />} />
-            <Route path="/qs/*" element={<QS/>}/>
-            <Route path="/sqs/*" element={<SQS/>}/>
+            <Route path="/qs/*" element={<QS />} />
+            <Route path="/sqs/*" element={<SQS />} />
 
-            
+            <Route path="/legal_officer/*" element={<LegalOfficer />} />
+
 
           </Route>
         </Routes>

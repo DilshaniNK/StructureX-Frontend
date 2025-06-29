@@ -46,7 +46,7 @@ const Sidebar = ({
     Project_Manager: [
       { id: 'home', label: 'Home', icon: Home, path: '/projectmanager/home', badge: null },
       { id: 'dailyupdates', label: 'Daily Updates', icon: Rocket, path: '/projectmanager/dailyupdates', badge: null },
-      { id: 'financialstatus', label: 'Financial Status', icon: Loader, path: '/projectmanager/financialstatus', badge: null },
+      { id: 'projects', label: 'Projects', icon: Loader, path: '/projectmanager/projects', badge: null },
       { id: 'materials', label: 'Materials', icon: BadgeCheck, path: '/projectmanager/materials', badge: null },
       { id: 'projectprogress', label: 'Project Progress', icon: ChartSpline, path: '/projectmanager/projectprogress', badge: null },
       { id: 'sitevisitlogs', label: 'Site Visit Logs', icon: BookmarkCheck, path: '/projectmanager/sitevisitlogs', badge: null },

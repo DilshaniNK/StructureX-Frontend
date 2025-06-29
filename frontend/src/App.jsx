@@ -16,6 +16,8 @@ import QS from './Pages/QS/QS'
 import SQS from './Pages/SQS/SQS'
 
 import ProjectManager from './Pages/ProjectManager/ProjectManager'
+import Supplier from './Pages/Supplier/Supplier'
+import ProjectOwner from './Pages/ProjectOwner/ProjectOwner'
 import LegalOfficer from './Pages/LegalOfficer/LegalOfficer';
 
 
@@ -33,12 +35,13 @@ const App = () => {
             <Route path="/site_supervisor/*" element={<SiteSupervisor />} />
             <Route path="/example/*" element={<Example />} />
             <Route path="/designer/*" element={<Designer />} />
-            /* hello*/
-            <Route path="/legalofficer/*" element={<LegalOfficer />} />
-            <Route path="/qs/*" element={<QS />} />
-            <Route path="/sqs/*" element={<SQS />} />
-
             <Route path="/legal_officer/*" element={<LegalOfficer />} />
+            <Route path="/qs/*" element={<QS/>}/>
+            <Route path="/sqs/*" element={<SQS/>}/>
+            <Route path="/supplier/*" element={<Supplier/>}/>
+            <Route path="/project_owner/*" element={<ProjectOwner/>}/>
+           
+
 
 
           </Route>

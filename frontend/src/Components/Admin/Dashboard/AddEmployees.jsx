@@ -5,7 +5,7 @@ const AddEmployeeForm = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    contact: '',
+    contactNumber: '', // Changed from 'contact' to match backend
     address: '',
     employeeType: '',
     joinDate: '',
@@ -20,6 +20,10 @@ const AddEmployeeForm = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Backend API URL
+  const API_BASE_URL = 'http://localhost:8086/api/v1';
 
   const employeeTypes = [
     'QS_Officer',
@@ -71,7 +75,7 @@ const AddEmployeeForm = () => {
     if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
-    if (!formData.contact.trim()) newErrors.contact = 'Contact number is required';
+    if (!formData.contactNumber.trim()) newErrors.contactNumber = 'Contact number is required';
     if (!formData.address.trim()) newErrors.address = 'Address is required';
     if (!formData.employeeType) newErrors.employeeType = 'Employee type is required';
     if (!formData.joinDate) newErrors.joinDate = 'Join date is required';
@@ -86,19 +90,81 @@ const AddEmployeeForm = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
     
-    if (!validateForm()) return;
+    console.log('Submit button clicked!'); // Debug log
+    console.log('Form data:', formData); // Debug log
+    
+    if (!validateForm()) {
+      console.log('Form validation failed:', errors);
+      return;
+    }
 
     setIsSubmitting(true);
+    setSubmitSuccess(false);
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Employee Data:', formData);
-      alert('Employee added successfully!');
+    try {
+      // Prepare data for backend (exclude confirmPassword and profileImage for now)
+      const employeeData = {
+        fullName: formData.fullName,
+        email: formData.email,
+        contactNumber: formData.contactNumber,
+        address: formData.address,
+        employeeType: formData.employeeType,
+        joinDate: formData.joinDate,
+        salary: parseFloat(formData.salary), // Convert to number
+        password: formData.password
+      };
+
+      console.log('Sending employee data:', employeeData);
+
+      const response = await fetch(`${API_BASE_URL}/admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(employeeData)
+      });
+
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Employee created successfully:', result);
+      
+      setSubmitSuccess(true);
+      
+      // Reset form after successful submission
+      setTimeout(() => {
+        setFormData({
+          fullName: '',
+          email: '',
+          contactNumber: '',
+          address: '',
+          employeeType: '',
+          joinDate: '',
+          salary: '',
+          password: '',
+          confirmPassword: '',
+          profileImage: null
+        });
+        setPreviewImage(null);
+        setSubmitSuccess(false);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      alert(`Error creating employee: ${error.message}`);
+    } finally {
       setIsSubmitting(false);
-      // Reset form or redirect
-    }, 2000);
+    }
   };
 
   const formatEmployeeType = (type) => {
@@ -108,6 +174,17 @@ const AddEmployeeForm = () => {
   return (
     <div className="min-h-screen bg-gray-900 p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Success Message */}
+        {submitSuccess && (
+          <div className="mb-6 bg-green-800 border border-green-600 rounded-lg p-4 flex items-center gap-3">
+            <CheckCircle className="text-green-400" size={20} />
+            <div>
+              <p className="text-green-200 font-medium">Employee Added Successfully!</p>
+              <p className="text-green-300 text-sm">The employee has been created in the system.</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -206,14 +283,14 @@ const AddEmployeeForm = () => {
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <input
                     type="tel"
-                    name="contact"
-                    value={formData.contact}
+                    name="contactNumber"
+                    value={formData.contactNumber}
                     onChange={handleInputChange}
-                    className={`w-full bg-gray-700 border ${errors.contact ? 'border-red-500' : 'border-gray-600'} rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
+                    className={`w-full bg-gray-700 border ${errors.contactNumber ? 'border-red-500' : 'border-gray-600'} rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
                     placeholder="Enter contact number"
                   />
                 </div>
-                {errors.contact && <p className="text-red-400 text-sm mt-1">{errors.contact}</p>}
+                {errors.contactNumber && <p className="text-red-400 text-sm mt-1">{errors.contactNumber}</p>}
               </div>
             </div>
           </div>

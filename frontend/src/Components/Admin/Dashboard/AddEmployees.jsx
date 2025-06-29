@@ -3,22 +3,15 @@ import { User, Mail, Phone, MapPin, Building, Calendar, Eye, EyeOff, Save, X, Up
 
 const AddEmployeeForm = () => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    fullName: '',
     email: '',
     contact: '',
     address: '',
-    city: '',
-    state: '',
-    zipCode: '',
     employeeType: '',
-    department: '',
     joinDate: '',
     salary: '',
     password: '',
     confirmPassword: '',
-    emergencyContact: '',
-    emergencyPhone: '',
     profileImage: null
   });
 
@@ -38,17 +31,6 @@ const AddEmployeeForm = () => {
     'Architect',
     'Finance_Department',
     'System_Administrator'
-  ];
-
-  const departments = [
-    'Quantity Survey',
-    'Project Management',
-    'Site Operations',
-    'Legal',
-    'Executive',
-    'Architecture',
-    'Finance',
-    'IT Administration'
   ];
 
   const handleInputChange = (e) => {
@@ -86,14 +68,12 @@ const AddEmployeeForm = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+    if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
     if (!formData.contact.trim()) newErrors.contact = 'Contact number is required';
     if (!formData.address.trim()) newErrors.address = 'Address is required';
     if (!formData.employeeType) newErrors.employeeType = 'Employee type is required';
-    if (!formData.department) newErrors.department = 'Department is required';
     if (!formData.joinDate) newErrors.joinDate = 'Join date is required';
     if (!formData.salary.trim()) newErrors.salary = 'Salary is required';
     if (!formData.password) newErrors.password = 'Password is required';
@@ -185,34 +165,19 @@ const AddEmployeeForm = () => {
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  First Name *
+                  Full Name *
                 </label>
                 <input
                   type="text"
-                  name="firstName"
-                  value={formData.firstName}
+                  name="fullName"
+                  value={formData.fullName}
                   onChange={handleInputChange}
-                  className={`w-full bg-gray-700 border ${errors.firstName ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
-                  placeholder="Enter first name"
+                  className={`w-full bg-gray-700 border ${errors.fullName ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
+                  placeholder="Enter full name"
                 />
-                {errors.firstName && <p className="text-red-400 text-sm mt-1">{errors.firstName}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Last Name *
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  className={`w-full bg-gray-700 border ${errors.lastName ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
-                  placeholder="Enter last name"
-                />
-                {errors.lastName && <p className="text-red-400 text-sm mt-1">{errors.lastName}</p>}
+                {errors.fullName && <p className="text-red-400 text-sm mt-1">{errors.fullName}</p>}
               </div>
 
               <div>
@@ -260,65 +225,19 @@ const AddEmployeeForm = () => {
               Address Information
             </h3>
             
-            <div className="grid grid-cols-1 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Street Address *
-                </label>
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  rows="3"
-                  className={`w-full bg-gray-700 border ${errors.address ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all resize-none`}
-                  placeholder="Enter complete address"
-                />
-                {errors.address && <p className="text-red-400 text-sm mt-1">{errors.address}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
-                    placeholder="Enter city"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    State/Province
-                  </label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
-                    placeholder="Enter state"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    ZIP/Postal Code
-                  </label>
-                  <input
-                    type="text"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
-                    placeholder="Enter ZIP code"
-                  />
-                </div>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Complete Address *
+              </label>
+              <textarea
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                rows="4"
+                className={`w-full bg-gray-700 border ${errors.address ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all resize-none`}
+                placeholder="Enter complete address including street, city, state, and postal code"
+              />
+              {errors.address && <p className="text-red-400 text-sm mt-1">{errors.address}</p>}
             </div>
           </div>
 
@@ -352,26 +271,6 @@ const AddEmployeeForm = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Department *
-                </label>
-                <select
-                  name="department"
-                  value={formData.department}
-                  onChange={handleInputChange}
-                  className={`w-full bg-gray-700 border ${errors.department ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
-                >
-                  <option value="">Select department</option>
-                  {departments.map(dept => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-                {errors.department && <p className="text-red-400 text-sm mt-1">{errors.department}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Join Date *
                 </label>
                 <div className="relative">
@@ -387,7 +286,7 @@ const AddEmployeeForm = () => {
                 {errors.joinDate && <p className="text-red-400 text-sm mt-1">{errors.joinDate}</p>}
               </div>
 
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Salary *
                 </label>
@@ -457,46 +356,6 @@ const AddEmployeeForm = () => {
                   </button>
                 </div>
                 {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Emergency Contact */}
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-6">
-              Emergency Contact (Optional)
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Emergency Contact Name
-                </label>
-                <input
-                  type="text"
-                  name="emergencyContact"
-                  value={formData.emergencyContact}
-                  onChange={handleInputChange}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
-                  placeholder="Enter emergency contact name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Emergency Contact Phone
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                  <input
-                    type="tel"
-                    name="emergencyPhone"
-                    value={formData.emergencyPhone}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
-                    placeholder="Enter emergency contact phone"
-                  />
-                </div>
               </div>
             </div>
           </div>

@@ -16,27 +16,27 @@ const Home = () => {
   const navigate = useNavigate();
 
   const handleViewClick = () => {
-    navigate('/project_manager/projectprogress');
+    navigate('/projectmanager/projectprogress');
     };
     const handlerequest = () =>{
-      navigate('/project_manager/materials');
+      navigate('/projectmanager/materials');
     };
     const handletodolist = () =>{
-      navigate('/project_manager/todolist');
+      navigate('/projectmanager/todolist');
     };
     const handleSiteUpdate = () =>{
-      navigate('/project_manager/dailyupdates');
+      navigate('/projectmanager/dailyupdates');
     };
     const handleprojectdetails = () =>{
-      navigate('/project_manager/projectdetails');
+      navigate('/projectmanager/projectdetails');
     };
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
+      {/* <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your projects today.</p>
-      </div>
+      </div> */}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

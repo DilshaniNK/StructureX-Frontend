@@ -45,14 +45,14 @@ const Sidebar = ({
     ],
 
     Project_Manager: [
-      { id: 'home', label: 'Home', icon: Home, path: '/project_manager/home', badge: null },
-      { id: 'dailyupdates', label: 'Daily Updates', icon: Rocket, path: '/project_manager/dailyupdates', badge: null },
-      { id: 'financialstatus', label: 'Financial Status', icon: Loader, path: '/project_manager/financialstatus', badge: null },
-      { id: 'materials', label: 'Materials', icon: BadgeCheck, path: '/project_manager/materials', badge: null },
-      { id: 'projectprogress', label: 'Project Progress', icon: ChartSpline, path: '/project_manager/projectprogress', badge: null },
-      { id: 'sitevisitlogs', label: 'Site Visit Logs', icon: BookmarkCheck, path: '/project_manager/sitevisitlogs', badge: null },
-      { id: 'todolist', label: 'Todo List', icon: ClipboardPenLine, path: '/project_manager/todolist', badge: null },
-      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/project_manager/chat', badge: null },
+      { id: 'home', label: 'Home', icon: Home, path: '/projectmanager/home', badge: null },
+      { id: 'dailyupdates', label: 'Daily Updates', icon: Rocket, path: '/projectmanager/dailyupdates', badge: null },
+      { id: 'financialstatus', label: 'Financial Status', icon: Loader, path: '/projectmanager/financialstatus', badge: null },
+      { id: 'materials', label: 'Materials', icon: BadgeCheck, path: '/projectmanager/materials', badge: null },
+      { id: 'projectprogress', label: 'Project Progress', icon: ChartSpline, path: '/projectmanager/projectprogress', badge: null },
+      { id: 'sitevisitlogs', label: 'Site Visit Logs', icon: BookmarkCheck, path: '/projectmanager/sitevisitlogs', badge: null },
+      { id: 'todolist', label: 'Todo List', icon: ClipboardPenLine, path: '/projectmanager/todolist', badge: null },
+      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/projectmanager/chat', badge: null },
     ],
 
     FinancialOfficer: [

@@ -124,10 +124,10 @@ const Materials = () => {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        {/* <div>
           <h1 className="text-3xl font-bold text-gray-900">Materials Management</h1>
           <p className="text-gray-600 mt-2">Monitor inventory levels and manage material requests</p>
-        </div>
+        </div> */}
         {/* <button
           onClick={() => setShowRequestForm(true)}
           className="mt-4 sm:mt-0 px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center"
@@ -194,7 +194,7 @@ const Materials = () => {
         </div>
       </div>
 
-      {/* Request History */}
+      {/* //Request History
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Requests</h2>
         <div className="space-y-4">
@@ -218,7 +218,7 @@ const Materials = () => {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
 
       {/* Search and Filter */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

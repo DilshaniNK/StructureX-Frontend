@@ -239,10 +239,10 @@ const ProjectProgress = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
+      {/* <div>
         <h1 className="text-3xl font-bold text-gray-900">Project Progress</h1>
         <p className="text-gray-600 mt-2">Track milestones and monitor project timelines</p>
-      </div>
+      </div> */}
 
       {/* Projects List */}
       <div className="space-y-6">
@@ -263,16 +263,16 @@ const ProjectProgress = () => {
                 </div>
               </div>
               <div className="mt-4 lg:mt-0">
-                <div className="text-right mb-2">
-                  <span className="text-2xl font-bold text-gray-900">{project.progress}%</span>
-                  <span className="text-gray-600 ml-1">Complete</span>
+                <div className="text-right mb-2 flex flex-col">
+                  <span className="text-2xl font-bold text-gray-900">Remaing Dates</span>
+                  <span className="text-gray-600 ml-1">1563 Days</span>
                 </div>
-                <div className="w-48 bg-gray-200 rounded-full h-3">
+                {/* <div className="w-48 bg-gray-200 rounded-full h-3">
                   <div 
                     className={`h-3 rounded-full transition-all duration-300 ${getProgressColor(project.progress)}`}
                     style={{ width: `${project.progress}%` }}
                   ></div>
-                </div>
+                </div> */}
               </div>
             </div>
 
@@ -320,16 +320,16 @@ const ProjectProgress = () => {
             <div className="border-t border-gray-200 pt-6 mt-6">
               <div className="flex flex-wrap gap-3">
               
-                <button onClick={() => setSelectedProject(project)} 
+                {/* <button onClick={() => setSelectedProject(project)} 
                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                   view Progress
-                </button>
-                <button 
+                </button> */}
+                {/* <button 
                   onClick={() => generateReport(project)}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Generate Report
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
@@ -431,7 +431,7 @@ const ProjectProgress = () => {
             </div>
 
             {/* Detailed Milestones */}
-            <div className="p-6">
+            {/* <div className="p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Milestone Details</h3>
               <div className="space-y-6">
                 {selectedProject.milestones.map((milestone, index) => (
@@ -510,16 +510,16 @@ const ProjectProgress = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       )}
 
       {/* Report Modal */}
-      {showReport && reportProject && (
+      {/* {showReport && reportProject && (
         <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
           <div className="bg-white border-2 border-amber-400 rounded-xl w-full max-w-4xl max-h-screen overflow-y-auto">
-            {/* Report Header */}
+          
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Project Progress Report</h2>
@@ -540,11 +540,10 @@ const ProjectProgress = () => {
                   <X size={24} className="text-gray-600" />
                 </button>
               </div>
-            </div>
+            </div> */}
 
             {/* Report Content */}
-            <div className="p-6">
-              {/* Executive Summary */}
+            {/* <div className="p-6">
               <div className="mb-8">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Executive Summary</h3>
                 <div className="bg-gray-50 p-6 rounded-lg">
@@ -571,7 +570,7 @@ const ProjectProgress = () => {
                 </div>
               </div>
 
-              {/* Milestone Progress */}
+             
               <div className="mb-8">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Milestone Progress</h3>
                 <div className="space-y-4">
@@ -610,7 +609,7 @@ const ProjectProgress = () => {
                 </div>
               </div>
 
-              {/* Financial Summary */}
+           
               <div className="mb-8">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Financial Summary</h3>
                 <div className="bg-gray-50 p-6 rounded-lg">
@@ -633,7 +632,7 @@ const ProjectProgress = () => {
                 </div>
               </div>
 
-              {/* Report Footer */}
+          
               <div className="border-t border-gray-200 pt-6">
                 <p className="text-sm text-gray-500">
                   Report generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
@@ -642,11 +641,11 @@ const ProjectProgress = () => {
                   Project Manager: John Smith | Construction Manager Dashboard
                 </p>
               </div>
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
         </div>
-      )}
-    </div>
+    //   )}
+    // </div>
   );
 };
 

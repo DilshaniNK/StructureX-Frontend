@@ -28,16 +28,16 @@ export default function Home() {
   // Determine active item based on current path
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path.includes('/project_manager/home') || path === '/') return 'home';
-    if (path.includes('/project_manager/dailyupdates')) return 'dailyupdates';
-    if (path.includes('/project_manager/financialstatus')) return 'financialstatus';
-    if (path.includes('/project_manager/materials')) return 'materials';
-    if (path.includes('/project_manager/projectprogress')) return 'projectprogress';
-    if (path.includes('/project_manager/sitevisitlogs')) return 'sitevisitlogs';
-    if (path.includes('/project_manager/todolist')) return 'todolist';
-    if (path.includes('/project_manager/chat')) return 'chat';
-    if (path.includes('/project_manager/projectdetails')) return 'projectdetails';
-    if (path.includes('/project_manager/notifications')) return 'notifications';
+    if (path.includes('/projectmanager/home') || path === '/') return 'home';
+    if (path.includes('/projectmanager/dailyupdates')) return 'dailyupdates';
+    if (path.includes('/projectmanager/financialstatus')) return 'financialstatus';
+    if (path.includes('/projectmanager/materials')) return 'materials';
+    if (path.includes('/projectmanager/projectprogress')) return 'projectprogress';
+    if (path.includes('/projectmanager/sitevisitlogs')) return 'sitevisitlogs';
+    if (path.includes('/projectmanager/todolist')) return 'todolist';
+    if (path.includes('/projectmanager/chat')) return 'chat';
+    if (path.includes('/projectmanager/projectdetails')) return 'projectdetails';
+    if (path.includes('/projectmanager/notifications')) return 'notifications';
     return 'home'; // default
   };
 

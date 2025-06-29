@@ -129,10 +129,10 @@ const TodoList = () => {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        {/* <div>
           <h1 className="text-3xl font-bold text-gray-900">To-Do List</h1>
           <p className="text-gray-600 mt-2">Manage your tasks and stay organized</p>
-        </div>
+        </div> */}
         <button
           onClick={() => setShowAddForm(true)}
           className="mt-4 sm:mt-0 px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center"

@@ -16,27 +16,27 @@ const Home = () => {
   const navigate = useNavigate();
 
   const handleViewClick = () => {
-    navigate('/project_manager/projectprogress');
+    navigate('/projectmanager/projectprogress');
     };
     const handlerequest = () =>{
-      navigate('/project_manager/materials');
+      navigate('/projectmanager/materials');
     };
     const handletodolist = () =>{
-      navigate('/project_manager/todolist');
+      navigate('/projectmanager/todolist');
     };
     const handleSiteUpdate = () =>{
-      navigate('/project_manager/dailyupdates');
+      navigate('/projectmanager/dailyupdates');
     };
     const handleprojectdetails = () =>{
-      navigate('../../Components/Employee/ProjDetails');
+      navigate('/projectmanager/projectdetails');
     };
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
+      {/* <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your projects today.</p>
-      </div>
+      </div> */}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -86,6 +86,30 @@ const Home = () => {
               <Users className="text-light-600" size={24} />
             </div>
           </div>
+        </div>
+      </div>
+
+       {/* Quick Actions */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <button onClick={handlerequest} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left cursor-pointer ">
+            <Package className="text-primary-600 mb-2" size={24} />
+            <h3 className="font-medium text-gray-900">Request Materials</h3>
+            <p className="text-sm text-gray-600">Submit new material requests</p>
+          </button>
+
+          <button onClick={handletodolist} className="p-4 border cursor-pointer border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
+            <Calendar className="text-secondary-600 mb-2" size={24} />
+            <h3 className="font-medium text-gray-900">To do List</h3>
+            <p className="text-sm text-gray-600">Plan site inspections</p>
+          </button>
+
+          <button onClick={handleSiteUpdate} className="p-4 border cursor-pointer border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
+            <FileText className="text-accent-600 mb-2" size={24} />
+            <h3 className="font-medium text-gray-900">Daily Report</h3>
+            <p className="text-sm text-gray-600">See today's updates</p>
+          </button>
         </div>
       </div>
 
@@ -199,30 +223,6 @@ const Home = () => {
               <button  className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button onClick={handlerequest} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left cursor-pointer ">
-            <Package className="text-primary-600 mb-2" size={24} />
-            <h3 className="font-medium text-gray-900">Request Materials</h3>
-            <p className="text-sm text-gray-600">Submit new material requests</p>
-          </button>
-
-          <button onClick={handletodolist} className="p-4 border cursor-pointer border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-            <Calendar className="text-secondary-600 mb-2" size={24} />
-            <h3 className="font-medium text-gray-900">To do List</h3>
-            <p className="text-sm text-gray-600">Plan site inspections</p>
-          </button>
-
-          <button onClick={handleSiteUpdate} className="p-4 border cursor-pointer border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-            <FileText className="text-accent-600 mb-2" size={24} />
-            <h3 className="font-medium text-gray-900">Daily Report</h3>
-            <p className="text-sm text-gray-600">See today's updates</p>
-          </button>
         </div>
       </div>
     </div>

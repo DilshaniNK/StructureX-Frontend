@@ -94,42 +94,6 @@ export default function Notifications() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-white via-[#FAAD00]/5 to-white shadow-lg border-b border-gray-100">
-        <div className="px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-[#FAAD00] rounded-xl shadow-lg">
-                  <Bell className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
-                    Notifications
-                  </h1>
-                  <p className="text-xl text-gray-600">
-                    {unreadCount > 0 ? `${unreadCount} unread notifications` : 'All notifications read'}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={markAllAsRead}
-                className="px-6 py-3 text-gray-700 border-2 border-gray-200 rounded-2xl hover:bg-gray-50 transition-all font-semibold"
-              >
-                Mark All Read
-              </button>
-              <button 
-                className="px-6 py-3 text-white rounded-2xl hover:opacity-90 transition-all shadow-lg hover:shadow-xl font-semibold"
-                style={{ backgroundColor: '#FAAD00' }}
-              >
-                Settings
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Search and Filters Section */}
       <div className="px-8 py-8 bg-gradient-to-r from-white to-gray-50 border-b border-gray-100">

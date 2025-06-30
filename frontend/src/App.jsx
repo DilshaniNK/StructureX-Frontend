@@ -11,9 +11,15 @@ import SiteSupervisor from './Pages/Site_supervisor/SiteSupervisor';
 import Home from './Pages/Home'
 import Admin from './Pages/Admin/Admin'
 import Designer from './Pages/Designer/Designer'
+
+import QS from './Pages/QS/QS'
+import SQS from './Pages/SQS/SQS'
+
 import ProjectManager from './Pages/ProjectManager/ProjectManager'
 import Supplier from './Pages/Supplier/Supplier'
 import ProjectOwner from './Pages/ProjectOwner/ProjectOwner'
+import LegalOfficer from './Pages/LegalOfficer/LegalOfficer';
+
 
 const App = () => {
   return (
@@ -25,12 +31,18 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/admin/*" element={<Admin />} />
             <Route path="/financial_officer/*" element={<FinancialOfficer />} />
-            <Route path="/project_manager/*" element={<ProjectManager/>} />
-            <Route path="/site_supervisor/*" element={<SiteSupervisor/>}/>
-            <Route path="/example/*" element={<Example/>}/>
-            <Route path="/designer/*" element={<Designer/>}/>
+            <Route path="/projectmanager/*" element={<ProjectManager />} />
+            <Route path="/site_supervisor/*" element={<SiteSupervisor />} />
+            <Route path="/example/*" element={<Example />} />
+            <Route path="/designer/*" element={<Designer />} />
+            <Route path="/legal_officer/*" element={<LegalOfficer />} />
+            <Route path="/qs/*" element={<QS/>}/>
+            <Route path="/sqs/*" element={<SQS/>}/>
             <Route path="/supplier/*" element={<Supplier/>}/>
             <Route path="/project_owner/*" element={<ProjectOwner/>}/>
+           
+
+
 
           </Route>
         </Routes>

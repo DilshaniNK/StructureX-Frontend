@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Download, Plus, Edit, Trash2, Eye, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Download, Plus, Edit, Trash2, Eye, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
-// Sample employee data
+// Reduced sample employee data (3-4 employees)
 const employeesData = [
   {
     employee_id: 'EMP001',
@@ -41,85 +40,162 @@ const employeesData = [
     contact: '+1-555-0104',
     address: '321 Elm St, Houston, TX 77001',
     type: 'Site_Supervisor',
-    status: 'Active',
+    status: 'Inactive',
     joinDate: '2023-06-05'
-  },
-  {
-    employee_id: 'EMP005',
-    name: 'David Wilson',
-    email: 'david.wilson@company.com',
-    contact: '+1-555-0105',
-    address: '654 Cedar Ln, Phoenix, AZ 85001',
-    type: 'Legal_Officer',
-    status: 'Inactive',
-    joinDate: '2022-11-15'
-  },
-  {
-    employee_id: 'EMP006',
-    name: 'Lisa Anderson',
-    email: 'lisa.anderson@company.com',
-    contact: '+1-555-0106',
-    address: '987 Birch Dr, Philadelphia, PA 19101',
-    type: 'Director',
-    status: 'Active',
-    joinDate: '2021-05-20'
-  },
-  {
-    employee_id: 'EMP007',
-    name: 'Robert Taylor',
-    email: 'robert.taylor@company.com',
-    contact: '+1-555-0107',
-    address: '159 Maple Ave, San Antonio, TX 78201',
-    type: 'Architect',
-    status: 'Active',
-    joinDate: '2023-02-14'
-  },
-  {
-    employee_id: 'EMP008',
-    name: 'Jennifer Martinez',
-    email: 'jennifer.martinez@company.com',
-    contact: '+1-555-0108',
-    address: '753 Walnut St, San Diego, CA 92101',
-    type: 'Finance_Department',
-    status: 'Active',
-    joinDate: '2022-09-30'
-  },
-  {
-    employee_id: 'EMP009',
-    name: 'Christopher Lee',
-    email: 'christopher.lee@company.com',
-    contact: '+1-555-0109',
-    address: '852 Spruce Ct, Dallas, TX 75201',
-    type: 'QS_Officer',
-    status: 'Active',
-    joinDate: '2023-04-18'
-  },
-  {
-    employee_id: 'EMP010',
-    name: 'Amanda White',
-    email: 'amanda.white@company.com',
-    contact: '+1-555-0110',
-    address: '426 Ash Blvd, San Jose, CA 95101',
-    type: 'Site_Supervisor',
-    status: 'Inactive',
-    joinDate: '2022-12-08'
   }
 ];
 
+// Employee Details Modal Component
+const EmployeeDetailsModal = ({ employee, onClose }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold text-yellow-400">Employee Details</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <X size={20} />
+        </button>
+      </div>
+      <div className="space-y-3">
+        <div><span className="text-gray-400">ID:</span> <span className="text-white ml-2">{employee.employee_id}</span></div>
+        <div><span className="text-gray-400">Name:</span> <span className="text-white ml-2">{employee.name}</span></div>
+        <div><span className="text-gray-400">Email:</span> <span className="text-white ml-2">{employee.email}</span></div>
+        <div><span className="text-gray-400">Contact:</span> <span className="text-white ml-2">{employee.contact}</span></div>
+        <div><span className="text-gray-400">Address:</span> <span className="text-white ml-2">{employee.address}</span></div>
+        <div><span className="text-gray-400">Type:</span> <span className="text-white ml-2">{employee.type.replace(/_/g, ' ')}</span></div>
+        <div><span className="text-gray-400">Status:</span> <span className={`ml-2 ${employee.status === 'Active' ? 'text-green-400' : 'text-red-400'}`}>{employee.status}</span></div>
+        <div><span className="text-gray-400">Join Date:</span> <span className="text-white ml-2">{employee.joinDate}</span></div>
+      </div>
+    </div>
+  </div>
+);
+
+// Employee Edit Modal Component
+const EmployeeEditModal = ({ employee, onClose, onSave }) => {
+  const [formData, setFormData] = useState(employee);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-yellow-400">Edit Employee</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
+        <div onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Name"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+            required
+          />
+          <input
+            type="tel"
+            placeholder="Contact"
+            value={formData.contact}
+            onChange={(e) => setFormData({...formData, contact: e.target.value})}
+            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+            required
+          />
+          <textarea
+            placeholder="Address"
+            value={formData.address}
+            onChange={(e) => setFormData({...formData, address: e.target.value})}
+            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+            rows="2"
+            required
+          />
+          <select
+            value={formData.type}
+            onChange={(e) => setFormData({...formData, type: e.target.value})}
+            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+            required
+          >
+            <option value="QS_Officer">QS Officer</option>
+            <option value="Senior_QS_Officer">Senior QS Officer</option>
+            <option value="Project_Manager">Project Manager</option>
+            <option value="Site_Supervisor">Site Supervisor</option>
+          </select>
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleSubmit}
+              className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-gray-900 py-2 rounded-lg font-semibold"
+            >
+              Update
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Delete Confirmation Modal
+const DeleteConfirmModal = ({ employee, onClose, onConfirm }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-gray-800 rounded-xl p-6 max-w-sm w-full">
+      <h3 className="text-xl font-bold text-red-400 mb-4">Confirm Deletion</h3>
+      <p className="text-gray-300 mb-6">
+        Are you sure you want to delete <span className="text-white font-semibold">{employee.name}</span>? 
+        This action cannot be undone.
+      </p>
+      <div className="flex gap-3">
+        <button
+          onClick={onConfirm}
+          className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-semibold"
+        >
+          Delete
+        </button>
+        <button
+          onClick={onClose}
+          className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 const EmployeeManagement = () => {
-  const [employees] = useState(employeesData);
+  const [employees, setEmployees] = useState(employeesData);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
-  const [filterStatus, setFilterStatus] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  
+  // Modal states
+  const [viewEmployee, setViewEmployee] = useState(null);
+  const [editEmployee, setEditEmployee] = useState(null);
+  const [deleteEmployee, setDeleteEmployee] = useState(null);
 
   // Get unique employee types for filter
   const employeeTypes = ['All', ...new Set(employees.map(emp => emp.type))];
-  const statusOptions = ['All', 'Active', 'Inactive'];
 
-  // Filter and search logic
+  // Filter and search logic (removed status filter)
   const filteredEmployees = useMemo(() => {
     return employees.filter(employee => {
       const matchesSearch = 
@@ -129,13 +205,11 @@ const EmployeeManagement = () => {
         employee.contact.includes(searchTerm);
       
       const matchesType = filterType === 'All' || employee.type === filterType;
-      const matchesStatus = filterStatus === 'All' || employee.status === filterStatus;
-      
-      return matchesSearch && matchesType && matchesStatus;
+      return matchesSearch && matchesType;
     });
-  }, [employees, searchTerm, filterType, filterStatus]);
+  }, [employees, searchTerm, filterType]);
 
-  // Sorting logic
+  // Rest of the sorting and pagination logic remains the same...
   const sortedEmployees = useMemo(() => {
     if (!sortConfig.key) return filteredEmployees;
     
@@ -149,7 +223,6 @@ const EmployeeManagement = () => {
     });
   }, [filteredEmployees, sortConfig]);
 
-  // Pagination logic
   const totalPages = Math.ceil(sortedEmployees.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedEmployees = sortedEmployees.slice(startIndex, startIndex + itemsPerPage);
@@ -165,19 +238,26 @@ const EmployeeManagement = () => {
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const getStatusColor = (status) => {
-    return status === 'Active' ? 'text-green-400' : 'text-red-400';
+  const handleAddEmployee = () => {
+    console.log('Navigate to add employee page');
+    // navigate('/admin/add-employee');
   };
 
-  const navigate = useNavigate();
+  // Modal handlers
+  const handleEditSave = (updatedEmployee) => {
+    setEmployees(employees.map(emp => 
+      emp.employee_id === updatedEmployee.employee_id ? updatedEmployee : emp
+    ));
+  };
 
-  const handleAddEmployee = () => {
-    navigate('/admin/add-employee');
+  const handleDeleteConfirm = () => {
+    setEmployees(employees.filter(emp => emp.employee_id !== deleteEmployee.employee_id));
+    setDeleteEmployee(null);
   };
 
   return (
     <div className="min-h-screen bg-gray-900 p-6">
-      {/* Header */}
+      {/* Header section remains the same... */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -190,8 +270,8 @@ const EmployeeManagement = () => {
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        {/* Stats Cards - removed inactive count */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
           <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
@@ -217,17 +297,6 @@ const EmployeeManagement = () => {
           <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-gray-400 text-xs sm:text-sm truncate">Inactive</p>
-                <p className="text-xl sm:text-2xl font-bold text-red-400 mt-1">{employees.filter(e => e.status === 'Inactive').length}</p>
-              </div>
-              <div className="bg-red-500 bg-opacity-20 p-2 sm:p-3 rounded-lg ml-3 flex-shrink-0">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-red-500 rounded"></div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
                 <p className="text-gray-400 text-xs sm:text-sm truncate">Departments</p>
                 <p className="text-xl sm:text-2xl font-bold text-yellow-400 mt-1">{employeeTypes.length - 1}</p>
               </div>
@@ -238,11 +307,10 @@ const EmployeeManagement = () => {
           </div>
         </div>
 
-        {/* Filters and Search */}
+        {/* Filters and Search - removed status filter */}
         <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 mb-6">
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
-              {/* Search */}
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <input
@@ -253,8 +321,6 @@ const EmployeeManagement = () => {
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 />
               </div>
-
-              {/* Type Filter */}
               <div className="relative">
                 <select
                   value={filterType}
@@ -269,25 +335,7 @@ const EmployeeManagement = () => {
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
               </div>
-
-              {/* Status Filter */}
-              <div className="relative">
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent appearance-none pr-10"
-                >
-                  {statusOptions.map(status => (
-                    <option key={status} value={status}>
-                      {status === 'All' ? 'All Status' : status}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-              </div>
             </div>
-
-            {/* Action Buttons */}
             <div className="flex gap-3">
               <button className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-lg flex items-center gap-2 transition-colors">
                 <Filter size={18} />
@@ -302,7 +350,7 @@ const EmployeeManagement = () => {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table - removed status column */}
       <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -315,7 +363,6 @@ const EmployeeManagement = () => {
                   { key: 'contact', label: 'Contact' },
                   { key: 'address', label: 'Address' },
                   { key: 'type', label: 'Type' },
-                  { key: 'status', label: 'Status' },
                   { key: 'actions', label: 'Actions' }
                 ].map(({ key, label }) => (
                   <th
@@ -338,7 +385,7 @@ const EmployeeManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {paginatedEmployees.map((employee, index) => (
+              {paginatedEmployees.map((employee) => (
                 <tr key={employee.employee_id} className="hover:bg-gray-750 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-yellow-400">
                     {employee.employee_id}
@@ -361,23 +408,23 @@ const EmployeeManagement = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                      employee.status === 'Active'
-                        ? 'text-green-400 border border-green-500'
-                        : 'text-red-400 border border-red-500'
-                    }`}>
-                      {employee.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button className="text-gray-400 hover:text-yellow-400 transition-colors p-1">
+                      <button 
+                        onClick={() => setViewEmployee(employee)}
+                        className="text-gray-400 hover:text-yellow-400 transition-colors p-1"
+                      >
                         <Eye size={16} />
                       </button>
-                      <button className="text-gray-400 hover:text-blue-400 transition-colors p-1">
+                      <button 
+                        onClick={() => setEditEmployee(employee)}
+                        className="text-gray-400 hover:text-blue-400 transition-colors p-1"
+                      >
                         <Edit size={16} />
                       </button>
-                      <button className="text-gray-400 hover:text-red-400 transition-colors p-1">
+                      <button 
+                        onClick={() => setDeleteEmployee(employee)}
+                        className="text-gray-400 hover:text-red-400 transition-colors p-1"
+                      >
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -388,7 +435,7 @@ const EmployeeManagement = () => {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination section remains the same... */}
         <div className="bg-gray-750 px-6 py-4 border-t border-gray-700">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -462,6 +509,30 @@ const EmployeeManagement = () => {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {viewEmployee && (
+        <EmployeeDetailsModal 
+          employee={viewEmployee} 
+          onClose={() => setViewEmployee(null)} 
+        />
+      )}
+      
+      {editEmployee && (
+        <EmployeeEditModal 
+          employee={editEmployee} 
+          onClose={() => setEditEmployee(null)}
+          onSave={handleEditSave}
+        />
+      )}
+      
+      {deleteEmployee && (
+        <DeleteConfirmModal 
+          employee={deleteEmployee} 
+          onClose={() => setDeleteEmployee(null)}
+          onConfirm={handleDeleteConfirm}
+        />
+      )}
     </div>
   );
 };

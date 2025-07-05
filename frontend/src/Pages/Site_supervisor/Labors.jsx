@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { 
-  Users, 
-  MapPin, 
-  Calendar, 
-  Save, 
-  FileText, 
-  TrendingUp, 
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import {
+  Users,
+  MapPin,
+  Calendar,
+  Save,
+  FileText,
+  TrendingUp,
   AlertCircle,
   CheckCircle,
   Search,
@@ -30,11 +31,49 @@ const laborCategories = [
   { id: 'helper', name: 'Helper', icon: '👷', color: 'bg-green-100 text-green-800' }
 ];
 
-export default function Labors  ()  {
+export default function Labors() {
+  const [sites, setSites] = useState([]);
+
   const [selectedSite, setSelectedSite] = useState('');
-  const [selectedDate, setSelectedDate] = useState(() =>
+  const [date, setSelectedDate] = useState(() =>
     new Date().toISOString().split('T')[0]
   );
+  const [hiring_type, setHiringType] = useState('');
+  const [labor_type, setLaborType] = useState('');
+  const [count, setCount] = useState('');
+  const [company, setCompany] = useState('');
+
+  useEffect(() => {
+    axios.get(`http://localhost:8086/api/v1/financial_officer`)
+      .then((res) => {
+        if (res.data) {
+          setSites(res.data); // Set all sites into state
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to fetch sites:', error);
+      });
+  }, []);
+
+
+  useEffect(() => {
+    axios.get(`http://localhost:8086/api/v1/site_supervisor`)
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setRecords(res.data);
+        } else {
+          console.warn("Unexpected response format:", res.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch attendance records:", err);
+      });
+  }, []);
+
+
+
+
+
   const [attendance, setAttendance] = useState({});
   const [thirdPartyAttendance, setThirdPartyAttendance] = useState({});
   const [records, setRecords] = useState([]);
@@ -42,22 +81,12 @@ export default function Labors  ()  {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('direct'); // 'direct' or 'thirdparty'
-  
-  // 3rd Party Company Management
-  const [thirdPartyCompanies, setThirdPartyCompanies] = useState([
-    { id: 'tp001', name: 'ABC Construction Services', contact: '+94 77 123 4567', specialization: 'Electrical Work' },
-    { id: 'tp002', name: 'Metro Builders Pvt Ltd', contact: '+94 71 987 6543', specialization: 'Plumbing & HVAC' },
-    { id: 'tp003', name: 'Elite Finishing Co.', contact: '+94 76 555 0123', specialization: 'Interior Finishing' }
-  ]);
+  const [thirdPartyCompanies, setThirdPartyCompanies] = useState([]);
+
+
   const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', contact: '', specialization: '' });
 
-  const sites = [
-    { id: 'site001', name: 'Colombo Highrise Project', location: 'Colombo, Western Province' },
-    { id: 'site002', name: 'Galle Road Mall Construction', location: 'Galle Road, Colombo' },
-    { id: 'site003', name: 'Airport Express Highway', location: 'Katunayake, Western Province' },
-    { id: 'site004', name: 'Kandy Convention Center', location: 'Kandy, Central Province' }
-  ];
 
   const handleSiteChange = (e) => {
     setSelectedSite(e.target.value);
@@ -72,27 +101,29 @@ export default function Labors  ()  {
     }));
   };
 
-  const handleThirdPartyCountChange = (companyId, value) => {
+  const handleThirdPartyCountChange = (labor_type, value) => {
     setThirdPartyAttendance((prev) => ({
       ...prev,
-      [companyId]: parseInt(value) || 0,
+      [labor_type]: parseInt(value) || 0,
     }));
   };
 
+
+
   const addThirdPartyCompany = () => {
     if (!newCompany.name.trim()) return;
-    
+
     const company = {
       id: `tp${Date.now()}`,
       name: newCompany.name,
       contact: newCompany.contact,
       specialization: newCompany.specialization
     };
-    
+
     setThirdPartyCompanies(prev => [...prev, company]);
     setNewCompany({ name: '', contact: '', specialization: '' });
     setShowAddCompanyModal(false);
-    
+
     // Success notification
     showNotification('3rd Party Company added successfully!', 'success');
   };
@@ -134,48 +165,71 @@ export default function Labors  ()  {
     }
 
     setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const directTotal = Object.values(attendance).reduce((sum, count) => sum + count, 0);
-    const thirdPartyTotal = Object.values(thirdPartyAttendance).reduce((sum, count) => sum + count, 0);
+    // 🔁 Create payload array
+    const directPayload = Object.entries(attendance).map(([labor_type, count]) => ({
+      project_id: selectedSite
+      ,// ensure it's a number
+      date: date,
+      hiring_type: "Direct worker",
+      labor_type,
+      count: parseInt(count),
+      company: ""
+    }));
 
-    const newRecord = {
-      id: Date.now(),
-      siteId: selectedSite,
-      siteName: sites.find((s) => s.id === selectedSite)?.name,
-      siteLocation: sites.find((s) => s.id === selectedSite)?.location,
-      date: selectedDate,
-      attendance,
-      thirdPartyAttendance,
-      thirdPartyCompanies: thirdPartyCompanies.filter(company => 
-        thirdPartyAttendance[company.id] > 0
-      ),
-      timestamp: new Date().toLocaleString(),
-      directTotal,
-      thirdPartyTotal,
-      grandTotal: directTotal + thirdPartyTotal
-    };
+    const thirdPartyPayload = Object.entries(thirdPartyAttendance).map(([labor_type, count]) => ({
+      project_id: selectedSite
+      ,// ensure it's a number
+      date: date,
+      hiring_type: "3rd party worker",
+      labor_type,
+      count: parseInt(count),
+      company,
+    }));
 
-    setRecords((prev) => [newRecord, ...prev]);
-    setAttendance({});
-    setThirdPartyAttendance({});
-    setIsSubmitting(false);
-    
-    showNotification('Attendance submitted successfully!', 'success');
+
+
+    const payload = [...directPayload, ...thirdPartyPayload];
+
+    console.log("Submitting payload:", JSON.stringify(payload, null, 2));
+
+    try {
+      await axios.post('http://localhost:8086/api/v1/site_supervisor', payload);
+      showNotification('Attendance submitted successfully!', 'success');
+      setAttendance({});
+      setThirdPartyAttendance({});
+    } catch (err) {
+      console.error("Submission failed:", err.response?.data || err.message);
+      showNotification('Failed to submit attendance', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+
   const deleteRecord = (id) => {
-    setRecords(prev => prev.filter(record => record.id !== id));
+    axios.delete(`http://localhost:8086/api/v1/site_supervisor`)
+      .then(() => {
+        setRecords(prev => prev.filter(record => record.id !== id));
+        setIsSaved(false);
+        setIsEditing(false);
+        alert('Deleted!');
+      })
+      .catch(() => alert('Failed to delete plan'));
     showNotification('Record deleted successfully!', 'success');
   };
 
+
   const filteredRecords = records.filter(record => {
-    const matchesSearch = record.siteName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         record.date.includes(searchQuery);
-    return matchesSearch;
+    const site = sites.find(site => site.projectId === record.project_id);
+    const siteName = site?.name || '';
+    const date = record?.date || '';
+    return (
+      siteName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      date.includes(searchQuery)
+    );
   });
+
 
   const totalDirectWorkers = records.reduce((sum, record) => sum + record.directTotal, 0);
   const totalThirdPartyWorkers = records.reduce((sum, record) => sum + record.thirdPartyTotal, 0);
@@ -266,7 +320,7 @@ export default function Labors  ()  {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Sites</p>
-                <p className="text-2xl font-bold text-indigo-600">{sites.length}</p>
+                <p className="text-2xl font-bold text-indigo-600"></p>
               </div>
               <div className="bg-indigo-100 p-3 rounded-lg">
                 <MapPin className="h-5 w-5 text-indigo-600" />
@@ -294,16 +348,17 @@ export default function Labors  ()  {
                 </label>
                 <select
                   value={selectedSite}
-                  onChange={handleSiteChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  onChange={(e) => setSelectedSite(e.target.value)}
+                  className="..."
                 >
                   <option value="">Choose a construction site...</option>
                   {sites.map((site) => (
-                    <option key={site.id} value={site.id}>
+                    <option key={site.id ?? site.name} value={site.projectId}>
                       {site.name}
                     </option>
                   ))}
                 </select>
+
                 {selectedSite && (
                   <p className="text-xs text-gray-500 mt-1">
                     📍 {sites.find(s => s.id === selectedSite)?.location}
@@ -319,7 +374,7 @@ export default function Labors  ()  {
                 </label>
                 <input
                   type="date"
-                  value={selectedDate}
+                  value={date}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 />
@@ -331,22 +386,20 @@ export default function Labors  ()  {
                   <div className="flex bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => setActiveTab('direct')}
-                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === 'direct'
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeTab === 'direct'
                           ? 'bg-white text-blue-600 shadow-sm'
                           : 'text-gray-600 hover:text-gray-800'
-                      }`}
+                        }`}
                     >
                       <Users className="inline h-4 w-4 mr-2" />
                       Direct Workers
                     </button>
                     <button
                       onClick={() => setActiveTab('thirdparty')}
-                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === 'thirdparty'
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeTab === 'thirdparty'
                           ? 'bg-white text-purple-600 shadow-sm'
                           : 'text-gray-600 hover:text-gray-800'
-                      }`}
+                        }`}
                     >
                       <Building2 className="inline h-4 w-4 mr-2" />
                       3rd Party
@@ -391,11 +444,46 @@ export default function Labors  ()  {
               {/* 3rd Party Workers Tab */}
               {selectedSite && activeTab === 'thirdparty' && (
                 <div className="space-y-4 mb-6">
-                  <div className="flex items-center justify-between">
+                  
                     <h3 className="text-sm font-medium text-gray-700 flex items-center">
                       <Building2 className="h-4 w-4 mr-2" />
                       3rd Party Companies
                     </h3>
+                    <input
+                      type="text"
+                      value={company}
+                      onChange={(e) => setCompany(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    />
+
+                    {laborCategories.map((category) => (
+                      <div key={category.id} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-lg">{category.icon}</span>
+                            <div>
+                              <span className="font-medium text-gray-900">{category.name}</span>
+                              <span className={`ml-2 px-2 py-1 rounded-full text-xs ${category.color}`}>
+                                {category.name}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                          value={thirdPartyAttendance[category.id] || ''}
+                          onChange={(e) => handleThirdPartyCountChange(category.id, e.target.value)}
+                        />
+                      </div>
+                    ))}
+
+
+
+
+
                     <button
                       onClick={() => setShowAddCompanyModal(true)}
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
@@ -403,8 +491,8 @@ export default function Labors  ()  {
                       <Plus className="h-4 w-4 mr-1" />
                       Add Company
                     </button>
-                  </div>
                   
+
                   {thirdPartyCompanies.map((company) => (
                     <div key={company.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
@@ -433,7 +521,7 @@ export default function Labors  ()  {
                       />
                     </div>
                   ))}
-                  
+
                   {thirdPartyCompanies.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <Building2 className="h-12 w-12 mx-auto mb-2 text-gray-300" />
@@ -479,7 +567,7 @@ export default function Labors  ()  {
                     Attendance Records
                   </h3>
                 </div>
-                
+
                 {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -524,20 +612,23 @@ export default function Labors  ()  {
                         <tr key={record.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
-                              <div className="font-medium text-gray-900">{record.siteName}</div>
+                              <div className="font-medium text-gray-900">
+                                {sites.find(site => site.projectId === record.project_id)?.name || 'Unknown Site'}
+                              </div>
+
                               <div className="text-sm text-gray-500">{new Date(record.date).toLocaleDateString()}</div>
-                              <div className="text-xs text-gray-400">{record.timestamp}</div>
+
                             </div>
                           </td>
                           <td className="px-6 py-4 text-center">
                             <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-800 text-sm font-medium">
-                              {record.directTotal}
+                              {record.count}
                             </span>
-                            <div className="text-xs text-gray-500 mt-1">
+                            {/*}  <div className="text-xs text-gray-500 mt-1">
                               {laborCategories.map(cat => 
                                 record.attendance[cat.id] ? `${cat.icon}${record.attendance[cat.id]} ` : ''
                               ).join('')}
-                            </div>
+                            </div>*/}
                           </td>
                           <td className="px-6 py-4 text-center">
                             <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium">
@@ -562,7 +653,7 @@ export default function Labors  ()  {
                             <button className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors">
                               <Edit3 className="h-4 w-4" />
                             </button>
-                            <button 
+                            <button
                               onClick={() => deleteRecord(record.id)}
                               className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
                             >
@@ -580,44 +671,44 @@ export default function Labors  ()  {
         </div>
 
         {showAddCompanyModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Add 3rd Party Company</h3>
-        <button
-          onClick={() => setShowAddCompanyModal(false)}
-          className="text-gray-400 hover:text-gray-600"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Add 3rd Party Company</h3>
+                <button
+                  onClick={() => setShowAddCompanyModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
-          <input
-            type="text"
-            value={newCompany.name}
-            onChange={(e) => setNewCompany(prev => ({ ...prev, name: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter company name"
-          />
-        </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+                  <input
+                    type="text"
+                    value={newCompany.name}
+                    onChange={(e) => setNewCompany(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter company name"
+                  />
+                </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-          <input
-            type="text"
-            value={newCompany.contact}
-            onChange={(e) => setNewCompany(prev => ({ ...prev, contact: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="e.g., +94 77 123 4567"
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                  <input
+                    type="text"
+                    value={newCompany.contact}
+                    onChange={(e) => setNewCompany(prev => ({ ...prev, contact: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., +94 77 123 4567"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

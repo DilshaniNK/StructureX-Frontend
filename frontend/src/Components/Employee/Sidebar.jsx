@@ -11,8 +11,14 @@ import TodoList from '@mui/icons-material/ListAltOutlined';
 
 
 import { 
-  Home, Users, BarChart3, Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader
+  Home, Users, BarChart3, Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader,
+  FolderOpen,
+  User,
+  MapPin,
+  Package,
+  FileText
 } from 'lucide-react';
+
 
 const Sidebar = ({ 
   userRole = 'Designer', 
@@ -59,6 +65,16 @@ const Sidebar = ({
       { id: 'to do', label: 'To-Do', icon: TodoList, path: '/site_supervisor/to-do', badge: '5' },
       { id: 'calendar', label: 'Calendar', icon: Calendar , path: '/site_supervisor/calendar', badge: null },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/site_supervisor/settings', badge: '5' }
+    ],
+    Director: [
+      { id: 'home', label: 'Home', icon: Home, path: '/director/home', badge: null},
+      { id: 'projects', label: 'Projects', icon: FolderOpen, path: '/director/projects'},
+      { id: 'teammanagment', label: 'Team Management', icon: User, path: '/director/teammanagment'},
+      { id: 'sitevisit', label: 'Site Visite', icon: MapPin, path: '/director/sitevisit'},
+      { id: 'inventory', label: 'Inventory', icon: Package, path: '/director/inventory'},
+      { id: 'documents', label: 'Documents', icon: FileText, path: '/director/documents'},
+
+
     ]
   };
 

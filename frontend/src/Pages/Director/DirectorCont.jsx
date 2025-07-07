@@ -3,6 +3,7 @@ import Navbar from '../../Components/Employee/Navbar'
 import { Routes,Route } from 'react-router-dom'
 
 import ProjectDetails from './ProjectDetails'
+import Clientdetails from './Clientdetails'
 
 const DirectorCont = () => {
 
@@ -17,6 +18,8 @@ const DirectorCont = () => {
       <Navbar/>
       <Routes>
         <Route path='/project/:id' element={<ProjectDetails/>}/>
+        <Route path='/clientdetails' element={<Clientdetails/>}/>
+
       </Routes>
     </div>
   )

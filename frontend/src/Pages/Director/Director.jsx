@@ -12,6 +12,7 @@ import Document from './Document';
 
 
 
+
 const Director = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const userRole = 'Director'; // Change this based on your user's actual role
@@ -63,6 +64,7 @@ const Director = () => {
             <Route path='/sitevisit' element={<SiteVisit/>}/>
             <Route path='/inventory' element={<Inventory/>}/>
             <Route path='/documents' element={<Document/>}/>
+            
           </Routes>
 
         </div>

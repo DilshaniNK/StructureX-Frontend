@@ -3,6 +3,7 @@ import React from 'react';
 import OverviewStats from '../../Components/Director/OverviewStats';
 import RecentProjects from '../../Components/Director/RecentProjects';
 import UpcomingSiteVisits from '../../Components/Director/UpcomingSiteVisits';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const projects = [
@@ -23,6 +24,7 @@ const Dashboard = () => {
   const siteVisits = [
     { id: 1, project: "Green Heights Apartments", date: "2024-06-11", inspector: "Sarah Davis", status: "scheduled" },
   ];
+  const navigate = useNavigate();
 
   return (
   
@@ -36,11 +38,16 @@ const Dashboard = () => {
     
     <div className=" space-y-6">
       <OverviewStats projects={projects} />
-
+        <button className="bg-amber-500 hover:bg-black text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out"
+        onClick={() => navigate('/directorcont/clientdetails')}
+        >
+        Register Client
+        </button>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentProjects projects={projects} />
         <UpcomingSiteVisits siteVisits={siteVisits} />
       </div>
+     
     </div>
    
    

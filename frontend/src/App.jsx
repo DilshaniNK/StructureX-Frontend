@@ -38,6 +38,7 @@ const App = () => {
             
             
             <Route path="/legal_officer/*" element={<LegalOfficer />} />
+
             <Route path="/qs/*" element={<QS/>}/>
             <Route path="/sqs/*" element={<SQS/>}/>
             <Route path="/supplier/*" element={<Supplier/>}/>

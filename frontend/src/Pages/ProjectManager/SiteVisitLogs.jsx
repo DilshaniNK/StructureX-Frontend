@@ -268,10 +268,10 @@ const SiteVisitLogs = () => {
                       <CircleMinus size={20} className="m-1" />
                       Rejected
                     </button>
-                    <button className="flex p-3 bg-amber-400 text-gray-900 cursor-pointer hover:bg-amber-200  rounded-lg py-2 font-medium m-2">
+                    {/* <button className="flex p-3 bg-amber-400 text-gray-900 cursor-pointer hover:bg-amber-200  rounded-lg py-2 font-medium m-2">
                       <Check size={20} className="m-1" />
                       Completed
-                    </button>
+                    </button> */}
                   </td>
                 </tr>
             </tbody>

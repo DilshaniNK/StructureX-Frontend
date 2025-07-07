@@ -898,29 +898,29 @@ function Projects() {
           </div>
         )
 
-      // case 'materials':
-      //   return (
-      //     <div className="space-y-6">
-      //       <h3 className="text-lg font-semibold text-gray-900">Material Management</h3>
-      //       <div className="space-y-4">
-      //         {[
-      //           { item: 'Cement', remaining: '50 bags', status: 'Approved' },
-      //           { item: 'Steel Bars', remaining: '200 units', status: 'Pending' },
-      //           { item: 'Bricks', remaining: '5000 pieces', status: 'Approved' }
-      //         ].map((material, index) => (
-      //           <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-      //             <div>
-      //               <span className="font-medium text-gray-900">{material.item}</span>
-      //               <p className="text-sm text-gray-600">{material.remaining} remaining</p>
-      //             </div>
-      //             <span className={`text-xs px-2 py-1 rounded-full ${material.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-      //               {material.status}
-      //             </span>
-      //           </div>
-      //         ))}
-      //       </div>
-      //     </div>
-      //   )
+      case 'materials':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900">Material Management</h3>
+            <div className="space-y-4">
+              {[
+                { item: 'Cement', remaining: '50 bags', status: 'Approved' },
+                { item: 'Steel Bars', remaining: '200 units', status: 'Pending' },
+                { item: 'Bricks', remaining: '5000 pieces', status: 'Approved' }
+              ].map((material, index) => (
+                <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <span className="font-medium text-gray-900">{material.item}</span>
+                    <p className="text-sm text-gray-600">{material.remaining} remaining</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full ${material.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    {material.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
 
       // case 'visits':
       //   return (
@@ -1235,7 +1235,8 @@ function Projects() {
                 { id: 'design', label: 'Design/Plans' },
                 { id: 'wbs', label: 'WBS & Milestones' },
                 { id: 'boq', label: 'BOQ Summary' },
-                { id: 'financial', label: 'Financial' }
+                { id: 'financial', label: 'Financial' },
+                { id: 'materials', label: 'Materials' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1274,7 +1275,7 @@ function Projects() {
                   onClick={() => setActiveTab('ongoing')}
                   className={`px-4 py-2 rounded-md font-medium transition duration-200 ${activeTab === 'ongoing'
                     ? 'bg-amber-400 text-white'
-                    : 'bg-white text-blue-600 border border-blue-600 hover:bg-blue-50'
+                    : 'bg-white text-amber-400 border border-amber-400 hover:bg-blue-50'
                     }`}
                 >
                   Ongoing Projects
@@ -1282,7 +1283,7 @@ function Projects() {
                 <button
                   onClick={() => setActiveTab('finished')}
                   className={`px-4 py-2 rounded-md font-medium transition duration-200 ${activeTab === 'finished'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-amber-400 text-white'
                     : 'bg-white text-amber-400 border border-amber-400 hover:bg-blue-50'
                     }`}
                 >

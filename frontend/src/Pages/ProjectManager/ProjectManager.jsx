@@ -5,13 +5,11 @@ import Sidebar from '../../Components/Employee/Sidebar';
 import Main from './Home';
 import DailyUpdates from './DailyUpdates';
 import Materials from './Materials';
-import ProjectProgress from './ProjectProgress';
 import SiteVisitLogs from './SiteVisitLogs';
 import TodoList from './TodoList';
 import Chat from './Chat';
 
 import Notification from '../../Components/Employee/Notification'
-import Projectdetails from './Projectdetails';
 import Projects from './Projects';
 
 export default function Home() {
@@ -32,11 +30,9 @@ export default function Home() {
     if (path.includes('/projectmanager/dailyupdates')) return 'dailyupdates';
     if (path.includes('/projectmanager/projects')) return 'projects';
     if (path.includes('/projectmanager/materials')) return 'materials';
-    if (path.includes('/projectmanager/projectprogress')) return 'projectprogress';
     if (path.includes('/projectmanager/sitevisitlogs')) return 'sitevisitlogs';
     if (path.includes('/projectmanager/todolist')) return 'todolist';
     if (path.includes('/projectmanager/chat')) return 'chat';
-    if (path.includes('/projectmanager/projectdetails')) return 'projectdetails';
     if (path.includes('/projectmanager/notifications')) return 'notifications';
     return 'home'; // default
   };
@@ -68,11 +64,9 @@ export default function Home() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/materials" element={<Materials />} />
             <Route path="/notifications" element={<Notification />} />
-            <Route path="/projectprogress" element={<ProjectProgress />} />
             <Route path="/sitevisitlogs" element={<SiteVisitLogs />} />
             <Route path="/todolist" element={<TodoList />} />
             <Route path="/chat" element={<Chat />} />
-            <Route path="/projectdetails" element={<Projectdetails />} />
             {/* Add more routes as needed */}
 
           </Routes>

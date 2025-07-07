@@ -27,18 +27,9 @@ const Home = () => {
     const handleSiteUpdate = () =>{
       navigate('/projectmanager/dailyupdates');
     };
-    const handleprojectdetails = () =>{
-      navigate('/projectmanager/projectdetails');
-    };
+    
   return (
     <div className="space-y-8">
-      {/* Header */}
-      {/* <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your projects today.</p>
-      </div> */}
-
-      {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
@@ -114,7 +105,7 @@ const Home = () => {
       </div>
 
       {/* Project Summary & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="flex w-full flex-col lg:grid-cols-2 gap-8">
         {/* Project Summary */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Active Projects</h2>
@@ -159,68 +150,6 @@ const Home = () => {
                 <span className="text-sm text-gray-600">60%</span>
               </div> */}
               <button onClick={handleViewClick} className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Projects Detilas</h2>
-          <div className="space-y-4">
-           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Residential Towers</h3>
-                <p className="text-sm text-gray-600">Due: June 30, 2025</p>
-              </div>
-              {/* <div className="text-right">
-                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
-                  <div className="bg-secondary-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                </div>
-                <span className="text-sm text-gray-600">45%</span>
-              </div> */}
-              <button onClick={handleprojectdetails}  className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Residential Towers</h3>
-                <p className="text-sm text-gray-600">Due: June 30, 2025</p>
-              </div>
-              {/* <div className="text-right">
-                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
-                  <div className="bg-secondary-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                </div>
-                <span className="text-sm text-gray-600">45%</span>
-              </div> */}
-              <button  className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
-            </div>
-
-           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Residential Towers</h3>
-                <p className="text-sm text-gray-600">Due: June 30, 2025</p>
-              </div>
-              {/* <div className="text-right">
-                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
-                  <div className="bg-secondary-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                </div>
-                <span className="text-sm text-gray-600">45%</span>
-              </div> */}
-              <button  className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
-            </div>
-
-           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Residential Towers</h3>
-                <p className="text-sm text-gray-600">Due: June 30, 2025</p>
-              </div>
-              {/* <div className="text-right">
-                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
-                  <div className="bg-secondary-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                </div>
-                <span className="text-sm text-gray-600">45%</span>
-              </div> */}
-              <button  className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
           </div>
         </div>

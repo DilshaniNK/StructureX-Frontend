@@ -1,28 +1,119 @@
 import React, { useState, useEffect } from "react";
-
-
-import HomeWorkIcon from '@mui/icons-material/HomeWork';
-import CorporateFareIcon from '@mui/icons-material/CorporateFare';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import HolidayVillageIcon from '@mui/icons-material/HolidayVillage';
+import { 
+  Search, 
+  Filter, 
+  Eye, 
+  Edit, 
+  Trash2, 
+  Plus, 
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  Users,
+  MapPin,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Pause,
+  Building,
+  GraduationCap,
+  ShoppingBag,
+  Dumbbell
+} from 'lucide-react';
 
 const sampleProjects = [
-  { id: 1, name: "Tower A", budget: 500000, spent: 420000, status: "Active"},
-  { id: 2, name: "Bridge Renovation", budget: 300000, spent: 280000, status: "Completed" },
-  { id: 3, name: "Mall B", budget: 700000, spent: 400000, status: "Pending" },
-  { id: 4, name: "Highway Extension", budget: 900000, spent: 750000, status: "Active"},
-  { id: 5, name: "Office Park", budget: 600000, spent: 600000, status: "Completed"},
+  { 
+    id: 1, 
+    name: "Luxury Tower A - Phase 1", 
+    budget: 50000000, 
+    spent: 42000000, 
+    status: "Active",
+    category: "Housing",
+    location: "Colombo 03",
+    startDate: "2024-01-15",
+    expectedCompletion: "2025-06-30",
+    manager: "John Silva",
+    progress: 84
+  },
+  { 
+    id: 2, 
+    name: "Golden Gate Bridge Renovation", 
+    budget: 30000000, 
+    spent: 28000000, 
+    status: "Completed",
+    category: "Infrastructure",
+    location: "Kandy",
+    startDate: "2023-03-10",
+    expectedCompletion: "2024-02-15",
+    manager: "Sarah Fernando",
+    progress: 100
+  },
+  { 
+    id: 3, 
+    name: "Central Mall Complex B", 
+    budget: 70000000, 
+    spent: 40000000, 
+    status: "Active",
+    category: "Commercial",
+    location: "Galle",
+    startDate: "2024-05-20",
+    expectedCompletion: "2025-12-01",
+    manager: "Mike Perera",
+    progress: 57
+  },
+  { 
+    id: 4, 
+    name: "Southern Highway Extension", 
+    budget: 90000000, 
+    spent: 75000000, 
+    status: "On Hold",
+    category: "Infrastructure",
+    location: "Matara",
+    startDate: "2023-08-01",
+    expectedCompletion: "2025-03-15",
+    manager: "David Rajapaksa",
+    progress: 83
+  },
+  { 
+    id: 5, 
+    name: "Corporate Office Park", 
+    budget: 60000000, 
+    spent: 60000000, 
+    status: "Completed",
+    category: "Commercial",
+    location: "Negombo",
+    startDate: "2023-01-05",
+    expectedCompletion: "2024-01-30",
+    manager: "Lisa Mendis",
+    progress: 100
+  },
+  { 
+    id: 6, 
+    name: "International School Campus", 
+    budget: 45000000, 
+    spent: 12000000, 
+    status: "Pending",
+    category: "Educational",
+    location: "Mount Lavinia",
+    startDate: "2024-08-01",
+    expectedCompletion: "2026-05-15",
+    manager: "Robert De Silva",
+    progress: 27
+  }
 ];
 
 const ProjectsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("name");
+  const [viewMode, setViewMode] = useState("table"); // table or cards
 
   // Count-up animation states
   const [housingCount, setHousingCount] = useState(0);
   const [commercialCount, setCommercialCount] = useState(0);
   const [educationCount, setEducationCount] = useState(0);
-  const [sportsCount, setSportsCount] = useState(0);
+  const [infrastructureCount, setInfrastructureCount] = useState(0);
 
   useEffect(() => {
     const animateCount = (target, setter) => {
@@ -38,122 +129,390 @@ const ProjectsPage = () => {
       }, 100);
     };
 
-    animateCount(12, setHousingCount);
-    animateCount(5, setCommercialCount);
-    animateCount(5, setEducationCount);
-    animateCount(4, setSportsCount);
+    animateCount(15, setHousingCount);
+    animateCount(8, setCommercialCount);
+    animateCount(6, setEducationCount);
+    animateCount(12, setInfrastructureCount);
   }, []);
 
   const filteredProjects = sampleProjects.filter((project) => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.manager.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "All" || project.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesCategory = categoryFilter === "All" || project.category === categoryFilter;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    switch (sortBy) {
+      case "budget":
+        return b.budget - a.budget;
+      case "progress":
+        return b.progress - a.progress;
+      case "status":
+        return a.status.localeCompare(b.status);
+      default:
+        return a.name.localeCompare(b.name);
+    }
+  });
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "Completed":
+        return <CheckCircle className="h-4 w-4" />;
+      case "Active":
+        return <Clock className="h-4 w-4" />;
+      case "On Hold":
+        return <Pause className="h-4 w-4" />;
+      case "Pending":
+        return <AlertCircle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Completed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "Active":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "On Hold":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case "Housing":
+        return <Building className="h-5 w-5" />;
+      case "Commercial":
+        return <ShoppingBag className="h-5 w-5" />;
+      case "Educational":
+        return <GraduationCap className="h-5 w-5" />;
+      case "Infrastructure":
+        return <Dumbbell className="h-5 w-5" />;
+      default:
+        return <Building className="h-5 w-5" />;
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-LK', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const totalBudget = sampleProjects.reduce((sum, project) => sum + project.budget, 0);
+  const totalSpent = sampleProjects.reduce((sum, project) => sum + project.spent, 0);
+  const activeProjects = sampleProjects.filter(p => p.status === "Active").length;
+  const completedProjects = sampleProjects.filter(p => p.status === "Completed").length;
+
   return (
-    <div>
-      <div>
-        <h1 className="text-center justify-center align-middle text-3xl mb-15">Ongoing Projects</h1>
-        
-        {/* Top Cards */}
-        <div className="flex flex-wrap gap-8 mb-20">
-          <div className="flex-1 min-w-[200px] border-black border-4 hover:border-amber-500 p-6 rounded-lg text-center">
-            <HomeWorkIcon className="text-amber-400" style={{ fontSize: '60px' }} />
-            <h3 className="mb-2">Housing Complexes & Real Estate</h3>
-            <p className="text-3xl font-bold text-amber-500">{housingCount}+</p>
-          </div>
-
-          <div className="flex-1 min-w-[200px] border-black border-4 hover:border-amber-500 p-6 rounded-lg text-center">
-            <CorporateFareIcon className="text-amber-400" style={{ fontSize: '60px' }} />
-            <h3 className="mb-2">Commercial Buildings</h3>
-            <p className="text-3xl font-bold text-amber-500">{commercialCount}+</p>
-          </div>
-
-          <div className="flex-1 min-w-[200px] border-black border-4 hover:border-amber-500 p-6 rounded-lg text-center">
-            <AccountBalanceIcon className="text-amber-400" style={{ fontSize: '60px' }} />
-            <h3 className="mb-2">Educational Institutes</h3>
-            <p className="text-3xl font-bold text-amber-500">{educationCount}+</p>
-          </div>
-
-          <div className="flex-1 min-w-[200px] border-black border-4 hover:border-amber-500 p-6 rounded-lg text-center">
-            <HolidayVillageIcon className="text-amber-400" style={{ fontSize: '60px' }} />
-            <h3 className="mb-2">Sports & Hotel Complexes</h3>
-            <p className="text-3xl font-bold text-amber-500">{sportsCount}+</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Project Portfolio</h1>
+                <p className="mt-1 text-sm text-gray-500">Manage and monitor all construction projects</p>
+              </div>
+              <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <Plus className="h-4 w-4 mr-2" />
+                New Project
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Search & Filter */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search by project name..."
-          className="w-full md:w-1/2 p-2 border-2 rounded"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select
-          className="w-full md:w-1/4 p-2 border-2 rounded"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="All">All Statuses</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-          <option value="Pending">Pending</option>
-        </select>
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Overview Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Budget</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalBudget)}</p>
+              </div>
+              <div className="bg-green-100 p-3 rounded-full">
+                <DollarSign className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Spent</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalSpent)}</p>
+              </div>
+              <div className="bg-blue-100 p-3 rounded-full">
+                <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Projects</p>
+                <p className="text-2xl font-bold text-gray-900">{activeProjects}</p>
+              </div>
+              <div className="bg-orange-100 p-3 rounded-full">
+                <Clock className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-2xl font-bold text-gray-900">{completedProjects}</p>
+              </div>
+              <div className="bg-green-100 p-3 rounded-full">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+        </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto bg-white rounded shadow">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-black text-white">
-            <tr>
-              <th className="px-4 py-2">Project Name</th>
-              <th className="px-4 py-2">Budget ($)</th>
-              <th className="px-4 py-2">Spent ($)</th>
-              <th className="px-4 py-2">Remaining ($)</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredProjects.length > 0 ? (
-              filteredProjects.map((project) => (
-                <tr key={project.id} className="border-t hover:bg-gray-100">
-                  <td className="px-4 py-2 font-medium">{project.name}</td>
-                  <td className="px-4 py-2">{project.budget.toLocaleString()}</td>
-                  <td className="px-4 py-2">{project.spent.toLocaleString()}</td>
-                  <td className="px-4 py-2">
-                    {(project.budget - project.spent).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        project.status === "Completed"
-                          ? "bg-green-200 text-green-800"
-                          : project.status === "Active"
-                          ? "bg-blue-200 text-blue-800"
-                          : "bg-yellow-200 text-yellow-800"
-                      }`}
-                    >
-                      {project.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <button className="text-blue-600 hover:underline">View</button>
-                  </td>
+        {/* Category Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="group bg-gradient-to-br from-amber-50 to-orange-100 border-2 border-amber-200 hover:border-amber-400 p-6 rounded-xl text-center transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
+            <div className="bg-amber-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+              <Building className="text-white" style={{ fontSize: '32px' }} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Housing Complexes</h3>
+            <p className="text-3xl font-bold text-amber-600">{housingCount}+</p>
+            <p className="text-sm text-gray-600 mt-1">Residential Projects</p>
+          </div>
+
+          <div className="group bg-gradient-to-br from-blue-50 to-indigo-100 border-2 border-blue-200 hover:border-blue-400 p-6 rounded-xl text-center transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
+            <div className="bg-blue-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+              <ShoppingBag className="text-white" style={{ fontSize: '32px' }} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Commercial Buildings</h3>
+            <p className="text-3xl font-bold text-blue-600">{commercialCount}+</p>
+            <p className="text-sm text-gray-600 mt-1">Business Centers</p>
+          </div>
+
+          <div className="group bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-200 hover:border-green-400 p-6 rounded-xl text-center transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
+            <div className="bg-green-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+              <GraduationCap className="text-white" style={{ fontSize: '32px' }} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Educational Institutes</h3>
+            <p className="text-3xl font-bold text-green-600">{educationCount}+</p>
+            <p className="text-sm text-gray-600 mt-1">Schools & Universities</p>
+          </div>
+
+          <div className="group bg-gradient-to-br from-purple-50 to-violet-100 border-2 border-purple-200 hover:border-purple-400 p-6 rounded-xl text-center transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1">
+            <div className="bg-purple-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+              <Dumbbell className="text-white" style={{ fontSize: '32px' }} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Infrastructure Projects</h3>
+            <p className="text-3xl font-bold text-purple-600">{infrastructureCount}+</p>
+            <p className="text-sm text-gray-600 mt-1">Roads & Bridges</p>
+          </div>
+        </div>
+
+        {/* Filters and Controls */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search projects, managers, or locations..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex gap-4">
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="All">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Completed">Completed</option>
+                <option value="Pending">Pending</option>
+                <option value="On Hold">On Hold</option>
+              </select>
+              
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <option value="All">All Categories</option>
+                <option value="Housing">Housing</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Educational">Educational</option>
+                <option value="Infrastructure">Infrastructure</option>
+              </select>
+              
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="name">Sort by Name</option>
+                <option value="budget">Sort by Budget</option>
+                <option value="progress">Sort by Progress</option>
+                <option value="status">Sort by Status</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Projects Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Project Details
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Budget & Spent
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Progress
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Timeline
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="text-center p-4 text-gray-500">
-                  No projects found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sortedProjects.length > 0 ? (
+                  sortedProjects.map((project) => (
+                    <tr key={project.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                              {getCategoryIcon(project.category)}
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{project.name}</div>
+                            <div className="text-sm text-gray-500 flex items-center">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {project.location} • {project.manager}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 font-medium">
+                          {formatCurrency(project.budget)}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Spent: {formatCurrency(project.spent)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-1">
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-700">{project.progress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full ${
+                                  project.progress === 100
+                                    ? 'bg-green-500'
+                                    : project.progress >= 70
+                                    ? 'bg-blue-500'
+                                    : project.progress >= 40
+                                    ? 'bg-yellow-500'
+                                    : 'bg-red-500'
+                                }`}
+                                style={{ width: `${project.progress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center mb-1">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          Started: {formatDate(project.startDate)}
+                        </div>
+                        <div className="flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Due: {formatDate(project.expectedCompletion)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(project.status)}`}>
+                          {getStatusIcon(project.status)}
+                          <span className="ml-1">{project.status}</span>
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center space-x-2">
+                          <button className="text-blue-600 hover:text-blue-900 transition-colors">
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button className="text-green-600 hover:text-green-900 transition-colors">
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button className="text-red-600 hover:text-red-900 transition-colors">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center py-12">
+                      <div className="text-gray-500">
+                        <Building className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No projects found</p>
+                        <p className="text-sm">Try adjusting your search or filter criteria</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

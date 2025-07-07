@@ -38,14 +38,15 @@ const App = () => {
             <Route path="/example/*" element={<Example />} />
             <Route path="/designer/*" element={<Designer />} />
             <Route path="/legal_officer/*" element={<LegalOfficer />} />
+            
+            
+            
+            <Route path="/legal_officer/*" element={<LegalOfficer />} />
+
             <Route path="/qs/*" element={<QS/>}/>
             <Route path="/sqs/*" element={<SQS/>}/>
             <Route path="/supplier/*" element={<Supplier/>}/>
             <Route path="/project_owner/*" element={<ProjectOwner/>}/>
-           
-
-
-
             <Route path="/" element={<Home/>}/>
             <Route path="/admin/*" element={<Admin/>}/>
             <Route path="/financial_officer/*" element={<FinancialOfficer/>}/>

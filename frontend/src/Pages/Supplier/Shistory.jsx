@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import { History, Filter, Calendar, Package, Search, Eye, X, Download } from "lucide-react"
 import { cn } from '../../Utils/cn'
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+// import 'jspdf-autotable'
 
 const mockSupplyHistory = [
   {

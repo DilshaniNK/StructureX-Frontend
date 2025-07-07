@@ -222,7 +222,6 @@ export default function ProjectDetails({ projectId, onBack, user }) {
             {[
               { key: 'documents', label: 'Legal Documents', count: documents.length },
               { key: 'processes', label: 'Legal Processes', count: processes.length },
-              { key: 'audit', label: 'Audit Trail', count: 0 }
             ].map(tab => (
               <button
                 key={tab.key}
@@ -372,27 +371,6 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                 </div>
               ))
             )}
-          </div>
-        )}
-
-        {activeTab === 'audit' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Audit Trail</h3>
-            <div className="space-y-4">
-              {processes.map(process => (
-                <div key={process.id} className="border-l-4 border-blue-200 pl-4 py-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-gray-900">{process.name}</h4>
-                    <span className="text-sm text-gray-500">
-                      {new Date(process.lastUpdated).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Status updated by {process.createdBy}
-                  </p>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </main>

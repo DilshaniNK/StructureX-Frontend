@@ -138,16 +138,20 @@ const Navbar = ({
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item)}
-                className={`group flex items-center px-5 py-3 text-sm font-medium transition-all duration-200 ${
+                className={`group flex items-center px-5 py-3 text-sm font-medium transition-all duration-200 relative ${
                   isActive
-                    ? 'bg-[#FAAD00] text-white shadow-md transform scale-105 rounded-lg'
-                    : 'text-gray-700 hover:text-[#FAAD00] hover:bg-transparent'
+                    ? 'text-[#FAAD00]'
+                    : 'text-gray-700 hover:text-[#FAAD00]'
                 }`}
               >
                 <Icon className={`mr-3 h-4 w-4 transition-transform duration-200 ${
                   isActive ? '' : 'group-hover:scale-110'
                 }`} />
                 <span className="font-medium">{item.label}</span>
+                {/* Underline for active state */}
+                {isActive && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FAAD00] rounded-full"></div>
+                )}
               </button>
             );
           })}
@@ -284,16 +288,20 @@ const Navbar = ({
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item)}
-                  className={`group flex items-center w-full px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                  className={`group flex items-center w-full px-4 py-3 text-sm font-medium transition-all duration-200 relative ${
                     isActive
-                      ? 'bg-[#FAAD00] text-white shadow-md rounded-lg'
-                      : 'text-gray-700 hover:text-[#FAAD00] hover:bg-transparent'
+                      ? 'text-[#FAAD00]'
+                      : 'text-gray-700 hover:text-[#FAAD00]'
                   }`}
                 >
                   <Icon className={`mr-4 h-5 w-5 transition-transform duration-200 ${
                     isActive ? '' : 'group-hover:scale-110'
                   }`} />
                   <span>{item.label}</span>
+                  {/* Underline for active state in mobile */}
+                  {isActive && (
+                    <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#FAAD00] rounded-full"></div>
+                  )}
                 </button>
               );
             })}

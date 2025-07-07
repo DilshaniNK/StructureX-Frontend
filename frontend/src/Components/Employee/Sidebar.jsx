@@ -12,11 +12,14 @@ import TodoList from '@mui/icons-material/ListAltOutlined';
 
 
 import { 
-  Home, Users, BarChart3,ChartSpline ,BookmarkCheck ,ClipboardPenLine ,UserRoundSearch , Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader, FileText, Truck, Package, Receipt, icons
+  Home, Users, BarChart3,ChartSpline ,BookmarkCheck ,ClipboardPenLine ,UserRoundSearch , Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader, FileText, Truck, Package, Receipt, icons,FolderOpen,User,MapPin
 } from 'lucide-react';
 
-const Sidebar = ({
-  userRole = 'Designer',
+
+
+
+const Sidebar = ({ 
+  userRole = 'Designer', 
   activeItem = 'home',
   onNavigate,
   isSidebarOpen,
@@ -89,6 +92,16 @@ const Sidebar = ({
       { id: 'shistory', label: 'Supply History', icon: Package, path: '/supplier/shistory', badge: '5' },
       { id: 'invoices', label: 'Invoices', icon: Receipt, path: '/supplier/invoices', badge: null },
       { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/supplier/messages', badge: null }
+    ],
+    Director: [
+      { id: 'home', label: 'Home', icon: Home, path: '/director/home', badge: null},
+      { id: 'projects', label: 'Projects', icon: FolderOpen, path: '/director/projects'},
+      { id: 'teammanagment', label: 'Team Management', icon: User, path: '/director/teammanagment'},
+      { id: 'sitevisit', label: 'Site Visite', icon: MapPin, path: '/director/sitevisit'},
+      { id: 'inventory', label: 'Inventory', icon: Package, path: '/director/inventory'},
+      { id: 'documents', label: 'Documents', icon: FileText, path: '/director/documents'},
+
+
     ]
   };
 

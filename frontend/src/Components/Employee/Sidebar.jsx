@@ -52,7 +52,6 @@ const Sidebar = ({
       { id: 'dailyupdates', label: 'Daily Updates', icon: Rocket, path: '/projectmanager/dailyupdates', badge: null },
       { id: 'projects', label: 'Projects', icon: Loader, path: '/projectmanager/projects', badge: null },
       { id: 'materials', label: 'Materials', icon: BadgeCheck, path: '/projectmanager/materials', badge: null },
-      { id: 'projectprogress', label: 'Project Progress', icon: ChartSpline, path: '/projectmanager/projectprogress', badge: null },
       { id: 'sitevisitlogs', label: 'Site Visit Logs', icon: BookmarkCheck, path: '/projectmanager/sitevisitlogs', badge: null },
       { id: 'todolist', label: 'Todo List', icon: ClipboardPenLine, path: '/projectmanager/todolist', badge: null },
       { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/projectmanager/chat', badge: null },
@@ -69,7 +68,7 @@ const Sidebar = ({
       { id: 'settings', label: 'Settings', icon: Settings, path: '/financial_officer/settings', badge: '5' }
     ],
     Legal_Officer: [
-      { id: 'home', label: 'Home', icon: Home, path: '/legal_officer/dashboard', badge: null },
+      { id: 'home', label: 'Home', icon: Home, path: '/legalofficer/dashboard', badge: null },
     ],
     SiteSupervisor: [
       { id: 'home', label: 'Home', icon: Home, path: '/site_supervisor/home', badge: null },

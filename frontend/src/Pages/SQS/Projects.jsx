@@ -4,6 +4,17 @@ function Projects() {
   const [activeTab, setActiveTab] = useState('ongoing')
   const [selectedProject, setSelectedProject] = useState(null)
   const [activeSection, setActiveSection] = useState('overview')
+  const [showTaskForm, setShowTaskForm] = useState(false)
+  const [editingTask, setEditingTask] = useState(null)
+  const [parentTaskId, setParentTaskId] = useState(null)
+  const [taskFormData, setTaskFormData] = useState({
+    name: '',
+    status: 'Pending',
+    startDate: '',
+    deadline: '',
+    progress: 0,
+    isMilestone: false
+  })
   
   // WBS Data with milestones and sub-tasks
   const [wbsData, setWbsData] = useState([
@@ -13,7 +24,6 @@ function Projects() {
       status: 'Completed',
       startDate: '2024-01-15',
       deadline: '2024-06-30',
-      responsible: 'Mike Johnson',
       progress: 100,
       isMilestone: true,
       isExpanded: true,
@@ -24,9 +34,22 @@ function Projects() {
           status: 'Completed',
           startDate: '2024-01-15',
           deadline: '2024-02-15',
-          responsible: 'John Doe',
           progress: 100,
-          isMilestone: false
+          isMilestone: false,
+          isExpanded: true,
+          subTasks: [
+            {
+              id: 111,
+              name: 'Soil Testing',
+              status: 'Completed',
+              startDate: '2024-01-15',
+              deadline: '2024-01-20',
+              progress: 100,
+              isMilestone: false,
+              isExpanded: false,
+              subTasks: []
+            }
+          ]
         },
         {
           id: 12,
@@ -34,9 +57,10 @@ function Projects() {
           status: 'Completed',
           startDate: '2024-02-16',
           deadline: '2024-06-30',
-          responsible: 'Mike Johnson',
           progress: 100,
-          isMilestone: false
+          isMilestone: false,
+          isExpanded: false,
+          subTasks: []
         },
         {
           id: 13,
@@ -44,9 +68,10 @@ function Projects() {
           status: 'Completed',
           startDate: '2024-06-20',
           deadline: '2024-06-30',
-          responsible: 'Sarah Davis',
           progress: 100,
-          isMilestone: true
+          isMilestone: true,
+          isExpanded: false,
+          subTasks: []
         }
       ]
     },
@@ -56,7 +81,6 @@ function Projects() {
       status: 'In Progress',
       startDate: '2024-07-01',
       deadline: '2024-09-15',
-      responsible: 'Tom Wilson',
       progress: 45,
       isMilestone: true,
       isExpanded: false,
@@ -67,9 +91,10 @@ function Projects() {
           status: 'In Progress',
           startDate: '2024-07-01',
           deadline: '2024-08-15',
-          responsible: 'Tom Wilson',
           progress: 60,
-          isMilestone: false
+          isMilestone: false,
+          isExpanded: false,
+          subTasks: []
         },
         {
           id: 22,
@@ -77,9 +102,10 @@ function Projects() {
           status: 'Pending',
           startDate: '2024-08-16',
           deadline: '2024-09-15',
-          responsible: 'Sarah Davis',
           progress: 0,
-          isMilestone: false
+          isMilestone: false,
+          isExpanded: false,
+          subTasks: []
         },
         {
           id: 23,
@@ -87,9 +113,10 @@ function Projects() {
           status: 'Pending',
           startDate: '2024-09-01',
           deadline: '2024-09-15',
-          responsible: 'Tom Wilson',
           progress: 0,
-          isMilestone: false
+          isMilestone: false,
+          isExpanded: false,
+          subTasks: []
         }
       ]
     },
@@ -99,7 +126,6 @@ function Projects() {
       status: 'Pending',
       startDate: '2024-09-16',
       deadline: '2024-11-30',
-      responsible: 'Sarah Davis',
       progress: 0,
       isMilestone: false,
       isExpanded: false,
@@ -110,9 +136,10 @@ function Projects() {
           status: 'Pending',
           startDate: '2024-09-16',
           deadline: '2024-10-30',
-          responsible: 'Electric Team',
           progress: 0,
-          isMilestone: false
+          isMilestone: false,
+          isExpanded: false,
+          subTasks: []
         },
         {
           id: 32,
@@ -120,9 +147,10 @@ function Projects() {
           status: 'Pending',
           startDate: '2024-11-01',
           deadline: '2024-11-30',
-          responsible: 'Sarah Davis',
           progress: 0,
-          isMilestone: false
+          isMilestone: false,
+          isExpanded: false,
+          subTasks: []
         }
       ]
     },
@@ -132,7 +160,6 @@ function Projects() {
       status: 'Pending',
       startDate: '2024-12-01',
       deadline: '2024-12-15',
-      responsible: 'QS Team',
       progress: 0,
       isMilestone: true,
       isExpanded: false,
@@ -275,35 +302,327 @@ function Projects() {
     setActiveSection('overview')
   }
 
-  const toggleMilestone = (taskId, isSubTask = false, parentId = null) => {
-    setWbsData(prevData => {
-      return prevData.map(task => {
-        if (!isSubTask && task.id === taskId) {
-          return { ...task, isMilestone: !task.isMilestone }
-        } else if (isSubTask && task.id === parentId) {
-          return {
-            ...task,
-            subTasks: task.subTasks.map(subTask =>
-              subTask.id === taskId
-                ? { ...subTask, isMilestone: !subTask.isMilestone }
-                : subTask
-            )
-          }
+  // Helper function to generate unique ID
+  const generateTaskId = () => {
+    return Date.now() + Math.random()
+  }
+
+  // Helper function to find task by ID recursively
+  const findTaskById = (tasks, id) => {
+    for (const task of tasks) {
+      if (task.id === id) return task
+      if (task.subTasks && task.subTasks.length > 0) {
+        const found = findTaskById(task.subTasks, id)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  // Helper function to add task at any level
+  const addTaskAtLevel = (tasks, parentId, newTask) => {
+    if (!parentId) {
+      // Add to root level
+      return [...tasks, newTask]
+    }
+    
+    return tasks.map(task => {
+      if (task.id === parentId) {
+        return {
+          ...task,
+          subTasks: [...(task.subTasks || []), newTask]
         }
-        return task
-      })
+      }
+      if (task.subTasks && task.subTasks.length > 0) {
+        return {
+          ...task,
+          subTasks: addTaskAtLevel(task.subTasks, parentId, newTask)
+        }
+      }
+      return task
     })
   }
 
-  const toggleExpanded = (taskId) => {
-    setWbsData(prevData => {
-      return prevData.map(task => {
-        if (task.id === taskId) {
-          return { ...task, isExpanded: !task.isExpanded }
+  // Helper function to update task at any level
+  const updateTaskAtLevel = (tasks, taskId, updatedTask) => {
+    return tasks.map(task => {
+      if (task.id === taskId) {
+        return { ...task, ...updatedTask }
+      }
+      if (task.subTasks && task.subTasks.length > 0) {
+        return {
+          ...task,
+          subTasks: updateTaskAtLevel(task.subTasks, taskId, updatedTask)
         }
-        return task
-      })
+      }
+      return task
     })
+  }
+
+  // Helper function to delete task at any level
+  const deleteTaskAtLevel = (tasks, taskId) => {
+    return tasks.filter(task => {
+      if (task.id === taskId) {
+        return false
+      }
+      if (task.subTasks && task.subTasks.length > 0) {
+        task.subTasks = deleteTaskAtLevel(task.subTasks, taskId)
+      }
+      return true
+    })
+  }
+
+  // Helper function to toggle expanded state
+  const toggleExpandedAtLevel = (tasks, taskId) => {
+    return tasks.map(task => {
+      if (task.id === taskId) {
+        return { ...task, isExpanded: !task.isExpanded }
+      }
+      if (task.subTasks && task.subTasks.length > 0) {
+        return {
+          ...task,
+          subTasks: toggleExpandedAtLevel(task.subTasks, taskId)
+        }
+      }
+      return task
+    })
+  }
+
+  // Helper function to toggle milestone state
+  const toggleMilestoneAtLevel = (tasks, taskId) => {
+    return tasks.map(task => {
+      if (task.id === taskId) {
+        return { ...task, isMilestone: !task.isMilestone }
+      }
+      if (task.subTasks && task.subTasks.length > 0) {
+        return {
+          ...task,
+          subTasks: toggleMilestoneAtLevel(task.subTasks, taskId)
+        }
+      }
+      return task
+    })
+  }
+
+  // Task form handlers
+  const handleOpenTaskForm = (parentId = null) => {
+    setParentTaskId(parentId)
+    setEditingTask(null)
+    setTaskFormData({
+      name: '',
+      status: 'Pending',
+      startDate: '',
+      deadline: '',
+      progress: 0,
+      isMilestone: false
+    })
+    setShowTaskForm(true)
+  }
+
+  const handleEditTask = (task) => {
+    setEditingTask(task)
+    setParentTaskId(null)
+    setTaskFormData({
+      name: task.name,
+      status: task.status,
+      startDate: task.startDate,
+      deadline: task.deadline,
+      progress: task.progress,
+      isMilestone: task.isMilestone
+    })
+    setShowTaskForm(true)
+  }
+
+  const handleDeleteTask = (taskId) => {
+    if (window.confirm('Are you sure you want to delete this task and all its subtasks?')) {
+      setWbsData(prevData => deleteTaskAtLevel(prevData, taskId))
+    }
+  }
+
+  const handleTaskFormSubmit = (e) => {
+    e.preventDefault()
+    
+    if (editingTask) {
+      // Update existing task
+      setWbsData(prevData => updateTaskAtLevel(prevData, editingTask.id, taskFormData))
+    } else {
+      // Add new task
+      const newTask = {
+        id: generateTaskId(),
+        ...taskFormData,
+        isExpanded: false,
+        subTasks: []
+      }
+      setWbsData(prevData => addTaskAtLevel(prevData, parentTaskId, newTask))
+    }
+    
+    setShowTaskForm(false)
+    setEditingTask(null)
+    setParentTaskId(null)
+  }
+
+  const handleTaskFormCancel = () => {
+    setShowTaskForm(false)
+    setEditingTask(null)
+    setParentTaskId(null)
+  }
+
+  // Updated toggle functions
+  const toggleMilestone = (taskId) => {
+    setWbsData(prevData => toggleMilestoneAtLevel(prevData, taskId))
+  }
+
+  const toggleExpanded = (taskId) => {
+    setWbsData(prevData => toggleExpandedAtLevel(prevData, taskId))
+  }
+
+  // Helper function to get all milestones recursively
+  const getAllMilestones = (tasks) => {
+    let milestones = []
+    tasks.forEach(task => {
+      if (task.isMilestone) {
+        milestones.push(task)
+      }
+      if (task.subTasks && task.subTasks.length > 0) {
+        milestones = milestones.concat(getAllMilestones(task.subTasks))
+      }
+    })
+    return milestones
+  }
+
+  // Recursive function to render tasks at any level
+  const renderTaskRecursive = (task, level = 0) => {
+    const indentClass = level > 0 ? `ml-${level * 8}` : ''
+    const sizeClass = level === 0 ? 'p-4' : level === 1 ? 'p-3' : 'p-2'
+    const borderClass = level === 0 ? 'border-2' : 'border'
+    
+    return (
+      <div key={task.id} className={`space-y-3 ${indentClass}`}>
+        <div className={`relative ${sizeClass} rounded-lg ${borderClass} transition-all duration-300 ${
+          task.isMilestone 
+            ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-300 shadow-lg ring-2 ring-yellow-200' 
+            : level === 0 ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200'
+        }`}>
+          {/* Milestone Badge */}
+          {task.isMilestone && (
+            <div className="absolute -top-2 -left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full flex items-center shadow-md z-10">
+              <span className="mr-1">🏆</span>
+              {level === 0 ? 'MILESTONE' : 'SUB-MILESTONE'}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="absolute top-2 right-2 flex space-x-1">
+            {/* Add Sub-task Button */}
+            <button
+              onClick={() => handleOpenTaskForm(task.id)}
+              className="p-1.5 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors duration-200"
+              title="Add sub-task"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </button>
+
+            {/* Edit Button */}
+            <button
+              onClick={() => handleEditTask(task)}
+              className="p-1.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors duration-200"
+              title="Edit task"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+
+            {/* Delete Button */}
+            <button
+              onClick={() => handleDeleteTask(task.id)}
+              className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200"
+              title="Delete task"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+
+            {/* Milestone Toggle Button */}
+            <button
+              onClick={() => toggleMilestone(task.id)}
+              className={`p-1.5 rounded-full transition-all duration-200 ${
+                task.isMilestone 
+                  ? 'bg-yellow-500 text-white shadow-md hover:bg-yellow-600' 
+                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+              }`}
+              title={task.isMilestone ? 'Remove from milestones' : 'Mark as milestone'}
+            >
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between pr-20">
+            <div className="flex items-center space-x-4 flex-1">
+              {/* Expand/Collapse Button for subtasks */}
+              {task.subTasks && task.subTasks.length > 0 && (
+                <button
+                  onClick={() => toggleExpanded(task.id)}
+                  className="p-1 hover:bg-gray-200 rounded transition-colors duration-200"
+                >
+                  <svg 
+                    className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${
+                      task.isExpanded ? 'rotate-90' : ''
+                    }`} 
+                    fill="currentColor" 
+                    viewBox="0 0 20 20"
+                  >
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+              
+              <div className="flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                  <div className="md:col-span-2">
+                    <h4 className={`font-semibold ${level === 0 ? 'text-base' : 'text-sm'} ${task.isMilestone ? 'text-yellow-900' : 'text-gray-900'}`}>
+                      {task.name}
+                    </h4>
+                    <div className="mt-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-500 ${
+                              task.status === 'Completed' ? 'bg-green-500' :
+                              task.status === 'In Progress' ? 'bg-blue-500' : 'bg-gray-400'
+                            }`}
+                            style={{ width: `${task.progress}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs text-gray-600 min-w-0">{task.progress}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(task.status)}`}>
+                      {task.status}
+                    </span>
+                    <span className="text-sm text-gray-600">Due: {task.deadline}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sub Tasks */}
+        {task.isExpanded && task.subTasks && task.subTasks.length > 0 && (
+          <div className="space-y-2">
+            {task.subTasks.map((subTask) => renderTaskRecursive(subTask, level + 1))}
+          </div>
+        )}
+      </div>
+    )
   }
 
   const getStatusColor = (status) => {
@@ -402,186 +721,138 @@ function Projects() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">Work Breakdown Structure (WBS) & Milestones</h3>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
+              <button 
+                onClick={() => handleOpenTaskForm()}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+              >
                 + Add New Task
               </button>
             </div>
-            
-            <div className="space-y-4">
-              {wbsData.map((task) => (
-                <div key={task.id} className="space-y-3">
-                  {/* Main Task */}
-                  <div className={`relative p-4 rounded-lg border-2 transition-all duration-300 ${
-                    task.isMilestone 
-                      ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-300 shadow-lg ring-2 ring-yellow-200' 
-                      : 'bg-gray-50 border-gray-200'
-                  }`}>
-                    {/* Milestone Badge */}
-                    {task.isMilestone && (
-                      <div className="absolute -top-2 -left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full flex items-center shadow-md z-10">
-                        <span className="mr-1">🏆</span>
-                        MILESTONE
+
+            {/* Task Form Modal */}
+            {showTaskForm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <h4 className="text-lg font-semibold mb-4">
+                    {editingTask ? 'Edit Task' : 'Add New Task'}
+                  </h4>
+                  
+                  <form onSubmit={handleTaskFormSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Task Name
+                      </label>
+                      <input
+                        type="text"
+                        value={taskFormData.name}
+                        onChange={(e) => setTaskFormData({ ...taskFormData, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Status
+                      </label>
+                      <select
+                        value={taskFormData.status}
+                        onChange={(e) => setTaskFormData({ ...taskFormData, status: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Delayed">Delayed</option>
+                      </select>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={taskFormData.startDate}
+                          onChange={(e) => setTaskFormData({ ...taskFormData, startDate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
                       </div>
-                    )}
-
-                    {/* Milestone Toggle Button */}
-                    <button
-                      onClick={() => toggleMilestone(task.id)}
-                      className={`absolute top-2 right-2 p-1.5 rounded-full transition-all duration-200 ${
-                        task.isMilestone 
-                          ? 'bg-yellow-500 text-white shadow-md hover:bg-yellow-600' 
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                      }`}
-                      title={task.isMilestone ? 'Remove from milestones' : 'Mark as milestone'}
-                    >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    </button>
-
-                    <div className="flex items-center justify-between pr-12">
-                      <div className="flex items-center space-x-4 flex-1">
-                        {/* Expand/Collapse Button for subtasks */}
-                        {task.subTasks.length > 0 && (
-                          <button
-                            onClick={() => toggleExpanded(task.id)}
-                            className="p-1 hover:bg-gray-200 rounded transition-colors duration-200"
-                          >
-                            <svg 
-                              className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${
-                                task.isExpanded ? 'rotate-90' : ''
-                              }`} 
-                              fill="currentColor" 
-                              viewBox="0 0 20 20"
-                            >
-                              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </button>
-                        )}
-                        
-                        <div className="flex-1">
-                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-                            <div className="md:col-span-2">
-                              <h4 className={`font-semibold ${task.isMilestone ? 'text-yellow-900' : 'text-gray-900'}`}>
-                                {task.name}
-                              </h4>
-                              <div className="mt-2">
-                                <div className="flex items-center space-x-2">
-                                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                    <div 
-                                      className={`h-2 rounded-full transition-all duration-500 ${
-                                        task.status === 'Completed' ? 'bg-green-500' :
-                                        task.status === 'In Progress' ? 'bg-blue-500' : 'bg-gray-400'
-                                      }`}
-                                      style={{ width: `${task.progress}%` }}
-                                    ></div>
-                                  </div>
-                                  <span className="text-xs text-gray-600 min-w-0">{task.progress}%</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div>
-                              <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(task.status)}`}>
-                                {task.status}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-sm text-gray-600">Due: {task.deadline}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm text-gray-600">Responsible: {task.responsible}</span>
-                            </div>
-                          </div>
-                        </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Deadline
+                        </label>
+                        <input
+                          type="date"
+                          value={taskFormData.deadline}
+                          onChange={(e) => setTaskFormData({ ...taskFormData, deadline: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
                       </div>
                     </div>
-                  </div>
-
-                  {/* Sub Tasks */}
-                  {task.isExpanded && task.subTasks.length > 0 && (
-                    <div className="ml-8 space-y-2">
-                      {task.subTasks.map((subTask) => (
-                        <div 
-                          key={subTask.id} 
-                          className={`relative p-3 rounded-lg border transition-all duration-300 ${
-                            subTask.isMilestone 
-                              ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200 shadow-md' 
-                              : 'bg-white border-gray-200'
-                          }`}
-                        >
-                          {/* Sub-task Milestone Badge */}
-                          {subTask.isMilestone && (
-                            <div className="absolute -top-1 -left-1 bg-yellow-400 text-white text-xs px-1.5 py-0.5 rounded-full flex items-center shadow-sm z-10">
-                              <span className="mr-1 text-xs">⭐</span>
-                              SUB-MILESTONE
-                            </div>
-                          )}
-
-                          {/* Sub-task Milestone Toggle */}
-                          <button
-                            onClick={() => toggleMilestone(subTask.id, true, task.id)}
-                            className={`absolute top-1.5 right-1.5 p-1 rounded-full transition-all duration-200 ${
-                              subTask.isMilestone 
-                                ? 'bg-yellow-400 text-white shadow-sm hover:bg-yellow-500' 
-                                : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
-                            }`}
-                            title={subTask.isMilestone ? 'Remove from milestones' : 'Mark as milestone'}
-                          >
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          </button>
-
-                          <div className="pr-8">
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-center">
-                              <div className="md:col-span-2">
-                                <h5 className={`font-medium text-sm ${subTask.isMilestone ? 'text-yellow-800' : 'text-gray-800'}`}>
-                                  {subTask.name}
-                                </h5>
-                                <div className="mt-1">
-                                  <div className="flex items-center space-x-2">
-                                    <div className="flex-1 bg-gray-200 rounded-full h-1.5">
-                                      <div 
-                                        className={`h-1.5 rounded-full transition-all duration-500 ${
-                                          subTask.status === 'Completed' ? 'bg-green-500' :
-                                          subTask.status === 'In Progress' ? 'bg-blue-500' : 'bg-gray-400'
-                                        }`}
-                                        style={{ width: `${subTask.progress}%` }}
-                                      ></div>
-                                    </div>
-                                    <span className="text-xs text-gray-500 min-w-0">{subTask.progress}%</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div>
-                                <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(subTask.status)}`}>
-                                  {subTask.status}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-xs text-gray-600">Due: {subTask.deadline}</span>
-                              </div>
-                              <div>
-                                <span className="text-xs text-gray-600">Responsible: {subTask.responsible}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Progress (%)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={taskFormData.progress}
+                        onChange={(e) => setTaskFormData({ ...taskFormData, progress: parseInt(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
                     </div>
-                  )}
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="milestone"
+                        checked={taskFormData.isMilestone}
+                        onChange={(e) => setTaskFormData({ ...taskFormData, isMilestone: e.target.checked })}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="milestone" className="ml-2 block text-sm text-gray-700">
+                        Mark as Milestone
+                      </label>
+                    </div>
+                    
+                    <div className="flex justify-end space-x-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={handleTaskFormCancel}
+                        className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      >
+                        {editingTask ? 'Update Task' : 'Add Task'}
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              ))}
+              </div>
+            )}
+            
+            {/* Render Tasks */}
+            <div className="space-y-4">
+              {wbsData.map((task) => renderTaskRecursive(task, 0))}
             </div>
 
-            {/* Milestones Summary */}
+            {/* Milestone Summary */}
             <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
               <h4 className="font-semibold text-yellow-900 mb-3 flex items-center">
                 <span className="mr-2">🏆</span>
                 Milestone Summary
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {wbsData.filter(task => task.isMilestone).map(milestone => (
+                {getAllMilestones(wbsData).map(milestone => (
                   <div key={milestone.id} className="flex items-center space-x-3 p-2 bg-white rounded border border-yellow-200">
                     <div className={`w-3 h-3 rounded-full ${
                       milestone.status === 'Completed' ? 'bg-green-500' : 
@@ -590,18 +861,6 @@ function Projects() {
                     <div className="flex-1">
                       <p className="text-sm font-medium text-yellow-900">{milestone.name}</p>
                       <p className="text-xs text-yellow-700">Due: {milestone.deadline}</p>
-                    </div>
-                  </div>
-                ))}
-                {wbsData.flatMap(task => task.subTasks.filter(sub => sub.isMilestone)).map(subMilestone => (
-                  <div key={subMilestone.id} className="flex items-center space-x-3 p-2 bg-white rounded border border-yellow-200">
-                    <div className={`w-3 h-3 rounded-full ${
-                      subMilestone.status === 'Completed' ? 'bg-green-500' : 
-                      subMilestone.status === 'In Progress' ? 'bg-blue-500' : 'bg-gray-300'
-                    }`}></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-yellow-900">{subMilestone.name}</p>
-                      <p className="text-xs text-yellow-700">Due: {subMilestone.deadline}</p>
                     </div>
                   </div>
                 ))}
@@ -882,52 +1141,39 @@ function Projects() {
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              {/* Summary */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-sm text-gray-600">Total Paid</p>
-                    <p className="text-lg font-semibold text-green-600">Rs 36,000,000</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Next Payment Due</p>
-                    <p className="text-lg font-semibold text-yellow-600">Rs 10,200,000</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Remaining Balance</p>
-                    <p className="text-lg font-semibold text-gray-600">Rs 30,300,000</p>
-                  </div>
+            {/* Summary */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-sm text-gray-600">Total Paid</p>
+                  <p className="text-lg font-semibold text-green-600">Rs 36,000,000</p>
                 </div>
-              </div>
-
-              {/* Payment Terms */}
-              <div className="mt-6 p-4 border border-gray-200 rounded-lg">
-                <h5 className="font-medium text-gray-900 mb-3">Payment Terms & Conditions</h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                  <div>
-                    <p><strong>Late Payment Penalty:</strong> 2% per month</p>
-                    <p><strong>Early Payment Discount:</strong> 1% for payments made 30 days early</p>
-                  </div>
-                  <div>
-                    <p><strong>Payment Method:</strong> Bank Transfer to Company Account</p>
-                    <p><strong>Currency:</strong> Sri Lankan Rupees (LKR)</p>
-                  </div>
+                <div>
+                  <p className="text-sm text-gray-600">Next Payment Due</p>
+                  <p className="text-lg font-semibold text-yellow-600">Rs 10,200,000</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Remaining Balance</p>
+                  <p className="text-lg font-semibold text-gray-600">Rs 30,300,000</p>
                 </div>
               </div>
             </div>
 
-            {/* Financial Actions */}
-            <div className="flex flex-wrap gap-4">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200">
-                Generate Payment Report
-              </button>
-              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition duration-200">
-                Download Invoice
-              </button>
-              <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition duration-200">
-                Update Payment Plan
-              </button>
+            {/* Payment Terms */}
+            <div className="mt-6 p-4 border border-gray-200 rounded-lg">
+              <h5 className="font-medium text-gray-900 mb-3">Payment Terms & Conditions</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                <div>
+                  <p><strong>Late Payment Penalty:</strong> 2% per month</p>
+                  <p><strong>Early Payment Discount:</strong> 1% for payments made 30 days early</p>
+                </div>
+                <div>
+                  <p><strong>Payment Method:</strong> Bank Transfer to Company Account</p>
+                  <p><strong>Currency:</strong> Sri Lankan Rupees (LKR)</p>
+                </div>
+              </div>
             </div>
           </div>
         )
@@ -1311,7 +1557,7 @@ function Projects() {
             <div className="flex justify-between items-center mb-8">
               {/* <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Projects</h1>
-                <p className="text-gray-600">Manage and track your construction projects</p>
+                               <p className="text-gray-600">Manage and track your construction projects</p>
               </div> */}
               <div className="flex space-x-2">
                 <button 

@@ -1,186 +1,117 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Filter, Download, Plus, Edit, Trash2, Eye, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
-
-// Reduced sample employee data (3-4 employees)
-const employeesData = [
-  {
-    employee_id: 'EMP001',
-    name: 'John Smith',
-    email: 'john.smith@company.com',
-    contact: '+1-555-0101',
-    address: '123 Main St, New York, NY 10001',
-    type: 'QS_Officer',
-    status: 'Active',
-    joinDate: '2023-01-15'
-  },
-  {
-    employee_id: 'EMP002',
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@company.com',
-    contact: '+1-555-0102',
-    address: '456 Oak Ave, Los Angeles, CA 90210',
-    type: 'Senior_QS_Officer',
-    status: 'Active',
-    joinDate: '2022-08-20'
-  },
-  {
-    employee_id: 'EMP003',
-    name: 'Michael Brown',
-    email: 'michael.brown@company.com',
-    contact: '+1-555-0103',
-    address: '789 Pine Rd, Chicago, IL 60601',
-    type: 'Project_Manager',
-    status: 'Active',
-    joinDate: '2023-03-10'
-  },
-  {
-    employee_id: 'EMP004',
-    name: 'Emily Davis',
-    email: 'emily.davis@company.com',
-    contact: '+1-555-0104',
-    address: '321 Elm St, Houston, TX 77001',
-    type: 'Site_Supervisor',
-    status: 'Inactive',
-    joinDate: '2023-06-05'
-  }
-];
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Filter, Download, Plus, Trash2, Eye, ChevronDown, ChevronLeft, ChevronRight, X, Users, UserCheck, Building, RefreshCw } from 'lucide-react';
 
 // Employee Details Modal Component
 const EmployeeDetailsModal = ({ employee, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold text-yellow-400">Employee Details</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-white">
+  <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-700">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
+          Employee Details
+        </h3>
+        <button 
+          onClick={onClose} 
+          className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-full"
+        >
           <X size={20} />
         </button>
       </div>
-      <div className="space-y-3">
-        <div><span className="text-gray-400">ID:</span> <span className="text-white ml-2">{employee.employee_id}</span></div>
-        <div><span className="text-gray-400">Name:</span> <span className="text-white ml-2">{employee.name}</span></div>
-        <div><span className="text-gray-400">Email:</span> <span className="text-white ml-2">{employee.email}</span></div>
-        <div><span className="text-gray-400">Contact:</span> <span className="text-white ml-2">{employee.contact}</span></div>
-        <div><span className="text-gray-400">Address:</span> <span className="text-white ml-2">{employee.address}</span></div>
-        <div><span className="text-gray-400">Type:</span> <span className="text-white ml-2">{employee.type.replace(/_/g, ' ')}</span></div>
-        <div><span className="text-gray-400">Status:</span> <span className={`ml-2 ${employee.status === 'Active' ? 'text-green-400' : 'text-red-400'}`}>{employee.status}</span></div>
-        <div><span className="text-gray-400">Join Date:</span> <span className="text-white ml-2">{employee.joinDate}</span></div>
+      <div className="space-y-4">
+        {[
+          { label: 'ID', value: employee.employee_id, color: 'text-yellow-400' },
+          { label: 'Name', value: employee.name, color: 'text-white' },
+          { label: 'Email', value: employee.email, color: 'text-blue-400' },
+          { label: 'Phone', value: employee.phone_number || 'N/A', color: 'text-white' },
+          { label: 'Address', value: employee.address || 'N/A', color: 'text-white' },
+          { label: 'Type', value: employee.type.replace(/_/g, ' '), color: 'text-purple-400' },
+          { label: 'Status', value: employee.availability ? 'Active' : 'Inactive', color: employee.availability ? 'text-green-400' : 'text-red-400' },
+          { label: 'Join Date', value: new Date(employee.joined_date).toLocaleDateString(), color: 'text-white' }
+        ].map(({ label, value, color }) => (
+          <div key={label} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+            <span className="text-gray-400 font-medium">{label}:</span>
+            <span className={`font-semibold ${color}`}>{value}</span>
+          </div>
+        ))}
+        {employee.profile_image_url && (
+          <div className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+            <span className="text-gray-400 font-medium">Profile Image:</span>
+            <span className="text-green-400 font-semibold">Available</span>
+          </div>
+        )}
       </div>
     </div>
   </div>
 );
 
-// Employee Edit Modal Component
-const EmployeeEditModal = ({ employee, onClose, onSave }) => {
-  const [formData, setFormData] = useState(employee);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-yellow-400">Edit Employee</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
-            <X size={20} />
-          </button>
+// Delete Confirmation Modal 
+const DeleteConfirmModal = ({ employee, onClose, onConfirm }) => (
+  <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-red-500/30">
+      <div className="text-center">
+        <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Trash2 className="w-8 h-8 text-red-500" />
         </div>
-        <div onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Name"
-            value={formData.name}
-            onChange={(e) => setFormData({...formData, name: e.target.value})}
-            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
-            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-            required
-          />
-          <input
-            type="tel"
-            placeholder="Contact"
-            value={formData.contact}
-            onChange={(e) => setFormData({...formData, contact: e.target.value})}
-            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-            required
-          />
-          <textarea
-            placeholder="Address"
-            value={formData.address}
-            onChange={(e) => setFormData({...formData, address: e.target.value})}
-            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-            rows="2"
-            required
-          />
-          <select
-            value={formData.type}
-            onChange={(e) => setFormData({...formData, type: e.target.value})}
-            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-            required
+        <h3 className="text-xl font-bold text-red-400 mb-2">Deactivate Employee</h3>
+        <p className="text-gray-300 mb-6">
+          Are you sure you want to deactivate <span className="text-white font-semibold">{employee.name}</span>? 
+          This will make them unavailable for new assignments.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onConfirm}
+            className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg"
           >
-            <option value="QS_Officer">QS Officer</option>
-            <option value="Senior_QS_Officer">Senior QS Officer</option>
-            <option value="Project_Manager">Project Manager</option>
-            <option value="Site_Supervisor">Site Supervisor</option>
-          </select>
-          <div className="flex gap-3 pt-4">
-            <button
-              onClick={handleSubmit}
-              className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-gray-900 py-2 rounded-lg font-semibold"
-            >
-              Update
-            </button>
-            <button
-              onClick={onClose}
-              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg"
-            >
-              Cancel
-            </button>
-          </div>
+            Deactivate
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-3 rounded-lg font-semibold transition-all duration-200"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
-// Delete Confirmation Modal
-const DeleteConfirmModal = ({ employee, onClose, onConfirm }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-gray-800 rounded-xl p-6 max-w-sm w-full">
-      <h3 className="text-xl font-bold text-red-400 mb-4">Confirm Deletion</h3>
-      <p className="text-gray-300 mb-6">
-        Are you sure you want to delete <span className="text-white font-semibold">{employee.name}</span>? 
-        This action cannot be undone.
-      </p>
-      <div className="flex gap-3">
-        <button
-          onClick={onConfirm}
-          className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-semibold"
-        >
-          Delete
-        </button>
-        <button
-          onClick={onClose}
-          className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg"
-        >
-          Cancel
-        </button>
+// Loading Component
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center py-12">
+    <div className="relative">
+      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-yellow-500"></div>
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <div className="w-8 h-8 bg-yellow-500 rounded-full animate-pulse"></div>
       </div>
+    </div>
+  </div>
+);
+
+// Error Component
+const ErrorMessage = ({ message, onRetry }) => (
+  <div className="bg-gradient-to-r from-red-900/20 to-red-800/20 border border-red-500/30 rounded-xl p-4 mb-6 backdrop-blur-sm">
+    <div className="flex items-center gap-3">
+      <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
+        <X className="w-4 h-4 text-red-400" />
+      </div>
+      <div className="flex-1">
+        <p className="text-red-300 font-medium">{message}</p>
+      </div>
+      <button
+        onClick={onRetry}
+        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2"
+      >
+        <RefreshCw size={16} />
+        Retry
+      </button>
     </div>
   </div>
 );
 
 const EmployeeManagement = () => {
-  const [employees, setEmployees] = useState(employeesData);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
@@ -189,27 +120,126 @@ const EmployeeManagement = () => {
   
   // Modal states
   const [viewEmployee, setViewEmployee] = useState(null);
-  const [editEmployee, setEditEmployee] = useState(null);
   const [deleteEmployee, setDeleteEmployee] = useState(null);
 
-  // Get unique employee types for filter
-  const employeeTypes = ['All', ...new Set(employees.map(emp => emp.type))];
+  // API Base URL
+  const API_BASE_URL = 'http://localhost:8086/api/v1/admin';
 
-  // Filter and search logic (removed status filter)
+  // Employee types for filtering
+  const employeeTypes = [
+    'All',
+    'QS_Officer',
+    'Senior_QS_Officer',
+    'Project_Manager',
+    'Site_Supervisor',
+    'Legal_Officer',
+    'Director',
+    'Designer',
+    'Finance_Department'
+  ];
+
+  // Fetch employees from API
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Fetching employees from:', `${API_BASE_URL}/get_employees`);
+      
+      const response = await fetch(`${API_BASE_URL}/get_employees`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add any other headers if needed (like Authorization)
+        },
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Fetched data:', data);
+      
+      // Check if data is an array or wrapped in an object
+      if (Array.isArray(data)) {
+        setEmployees(data);
+      } else if (data.data && Array.isArray(data.data)) {
+        setEmployees(data.data);
+      } else if (data.employees && Array.isArray(data.employees)) {
+        setEmployees(data.employees);
+      } else {
+        console.error('Unexpected data format:', data);
+        setError('Unexpected data format received from server');
+      }
+      
+    } catch (err) {
+      setError(`Failed to fetch employees: ${err.message}`);
+      console.error('Error fetching employees:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // CORRECTED: Deactivate Employee Function
+  const deactivateEmployee = async (employeeId) => {
+    try {
+      console.log('Deactivating employee:', employeeId);
+      
+      const response = await fetch(`${API_BASE_URL}/deactivate/${employeeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+          // Include Authorization header here if required
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to deactivate employee: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.text(); // backend returns a string message
+      console.log('Deactivation result:', result);
+      
+      // Show success message
+      alert('Employee deactivated successfully! An email notification has been sent.');
+
+      // Close the modal
+      setDeleteEmployee(null);
+
+      // Refresh employee list after deactivation
+      await fetchEmployees();
+
+    } catch (err) {
+      console.error('Error deactivating employee:', err);
+      alert('Error deactivating employee: ' + err.message);
+    }
+  };
+
+  // Load employees on component mount
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  // Filter and search logic
   const filteredEmployees = useMemo(() => {
     return employees.filter(employee => {
       const matchesSearch = 
         employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         employee.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.contact.includes(searchTerm);
+        (employee.phone_number && employee.phone_number.includes(searchTerm));
       
       const matchesType = filterType === 'All' || employee.type === filterType;
       return matchesSearch && matchesType;
     });
   }, [employees, searchTerm, filterType]);
 
-  // Rest of the sorting and pagination logic remains the same...
+  // Sorting logic
   const sortedEmployees = useMemo(() => {
     if (!sortConfig.key) return filteredEmployees;
     
@@ -223,159 +253,232 @@ const EmployeeManagement = () => {
     });
   }, [filteredEmployees, sortConfig]);
 
+  // Handle sorting
+  const handleSort = (key) => {
+    setSortConfig(current => ({
+      key,
+      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Pagination
   const totalPages = Math.ceil(sortedEmployees.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedEmployees = sortedEmployees.slice(startIndex, startIndex + itemsPerPage);
-
-  const handleSort = (key) => {
-    setSortConfig(prevConfig => ({
-      key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
-    }));
-  };
 
   const formatEmployeeType = (type) => {
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  // Navigate to add employee page
   const handleAddEmployee = () => {
-    console.log('Navigate to add employee page');
-    // navigate('/admin/add-employee');
+    console.log('Navigating to add employee page...');
+    // In a real application, you would use React Router or similar
+    // For demonstration, we'll show an alert
+    alert('Navigating to Add Employee page...\n\nIn a real application, this would navigate to /admin/add-employee');
+    // Example with React Router: navigate('/admin/add-employee');
   };
 
-  // Modal handlers
-  const handleEditSave = (updatedEmployee) => {
-    setEmployees(employees.map(emp => 
-      emp.employee_id === updatedEmployee.employee_id ? updatedEmployee : emp
-    ));
+  // Handle Delete Confirmation
+  const handleDeleteConfirm = async () => {
+    if (!deleteEmployee) return;
+    
+    try {
+      // Call the deactivate function instead of delete
+      await deactivateEmployee(deleteEmployee.employee_id);
+    } catch (err) {
+      console.error('Error in handleDeleteConfirm:', err);
+      setError('Failed to deactivate employee. Please try again.');
+    }
   };
 
-  const handleDeleteConfirm = () => {
-    setEmployees(employees.filter(emp => emp.employee_id !== deleteEmployee.employee_id));
-    setDeleteEmployee(null);
+  // UPDATED: Get availability status styling
+  const getAvailabilityStyle = (availability) => {
+    switch (availability) {
+      case 'Available':
+        return 'text-green-400 border border-green-500';
+      case 'Assigned':
+        return 'text-blue-400 border border-blue-500';
+      case 'Deactive':
+        return 'text-red-400 border border-red-500';
+      default:
+        return 'text-gray-400 border border-gray-500';
+    }
   };
+
+  // UPDATED: Get row styling for deactivated employees
+  const getRowStyle = (availability) => {
+    if (availability === 'Deactive') {
+      return 'hover:bg-red-900/20 transition-colors opacity-60 bg-red-900/10';
+    }
+    return 'hover:bg-gray-750 transition-colors';
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent mb-2">
+            Employee Management
+          </h1>
+          <p className="text-gray-400">Loading employees...</p>
+        </div>
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
-      {/* Header section remains the same... */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
+      {/* Header section */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-[#FAAD00] mb-2">Employee Management</h1>
-            <p className="text-gray-400">Manage all system employees and their roles</p>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent mb-2">
+              Employee Management
+            </h1>
+            <p className="text-gray-400 text-lg">Manage all system employees and their roles</p>
           </div>
-          <button onClick={handleAddEmployee} className="bg-gradient-to-r from-yellow-500 to-yellow-400 hover:from-yellow-600 hover:to-yellow-500 text-gray-900 px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg">
-            <Plus size={20} />
-            Add Employee
-          </button>
-        </div>
-
-        {/* Stats Cards - removed inactive count */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-gray-400 text-xs sm:text-sm truncate">Total Employees</p>
-                <p className="text-xl sm:text-2xl font-bold text-white mt-1">{employees.length}</p>
-              </div>
-              <div className="bg-yellow-500 bg-opacity-20 p-2 sm:p-3 rounded-lg ml-3 flex-shrink-0">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded"></div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-gray-400 text-xs sm:text-sm truncate">Active</p>
-                <p className="text-xl sm:text-2xl font-bold text-green-400 mt-1">{employees.filter(e => e.status === 'Active').length}</p>
-              </div>
-              <div className="bg-green-500 bg-opacity-20 p-2 sm:p-3 rounded-lg ml-3 flex-shrink-0">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded"></div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-gray-400 text-xs sm:text-sm truncate">Departments</p>
-                <p className="text-xl sm:text-2xl font-bold text-yellow-400 mt-1">{employeeTypes.length - 1}</p>
-              </div>
-              <div className="bg-yellow-500 bg-opacity-20 p-2 sm:p-3 rounded-lg ml-3 flex-shrink-0">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-400 rounded"></div>
-              </div>
-            </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={handleAddEmployee} 
+              className="bg-gradient-to-r from-yellow-500 to-yellow-400 hover:from-yellow-600 hover:to-yellow-500 text-gray-900 px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              <Plus size={20} />
+              Add Employee
+            </button>
           </div>
         </div>
 
-        {/* Filters and Search - removed status filter */}
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        {/* Error Message */}
+        {error && (
+          <ErrorMessage 
+            message={error} 
+            onRetry={() => {
+              setError(null);
+              fetchEmployees();
+            }} 
+          />
+        )}
+
+        {/* Enhanced Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-gray-800 border border-gray-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-400 text-sm font-medium">Total Employees</p>
+                <p className="text-3xl font-bold text-white mt-2">{employees.length}</p>
+                <p className="text-xs text-gray-500 mt-1">All registered employees</p>
+              </div>
+              <div className="bg-gradient-to-br from-yellow-500 to-yellow-400 p-3 rounded-xl shadow-lg">
+                <Users className="w-6 h-6 text-gray-900" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-800 border border-gray-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-400 text-sm font-medium">Available Employees</p>
+                <p className="text-3xl font-bold text-green-400 mt-2">{employees.filter(e => e.availability === 'Available').length}</p>
+                <p className="text-xs text-gray-500 mt-1">Ready for assignment</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-500 to-green-400 p-3 rounded-xl shadow-lg">
+                <UserCheck className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-800 border border-gray-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-400 text-sm font-medium">Assigned Employees</p>
+                <p className="text-3xl font-bold text-blue-400 mt-2">{employees.filter(e => e.availability === 'Assigned').length}</p>
+                <p className="text-xs text-gray-500 mt-1">Currently working</p>
+              </div>
+              <div className="bg-gradient-to-br from-blue-500 to-blue-400 p-3 rounded-xl shadow-lg">
+                <Building className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-800 border border-gray-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-400 text-sm font-medium">Deactivated Employees</p>
+                <p className="text-3xl font-bold text-red-400 mt-2">{employees.filter(e => e.availability === 'Deactive').length}</p>
+                <p className="text-xs text-gray-500 mt-1">Inactive accounts</p>
+              </div>
+              <div className="bg-gradient-to-br from-red-500 to-red-400 p-3 rounded-xl shadow-lg">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Filters and Search */}
+        <div className="bg-gray-800 border border-gray-700/50 rounded-2xl p-6 mb-8 shadow-xl backdrop-blur-sm">
+          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="text"
-                  placeholder="Search employees..."
+                  placeholder="Search employees by name, email, ID, or phone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className="w-full bg-gray-700/50 border border-gray-600 rounded-xl pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all backdrop-blur-sm"
                 />
               </div>
               <div className="relative">
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent appearance-none pr-10 min-w-48"
+                  className="bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent appearance-none pr-12 min-w-52 transition-all backdrop-blur-sm"
                 >
                   {employeeTypes.map(type => (
                     <option key={type} value={type}>
-                      {type === 'All' ? 'All Types' : formatEmployeeType(type)}
+                      {type === 'All' ? 'All Departments' : formatEmployeeType(type)}
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
             </div>
-            <div className="flex gap-3">
-              <button className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-lg flex items-center gap-2 transition-colors">
-                <Filter size={18} />
-                More Filters
-              </button>
-              <button className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold transition-colors">
-                <Download size={18} />
-                Export
-              </button>
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <Filter size={16} />
+              <span>Showing {sortedEmployees.length} of {employees.length} employees</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Table - removed status column */}
-      <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+      {/* Enhanced Table */}
+      <div className="bg-gray-800 border border-gray-700/50 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-750">
+            <thead className="bg-gradient-to-r from-gray-750 to-gray-800">
               <tr className="border-b border-gray-700">
                 {[
                   { key: 'employee_id', label: 'Employee ID' },
                   { key: 'name', label: 'Name' },
                   { key: 'email', label: 'Email' },
-                  { key: 'contact', label: 'Contact' },
+                  { key: 'phone_number', label: 'Phone' },
                   { key: 'address', label: 'Address' },
-                  { key: 'type', label: 'Type' },
+                  { key: 'type', label: 'Department' },
+                  { key: 'availability', label: 'Status' },
                   { key: 'actions', label: 'Actions' }
                 ].map(({ key, label }) => (
                   <th
                     key={key}
-                    className={`px-6 py-4 text-left text-sm font-semibold text-gray-300 ${
+                    className={`px-6 py-5 text-left text-sm font-semibold text-gray-300 ${
                       key !== 'actions' ? 'cursor-pointer hover:text-yellow-400 transition-colors' : ''
                     }`}
-                    onClick={key !== 'actions' ? () => handleSort(key) : undefined}
-                  >
+                    onClick={key !== 'actions' ? () => handleSort(key) : undefined}                  >
                     <div className="flex items-center gap-2">
                       {label}
                       {sortConfig.key === key && (
-                        <span className="text-yellow-400">
+                        <span className="text-yellow-400 font-bold">
                           {sortConfig.direction === 'asc' ? '↑' : '↓'}
                         </span>
                       )}
@@ -385,45 +488,49 @@ const EmployeeManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
+              {/* Assuming paginatedEmployees is available */}
               {paginatedEmployees.map((employee) => (
-                <tr key={employee.employee_id} className="hover:bg-gray-750 transition-colors">
-                  <td className="px-6 py-4 text-sm font-medium text-yellow-400">
+                <tr key={employee.employee_id} className={getRowStyle(employee.availability)}>
+                  <td className={`px-6 py-4 text-sm font-medium ${employee.availability === 'Deactive' ? 'text-red-400/70' : 'text-yellow-400'}`}>
                     {employee.employee_id}
                   </td>
-                  <td className="px-6 py-4 text-sm text-white font-medium">
+                  <td className={`px-6 py-4 text-sm font-medium ${employee.availability === 'Deactive' ? 'text-gray-400 line-through' : 'text-white'}`}>
                     {employee.name}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-300">
+                  <td className={`px-6 py-4 text-sm ${employee.availability === 'Deactive' ? 'text-gray-500' : 'text-gray-300'}`}>
                     {employee.email}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-300">
-                    {employee.contact}
+                  <td className={`px-6 py-4 text-sm ${employee.availability === 'Deactive' ? 'text-gray-500' : 'text-gray-300'}`}>
+                    {employee.phone_number || 'N/A'}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-300 max-w-xs truncate">
-                    {employee.address}
+                  <td className={`px-6 py-4 text-sm max-w-xs truncate ${employee.availability === 'Deactive' ? 'text-gray-500' : 'text-gray-300'}`}>
+                    {employee.address || 'N/A'}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-yellow-400 border border-yellow-500">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${employee.availability === 'Deactive' ? 'text-red-400/70 border border-red-500/50' : 'text-yellow-400 border border-yellow-500'}`}>
                       {formatEmployeeType(employee.type)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getAvailabilityStyle(employee.availability)}`}>
+                      {employee.availability}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => setViewEmployee(employee)}
-                        className="text-gray-400 hover:text-yellow-400 transition-colors p-1"
+                        className={`transition-colors p-1 ${employee.availability === 'Deactive' ? 'text-gray-600 hover:text-gray-500' : 'text-gray-400 hover:text-yellow-400'}`}
+                        title="View Details"
+                        disabled={employee.availability === 'Deactive'}
                       >
                         <Eye size={16} />
                       </button>
                       <button 
-                        onClick={() => setEditEmployee(employee)}
-                        className="text-gray-400 hover:text-blue-400 transition-colors p-1"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button 
                         onClick={() => setDeleteEmployee(employee)}
-                        className="text-gray-400 hover:text-red-400 transition-colors p-1"
+                        className={`transition-colors p-1 ${employee.availability === 'Deactive' ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-red-400'}`}
+                        title={employee.availability === 'Deactive' ? 'Already Deactivated' : 'Deactivate Employee'}
+                        disabled={employee.availability === 'Deactive'}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -435,7 +542,7 @@ const EmployeeManagement = () => {
           </table>
         </div>
 
-        {/* Pagination section remains the same... */}
+        {/* Pagination */}
         <div className="bg-gray-750 px-6 py-4 border-t border-gray-700">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -515,14 +622,6 @@ const EmployeeManagement = () => {
         <EmployeeDetailsModal 
           employee={viewEmployee} 
           onClose={() => setViewEmployee(null)} 
-        />
-      )}
-      
-      {editEmployee && (
-        <EmployeeEditModal 
-          employee={editEmployee} 
-          onClose={() => setEditEmployee(null)}
-          onSave={handleEditSave}
         />
       )}
       

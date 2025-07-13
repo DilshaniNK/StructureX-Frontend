@@ -8,7 +8,7 @@ import Notification from '../../Components/Employee/Notification'
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const userRole = 'Legal_Officer'; 
+  const userRole = 'LegalOfficer'; 
   const userName = 'Ramesh Peshala';
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,8 +20,8 @@ export default function Home() {
   // Determine active item based on current path
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path.includes('/legal_officer/dashboard') || path === '/') return 'dashboard';
-    if (path.includes('/legal_officer/notifications')) return 'notifications';
+    if (path.includes('/legalofficer/dashboard') || path === '/') return 'dashboard';
+    if (path.includes('/legalofficer/notifications')) return 'notifications';
     return 'home'; // default
   };
 

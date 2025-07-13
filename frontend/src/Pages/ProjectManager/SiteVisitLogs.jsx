@@ -160,10 +160,10 @@ const SiteVisitLogs = () => {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        {/* <div>
           <h1 className="text-3xl font-bold text-gray-900">Site Visit Logs</h1>
           <p className="text-gray-600 mt-2">Record and track all site visits and inspections</p>
-        </div>
+        </div> */}
         <div className="flex space-x-3 mt-4 sm:mt-0">
           <button
             onClick={generateReport}
@@ -268,10 +268,10 @@ const SiteVisitLogs = () => {
                       <CircleMinus size={20} className="m-1" />
                       Rejected
                     </button>
-                    <button className="flex p-3 bg-amber-400 text-gray-900 cursor-pointer hover:bg-amber-200  rounded-lg py-2 font-medium m-2">
+                    {/* <button className="flex p-3 bg-amber-400 text-gray-900 cursor-pointer hover:bg-amber-200  rounded-lg py-2 font-medium m-2">
                       <Check size={20} className="m-1" />
                       Completed
-                    </button>
+                    </button> */}
                   </td>
                 </tr>
             </tbody>

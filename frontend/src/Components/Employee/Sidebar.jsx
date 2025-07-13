@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import Projects from '@mui/icons-material/FolderOpenOutlined';
 import Payments from '@mui/icons-material/ReceiptOutlined';
@@ -8,15 +8,18 @@ import Calendar from '@mui/icons-material/CalendarMonthOutlined';
 import Materials from '@mui/icons-material/HandymanOutlined';
 import Inventory from '@mui/icons-material/Inventory2Outlined';
 import TodoList from '@mui/icons-material/ListAltOutlined';
+// ADDED this import
 
 
-import {
-  Home, Users, BarChart3, ChartSpline, BookmarkCheck, ClipboardPenLine, UserRoundSearch, Clipboard, BadgeCheck, BookOpen, Shield, ChevronRight, Bell, MessageSquare, Settings, LogOut, Rocket, Loader,
-  icons
+import { 
+  Home, Users, BarChart3,ChartSpline ,BookmarkCheck ,ClipboardPenLine ,UserRoundSearch , Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader, FileText, Truck, Package, Receipt, icons,FolderOpen,User,MapPin
 } from 'lucide-react';
 
-const Sidebar = ({
-  userRole = 'Designer',
+
+
+
+const Sidebar = ({ 
+  userRole = 'Designer', 
   activeItem = 'home',
   onNavigate,
   isSidebarOpen,
@@ -25,6 +28,7 @@ const Sidebar = ({
   const [isDesktopHovered, setIsDesktopHovered] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const menuItems = {
     Example: [
@@ -44,26 +48,27 @@ const Sidebar = ({
     ],
 
     Project_Manager: [
-      { id: 'home', label: 'Home', icon: Home, path: '/project_manager/home', badge: null },
-      { id: 'dailyupdates', label: 'Daily Updates', icon: Rocket, path: '/project_manager/dailyupdates', badge: null },
-      { id: 'financialstatus', label: 'Financial Status', icon: Loader, path: '/project_manager/financialstatus', badge: null },
-      { id: 'materials', label: 'Materials', icon: BadgeCheck, path: '/project_manager/materials', badge: null },
-      { id: 'projectprogress', label: 'Project Progress', icon: ChartSpline, path: '/project_manager/projectprogress', badge: null },
-      { id: 'sitevisitlogs', label: 'Site Visit Logs', icon: BookmarkCheck, path: '/project_manager/sitevisitlogs', badge: null },
-      { id: 'todolist', label: 'Todo List', icon: ClipboardPenLine, path: '/project_manager/todolist', badge: null },
-      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/project_manager/chat', badge: null },
+      { id: 'home', label: 'Home', icon: Home, path: '/projectmanager/home', badge: null },
+      { id: 'dailyupdates', label: 'Daily Updates', icon: Rocket, path: '/projectmanager/dailyupdates', badge: null },
+      { id: 'projects', label: 'Projects', icon: Loader, path: '/projectmanager/projects', badge: null },
+      { id: 'materials', label: 'Materials', icon: BadgeCheck, path: '/projectmanager/materials', badge: null },
+      { id: 'sitevisitlogs', label: 'Site Visit Logs', icon: BookmarkCheck, path: '/projectmanager/sitevisitlogs', badge: null },
+      { id: 'todolist', label: 'Todo List', icon: ClipboardPenLine, path: '/projectmanager/todolist', badge: null },
+      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/projectmanager/chat', badge: null },
     ],
 
     FinancialOfficer: [
       { id: 'home', label: 'Home', icon: Home, path: '/financial_officer/home', badge: null },
       { id: 'projects', label: 'Projects', icon: Projects, path: '/financial_officer/projects' },
       { id: 'payments', label: 'Payments', icon: Payments, path: '/financial_officer/payments', badge: null },
+
       { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/financial_officer/calendar', badge: null },
       { id: 'daily labors', label: 'Daily Labors', icon: Labors, path: '/financial_officer/daily_labors', badge: '12' },
+
       { id: 'settings', label: 'Settings', icon: Settings, path: '/financial_officer/settings', badge: '5' }
     ],
     Legal_Officer: [
-      { id: 'home', label: 'Home', icon: Home, path: '/legal_officer/dashboard', badge: null },
+      { id: 'home', label: 'Home', icon: Home, path: '/legalofficer/dashboard', badge: null },
     ],
     SiteSupervisor: [
       { id: 'home', label: 'Home', icon: Home, path: '/site_supervisor/home', badge: null },
@@ -75,6 +80,27 @@ const Sidebar = ({
       { id: 'to do', label: 'To-Do', icon: TodoList, path: '/site_supervisor/to-do', badge: '5' },
       { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/site_supervisor/calendar', badge: null },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/site_supervisor/settings', badge: '5' }
+
+    ],
+    Supplier: [
+      { id: 'home', label: 'Home', icon: Home, path: '/supplier/home', badge: null },
+      { id: 'catalogue', label: 'Product Catalogue', icon: Projects, path: '/supplier/catalogue'},
+      { id: 'quotations', label: 'Quotations', icon: FileText, path: '/supplier/quotations', badge: null },
+      { id: 'orders', label: 'Material Orders', icon: Materials, path: '/supplier/orders', badge: '12' },
+      { id: 'delivery', label: 'Delivery Information', icon: Truck, path: '/supplier/delivery', badge: '5' },
+      { id: 'payments', label: 'Payments', icon: Payments, path: '/supplier/payments', badge: '10' },
+      { id: 'shistory', label: 'Supply History', icon: Package, path: '/supplier/shistory', badge: '5' },
+      { id: 'invoices', label: 'Invoices', icon: Receipt, path: '/supplier/invoices', badge: null },
+      { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/supplier/messages', badge: null }
+    ],
+    Director: [
+      { id: 'home', label: 'Home', icon: Home, path: '/director/home', badge: null},
+      { id: 'projects', label: 'Projects', icon: FolderOpen, path: '/director/projects'},
+      { id: 'teammanagment', label: 'Team Management', icon: User, path: '/director/teammanagment'},
+      { id: 'sitevisit', label: 'Site Visite', icon: MapPin, path: '/director/sitevisit'},
+      { id: 'inventory', label: 'Inventory', icon: Package, path: '/director/inventory'},
+      { id: 'documents', label: 'Documents', icon: FileText, path: '/director/documents'},
+
 
     ]
   };
@@ -246,7 +272,7 @@ const Sidebar = ({
           }`}>
           <div className="text-center">
             <p className="text-xs text-gray-500 font-medium">StructuraX v2.0</p>
-            <p className="text-xs text-gray-400">© 2024 All rights reserved</p>
+            <p className="text-xs text-gray-400">© 2025 All rights reserved</p>
           </div>
         </div>
       </aside>

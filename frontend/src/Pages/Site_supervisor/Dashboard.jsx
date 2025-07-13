@@ -1,4 +1,6 @@
 import React from 'react'
+import axios from 'axios'
+import { useState, useEffect } from 'react'
 import WorkerDistributionChart from '../../Components/Site_supervisor/WorkerDistributionChart'
 import InventoryChart from '../../Components/Site_supervisor/InventoryChart'
 import { 
@@ -17,6 +19,9 @@ import {
   DollarSign,
   ChevronRight
 } from 'lucide-react'
+
+const EMPLOYEE_ID = "EMP_001";
+
 
 const sampleData = [
   { project: 'Project A', workers: 25 },
@@ -37,44 +42,7 @@ const todayTasks = [
   { id: 3, task: 'Assign workers to Project B', completed: true, time: '2:00 PM' },
 ]
 
-const summaryCards = [
-  {
-    title: "Ongoing Projects",
-    value: 6,
-    icon: Building,
-    trend: "+2 from last month",
-    bgColor: "bg-blue-50",
-    iconColor: "text-blue-600",
-    borderColor: "border-blue-200"
-  },
-  {
-    title: "Pending Approvals",
-    value: 5,
-    icon: AlertCircle,
-    trend: "3 urgent",
-    bgColor: "bg-amber-50",
-    iconColor: "text-amber-600",
-    borderColor: "border-amber-200"
-  },
-  {
-    title: "Today's Visits",
-    value: "Rs. 312,500",
-    icon: Clock,
-    trend: "Total amount",
-    bgColor: "bg-green-50",
-    iconColor: "text-green-600",
-    borderColor: "border-green-200"
-  },
-  {
-    title: "Assinged Workers",
-    value: 35,
-    icon: Users,
-    trend: "85% capacity",
-    bgColor: "bg-purple-50",
-    iconColor: "text-purple-600",
-    borderColor: "border-purple-200"
-  }
-]
+
 
 const WorkerDistributionCard = () => (
   <div >
@@ -136,6 +104,80 @@ const TodayTasks = ({ tasks }) => (
 )
 
 const Dashboard = () => {
+  const EMPLOYEE_ID = "EMP_001";
+
+  const[projects,setProjects]=useState([])
+  const[activeCount,setActiveCount ]= useState(0)
+  const[visits,setVisits] = useState(0)
+  const[tasks,setTaskList]= useState([])
+
+useEffect(() => {
+    axios.get("http://localhost:8086/api/v1/financial_officer")
+ // Replace with your API endpoint
+      .then((response) => {
+        setProjects(response.data);
+        setActiveCount(response.data.filter(p => p.status === "Active").length);
+       
+      })
+      .catch((err) => {
+        console.error("Error fetching projects:", err);
+        
+      });
+  }, []);
+
+  useEffect(() => {
+    axios.get(`http://localhost:8086/api/v1/site_supervisor/todo/sp/${EMPLOYEE_ID}`)
+ // Replace with your API endpoint
+      .then((response) => {
+        setTaskList(response.data);
+        setVisits(response.data.filter(p => p.status === "pending").length);
+       
+      })
+      .catch((err) => {
+        console.error("Error fetching projects:", err);
+        
+      });
+  }, []);
+
+  const summaryCards = [
+  {
+    title: "Ongoing Projects",
+    value: activeCount,
+    icon: Building,
+    trend: "+2 from last month",
+    bgColor: "bg-blue-50",
+    iconColor: "text-blue-600",
+    borderColor: "border-blue-200"
+  },
+  {
+    title: "Pending Approvals",
+    value: 5,
+    icon: AlertCircle,
+    trend: "3 urgent",
+    bgColor: "bg-amber-50",
+    iconColor: "text-amber-600",
+    borderColor: "border-amber-200"
+  },
+  {
+    title: "Today's Visits",
+    value: visits,
+    icon: Clock,
+    trend: "Total amount",
+    bgColor: "bg-green-50",
+    iconColor: "text-green-600",
+    borderColor: "border-green-200"
+  },
+  {
+    title: "Assinged Workers",
+    value: 35,
+    icon: Users,
+    trend: "85% capacity",
+    bgColor: "bg-purple-50",
+    iconColor: "text-purple-600",
+    borderColor: "border-purple-200"
+  }
+]
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
@@ -202,18 +244,20 @@ const Dashboard = () => {
               <div className="flex items-center space-x-3">
                 <FolderOpen className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="font-medium text-gray-800">Create New Project</p>
-                  <p className="text-xs text-gray-600">Start a new construction project</p>
+                  <a href='site_supervisor/to_do'>
+                  <p className="font-medium text-gray-800">Create New Task</p>
+                  <p className="text-xs text-gray-600">Start a new task </p></a>
                 </div>
               </div>
             </button>
             
             <button className="w-full text-left p-3 rounded-lg bg-green-50 hover:bg-green-100 transition-colors duration-200 border border-green-100">
               <div className="flex items-center space-x-3">
-                <Users className="w-5 h-5 text-green-600" />
+                <Users className="w-5 h-5 text-black-600" />
                 <div>
-                  <p className="font-medium text-gray-800">Assign Workers</p>
-                  <p className="text-xs text-gray-600">Allocate workers to projects</p>
+                   <a href='/site_supervisor/inventory'>
+                  <p className="font-medium text-gray-800">Review Tool Requests</p>
+                  <p className="text-xs text-gray-600">Approve pending tool requestss</p></a>
                 </div>
               </div>
             </button>
@@ -221,9 +265,10 @@ const Dashboard = () => {
             <button className="w-full text-left p-3 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors duration-200 border border-amber-100">
               <div className="flex items-center space-x-3">
                 <AlertCircle className="w-5 h-5 text-amber-600" />
-                <div>
-                  <p className="font-medium text-gray-800">Review Requests</p>
-                  <p className="text-xs text-gray-600">Approve pending material requests</p>
+                <div >
+                  <a href='/site_supervisor/materials'>
+                  <p className="font-medium text-gray-800">Review Material Requests</p>
+                  <p className="text-xs text-gray-600">Approve pending material requests</p></a>
                 </div>
               </div>
             </button>

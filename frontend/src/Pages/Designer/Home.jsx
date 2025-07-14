@@ -6,7 +6,7 @@ import {
 
 const fetchDesigns = async () => {
   try {
-    const response = await fetch('http://localhost:8086/api/v1/admin/all_designs');
+    const response = await fetch('http://localhost:8086/api/v1/designer/all_designs');
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -21,7 +21,7 @@ const fetchDesigns = async () => {
 
 const fetchDesignById = async (designId) => {
   try {
-    const response = await fetch(`http://localhost:8086/api/v1/admin/get_design/${designId}`);
+    const response = await fetch(`http://localhost:8086/api/v1/designer/get_design/${designId}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -90,7 +90,7 @@ const DesignerHome = () => {
 
   const deleteDesign = async (designId) => {
     try {
-      const response = await fetch(`http://localhost:8086/api/v1/admin/delete_design/${designId}`, {
+      const response = await fetch(`http://localhost:8086/api/v1/designer/delete_design/${designId}`, {
         method: 'DELETE'
       });
       if (response.ok) {
@@ -106,7 +106,7 @@ const DesignerHome = () => {
 
   const updateDesign = async (designId, updatedData) => {
     try {
-      const response = await fetch(`http://localhost:8086/api/v1/admin/update_design/${designId}`, {
+      const response = await fetch(`http://localhost:8086/api/v1/designer/update_design/${designId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

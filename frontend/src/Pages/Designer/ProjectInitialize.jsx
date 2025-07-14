@@ -1,66 +1,70 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Calendar, User, Building, FileText, Link, Save, ArrowLeft, Plus, X, Sparkles, Zap, Users, UserPlus, ChevronRight, MapPin, Phone, Mail, Search } from 'lucide-react';
 
 export default function ClientSelectionPage() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Combined client list - all clients in one array with company added
-  const allClients = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@gmail.com',
-      phone: '+1 (555) 123-4567',
-      address: '123 Oak Street, Downtown, NY 10001',
-      company: 'Johnson Design Co.',
-      avatar: 'SJ'
-    },
-    {
-      id: 2,
-      name: 'Michael Chen',
-      email: 'michael.chen@techcorp.com',
-      phone: '+1 (555) 987-6543',
-      address: '456 Pine Avenue, Business District, NY 10002',
-      company: 'TechCorp Solutions',
-      avatar: 'MC'
-    },
-    {
-      id: 3,
-      name: 'Emily Rodriguez',
-      email: 'emily.rodriguez@homedesign.com',
-      phone: '+1 (555) 456-7890',
-      address: '789 Maple Drive, Residential Area, NY 10003',
-      company: 'Home Design Studio',
-      avatar: 'ER'
-    },
-    {
-      id: 4,
-      name: 'David Thompson',
-      email: 'david.thompson@outlook.com',
-      phone: '+1 (555) 321-0987',
-      address: '321 Elm Court, Suburban Hills, NY 10004',
-      company: 'Thompson Architecture',
-      avatar: 'DT'
-    }
-  ];
-
+  const [allClients, setAllClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     projectName: '',
     projectType: '',
-    clientName: selectedClient?.name || '',
-    clientEmail: selectedClient?.email || '',
-    clientPhone: selectedClient?.phone || '',
-    clientAddress: selectedClient?.address || '',
-    projectDescription: '',
     dueDate: '',
     priority: 'medium',
+    price: '', // Added price field that was missing
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
+    clientAddress: '',
     designToolLink: '',
-    requirements: [''],
-    notes: ''
+    projectDescription: '',
+    notes: '',
+    requirements: ['']
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch clients from API
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:8086/api/v1/designer/get_clients');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch clients: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        
+        // Transform API data to match your component structure
+        const transformedClients = data.map(client => ({
+          id: client.client_id,
+          name: client.last_name 
+            ? `${client.first_name} ${client.last_name}` 
+            : client.first_name,
+          email: client.email,
+          phone: client.contact_number,
+          address: client.address,
+          company: client.type === 'company' ? client.first_name : `${client.first_name} (${client.type})`,
+          avatar: client.last_name 
+            ? `${client.first_name[0]}${client.last_name[0]}` 
+            : client.first_name.substring(0, 2).toUpperCase(),
+          type: client.type,
+          havePlan: client.is_have_plan
+        }));
+        
+        setAllClients(transformedClients);
+      } catch (err) {
+        console.error('Error fetching clients:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClients();
+  }, []);
 
   // Fixed filter function - properly handles all searchable fields
   const filteredClients = allClients.filter(client => {
@@ -75,7 +79,7 @@ export default function ClientSelectionPage() {
   });
 
   // Update form when client is selected
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedClient) {
       setFormData(prev => ({
         ...prev,
@@ -95,54 +99,145 @@ export default function ClientSelectionPage() {
     }));
   };
 
-  const handleRequirementChange = (index, value) => {
-    const newRequirements = [...formData.requirements];
-    newRequirements[index] = value;
-    setFormData(prev => ({
-      ...prev,
-      requirements: newRequirements
-    }));
-  };
-
-  const addRequirement = () => {
-    setFormData(prev => ({
-      ...prev,
-      requirements: [...prev.requirements, '']
-    }));
-  };
-
-  const removeRequirement = (index) => {
-    const newRequirements = formData.requirements.filter((_, i) => i !== index);
-    setFormData(prev => ({
-      ...prev,
-      requirements: newRequirements
-    }));
-  };
-
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      console.log('Project initialized:', formData);
-      alert('Project initialized successfully!');
-    }, 2000);
-  };
+  e.preventDefault();
+  
+  // Validation before submission
+  if (!selectedClient) {
+    alert('Please select a client first');
+    return;
+  }
+  
+  if (!formData.projectName.trim()) {
+    alert('Please enter a project name');
+    return;
+  }
+  
+  if (!formData.projectType) {
+    alert('Please select a project type');
+    return;
+  }
+  
+  if (!formData.dueDate) {
+    alert('Please select a due date');
+    return;
+  }
+  
+  setIsSubmitting(true);
+  
+  try {
+    // Prepare the payload according to your backend API structure
+    const payload = {
+      name: formData.projectName.trim(),
+      type: formData.projectType,
+      due_date: formData.dueDate,
+      priority: formData.priority,
+      price: parseFloat(formData.price) || 0,
+      design_link: formData.designToolLink.trim() || null,
+      description: formData.projectDescription.trim() || null,
+      additional_note: formData.notes.trim() || null,
+      client_id: selectedClient.id
+    };
 
+    console.log('Submitting payload:', payload);
+
+    // Call your backend API
+    const response = await fetch('http://localhost:8086/api/v1/designer/initializing_design', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
+
+    // Enhanced response handling
+    let result;
+    let responseText;
+    
+    try {
+      // First, get the response as text
+      responseText = await response.text();
+      console.log('Raw response:', responseText);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      // Try to parse as JSON
+      if (responseText.trim()) {
+        result = JSON.parse(responseText);
+      } else {
+        throw new Error('Empty response from server');
+      }
+    } catch (jsonError) {
+      console.error('JSON parsing error:', jsonError);
+      console.error('Response text:', responseText);
+      
+      // If it's an HTML error page, extract useful info
+      if (responseText.includes('<html>') || responseText.includes('<!DOCTYPE')) {
+        throw new Error('Server returned HTML error page instead of JSON');
+      }
+      
+      // If response starts with "Error" (like your original error)
+      if (responseText.startsWith('Error')) {
+        throw new Error(`Server error: ${responseText}`);
+      }
+      
+      throw new Error(`Invalid response format: ${responseText.substring(0, 100)}...`);
+    }
+    
+    if (!response.ok) {
+      throw new Error(result?.message || `HTTP error! status: ${response.status}`);
+    }
+    
+    // Handle success
+    console.log('Project initialized successfully:', result);
+    alert('Project initialized successfully!');
+    
+    // Reset form after successful submission
+    setFormData({
+      projectName: '',
+      projectType: '',
+      dueDate: '',
+      priority: 'medium',
+      price: '',
+      clientName: '',
+      clientEmail: '',
+      clientPhone: '',
+      clientAddress: '',
+      designToolLink: '',
+      projectDescription: '',
+      notes: '',
+      requirements: ['']
+    });
+    setSelectedClient(null);
+    
+  } catch (error) {
+    console.error('Error initializing project:', error);
+    
+    // More specific error messages
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      alert('Network error: Please check your connection and try again');
+    } else if (error.message.includes('JSON')) {
+      alert('Server communication error: Invalid response format');
+    } else {
+      alert(`Failed to initialize project: ${error.message}`);
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   const handleClientSelect = (client) => {
     setSelectedClient(client);
   };
 
   const projectTypes = [
-    'Residential Design',
-    'Commercial Design',
-    'Interior Design',
-    'Landscape Design',
-    'Renovation',
-    'New Construction',
-    'Other'
+    'architectural',
+    'structural', 
+    'electrical',
+    'plumbing',
+    'mechanical',
+    'landscape',
+    'interior',
+    '3d_modeling'
   ];
 
   const priorityColors = {
@@ -150,16 +245,6 @@ export default function ClientSelectionPage() {
     medium: 'bg-blue-100 text-blue-800 border-blue-200',
     high: 'bg-orange-100 text-orange-800 border-orange-200',
     urgent: 'bg-red-100 text-red-800 border-red-200'
-  };
-
-  const getServiceTypeColor = (serviceType) => {
-    const colors = {
-      'Full Service': 'bg-[#FAAD00] text-white',
-      'Design Only': 'bg-blue-500 text-white',
-      'Design & Build': 'bg-green-500 text-white',
-      'Consultation': 'bg-purple-500 text-white'
-    };
-    return colors[serviceType] || 'bg-gray-500 text-white';
   };
 
   // Client Selection View
@@ -205,6 +290,36 @@ export default function ClientSelectionPage() {
                   Found {filteredClients.length} client{filteredClients.length !== 1 ? 's' : ''} 
                   {searchTerm && ` matching "${searchTerm}"`}
                 </p>
+              </div>
+            )}
+
+            {/* Add loading and error states in the JSX */}
+            {loading && (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FAAD00] mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading clients...</p>
+              </div>
+            )}
+
+            {error && (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <X className="w-12 h-12 text-red-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Error loading clients</h3>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-6 py-3 bg-[#FAAD00] text-white rounded-lg hover:bg-[#E09A00] transition-colors duration-200 font-medium"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
+            {!loading && !error && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {/* Your existing client grid code */}
               </div>
             )}
 
@@ -283,8 +398,7 @@ export default function ClientSelectionPage() {
             </div>
 
             {/* No results message */}
-            {filteredClients.length === 0 && (
-              <div className="text-center py-12">
+              {!loading && !error && filteredClients.length === 0 && (              <div className="text-center py-12">
                 <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Search className="w-12 h-12 text-gray-400" />
                 </div>
@@ -446,8 +560,29 @@ export default function ClientSelectionPage() {
                       <option value="urgent">🔴 Urgent</option>
                     </select>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Project Price (LKR)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-4 text-gray-500 font-medium">Rs.</span>
+                      <input
+                        type="number"
+                        name="price"
+                        value={formData.price}
+                        onChange={handleInputChange}
+                        className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-yellow-200 focus:border-[#FAAD00] transition-all duration-300 hover:border-gray-300"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
                 </div>
+
               </div>
+              
 
               {/* Client Information - Auto-filled */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">

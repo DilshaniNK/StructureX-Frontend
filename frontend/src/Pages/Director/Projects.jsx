@@ -9,6 +9,8 @@ import Project13 from '../../assets/Projects/P1_2.jpg';
 const Project = () => {
   const [activeCategory, setActiveCategory] = useState('ongoing');
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showNewProjectForm, setShowNewProjectForm]= useState(false)
+
   const navigate = useNavigate();
 
   const projects = [
@@ -189,11 +191,11 @@ const Project = () => {
           <div className="mb-4">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-gray-700">Progress</span>
-              <span className="text-sm font-bold text-yellow-600">{project.progress}%</span>
+              <span className="text-sm font-bold text-[#FAAD00]">{project.progress}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
-                className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-2 rounded-full"
+                className="bg-gradient-to-r from-[#FAAD00] to-yellow-500 h-2 rounded-full"
                 style={{ width: `${project.progress}%` }}
               />
             </div>
@@ -201,7 +203,7 @@ const Project = () => {
 
           <button
             onClick={() => navigate(`/directorcont/project/${project.id}`, { state: { project } })}
-            className="w-full bg-black hover:bg-yellow-400 text-white hover:text-black font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center group"
+            className="w-full bg-black hover:bg-[#FAAD00] text-white hover:text-black font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center group"
           >
             <Eye className="w-4 h-4 mr-2" />
             View More
@@ -222,7 +224,7 @@ const Project = () => {
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Project Overview</h1>
             <p className="text-gray-600">Manage and track all your projects in one place</p>
           </div>
-          <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+          <button className="bg-[#FAAD00] hover:bg-yellow-500 text-black font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-1">
             <Plus className="w-5 h-5 mr-2" />
             Add Project
           </button>
@@ -235,7 +237,7 @@ const Project = () => {
               onClick={() => handleCategoryChange(category.key)}
               className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
                 activeCategory === category.key
-                  ? 'bg-yellow-400 text-black shadow-lg transform scale-105'
+                  ? 'bg-[#FAAD00] text-black shadow-lg transform scale-105'
                   : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md hover:shadow-lg'
               }`}
             >
@@ -243,7 +245,7 @@ const Project = () => {
               <span
                 className={`px-2 py-1 rounded-full text-xs font-bold ${
                   activeCategory === category.key
-                    ? 'bg-black text-yellow-400'
+                    ? 'bg-black text-[#FAAD00]'
                     : 'bg-gray-200 text-gray-600'
                 }`}
               >

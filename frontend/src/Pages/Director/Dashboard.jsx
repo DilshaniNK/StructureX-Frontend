@@ -38,8 +38,8 @@ const Dashboard = () => {
     
     <div className=" space-y-6">
       <OverviewStats projects={projects} />
-        <button className="bg-amber-500 hover:bg-black text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out"
-        onClick={() => navigate('/directorcont/clientdetails')}
+        <button className="bg-[#FAAD00] hover:bg-black text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out"
+        onClick={() => navigate('/directorcont/clientdetails', {state: {showForm: true}})}
         >
         Register Client
         </button>

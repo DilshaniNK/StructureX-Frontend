@@ -39,7 +39,7 @@ const ProjectDetails = () => {
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white mt-[50px]">
             {/* Header Section */}
             <div className="bg-white border-b border-gray-100">
                 <div className="max-w-6xl mx-auto px-6 py-8">

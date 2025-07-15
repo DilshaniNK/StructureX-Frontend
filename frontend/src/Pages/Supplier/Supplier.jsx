@@ -36,7 +36,7 @@ export default function Supplier() {
     if (path.includes('/supplier/quotations')) return 'quotations';
     if (path.includes('/supplier/shistory')) return 'shistory';
     if (path.includes('/supplier/messages')) return 'messages';
-    return 'dashboard'; // default
+    return 'home'; // default
   };
 
   return (

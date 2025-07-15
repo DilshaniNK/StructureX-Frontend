@@ -379,7 +379,7 @@ const Dashboard = ({ setActiveSection }) => {
         </div>
 
         {/* System Status */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
@@ -411,7 +411,7 @@ const Dashboard = ({ setActiveSection }) => {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   )

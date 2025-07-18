@@ -71,18 +71,19 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
       const decoded = jwtDecode(token);
       const role = decoded.role
       const employeeId = decoded.employeeId;
-      
+
 
       console.log("Decoded JWT:", decoded);
 
       alert("Login Successful");
 
+      // direct based on role
       switch (role) {
         case "Site_Supervisor":
           navigate(`/site_supervisor/${employeeId}`);
           break;
-        case "project_manager":
-          navigate("/project-manager/dashboard");
+        case "Financial_Officer":
+          navigate(`/financial_officer/${employeeId}`);
           break;
         case "admin":
           navigate("/admin/dashboard");
@@ -156,8 +157,8 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
                 value={formData.email}
                 onChange={handleInputChange}
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${errors.email
-                    ? 'border-red-500 focus:ring-red-200'
-                    : 'border-gray-300 focus:ring-yellow-200 focus:border-yellow-500'
+                  ? 'border-red-500 focus:ring-red-200'
+                  : 'border-gray-300 focus:ring-yellow-200 focus:border-yellow-500'
                   }`}
                 placeholder="Enter email"
               />
@@ -179,8 +180,8 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
                 value={formData.password}
                 onChange={handleInputChange}
                 className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${errors.password
-                    ? 'border-red-500 focus:ring-red-200'
-                    : 'border-gray-300 focus:ring-yellow-200 focus:border-yellow-500'
+                  ? 'border-red-500 focus:ring-red-200'
+                  : 'border-gray-300 focus:ring-yellow-200 focus:border-yellow-500'
                   }`}
                 placeholder="Enter your password"
               />
@@ -215,8 +216,8 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
             onClick={handleLogin}
             disabled={isLoading}
             className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 transform ${isLoading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-yellow-500 hover:bg-yellow-600 hover:scale-105 active:scale-95'
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-yellow-500 hover:bg-yellow-600 hover:scale-105 active:scale-95'
               }`}
           >
             {isLoading ? (

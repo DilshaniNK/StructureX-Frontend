@@ -33,7 +33,7 @@ const AddEmployeeForm = () => {
     'Legal_Officer',
     'Director',
     'Designer',
-    'Finance_Department'
+    'Financial_Officer'
   ];
 
   const handleInputChange = (e) => {

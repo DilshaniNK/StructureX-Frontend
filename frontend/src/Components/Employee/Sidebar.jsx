@@ -60,20 +60,18 @@ const Sidebar = ({
     ],
 
     FinancialOfficer: [
-      { id: 'home', label: 'Home', icon: Home, path: '/financial_officer/home', badge: null },
-      { id: 'projects', label: 'Projects', icon: Projects, path: '/financial_officer/projects' },
-      { id: 'payments', label: 'Payments', icon: Payments, path: '/financial_officer/payments', badge: null },
-
-      { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/financial_officer/calendar', badge: null },
-      { id: 'daily labors', label: 'Daily Labors', icon: Labors, path: '/financial_officer/daily_labors', badge: '12' },
-
-      { id: 'settings', label: 'Settings', icon: Settings, path: '/financial_officer/settings', badge: '5' }
+      { id: 'home', label: 'Home', icon: Home, path: `/financial_officer/${employeeId}/home`, badge: null },
+      { id: 'projects', label: 'Projects', icon: Projects, path: `/financial_officer/${employeeId}/projects` },
+      { id: 'payments', label: 'Payments', icon: Payments, path: `/financial_officer/${employeeId}/payments`, badge: null },
+      { id: 'calendar', label: 'Calendar', icon: Calendar, path: `/financial_officer/${employeeId}/calendar`, badge: null },
+      { id: 'daily labors', label: 'Daily Labors', icon: Labors, path: `/financial_officer/${employeeId}/daily_labors`, badge: '12' },
+      { id: 'settings', label: 'Settings', icon: Settings, path: `/financial_officer/${employeeId}/settings`, badge: '5' }
     ],
     Legal_Officer: [
       { id: 'home', label: 'Home', icon: Home, path: '/legalofficer/dashboard', badge: null },
     ],
     Site_Supervisor: [
-      { id: 'home', label: 'Home', icon: Home, path: '/site_supervisor/home', badge: null },
+      { id: 'home', label: 'Home', icon: Home, path: `/site_supervisor/${employeeId}`, badge: null },
       { id: 'projects', label: 'Projects', icon: Projects, path: `/site_supervisor/${employeeId}/projects` },
       { id: 'labors', label: 'Labors', icon: Labors, path: `/site_supervisor/${employeeId}/labors`, badge: null },
       { id: 'progress', label: 'Progress', icon: BadgeCheck, path: `/site_supervisor/${employeeId}/progress`, badge: null },

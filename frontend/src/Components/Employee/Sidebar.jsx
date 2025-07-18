@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
 import Projects from '@mui/icons-material/FolderOpenOutlined';
 import Payments from '@mui/icons-material/ReceiptOutlined';
@@ -29,6 +29,8 @@ const Sidebar = ({
   const [hoveredItem, setHoveredItem] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+   const { employeeId } = useParams(); //get employeeId from URL params
 
   const menuItems = {
     Example: [
@@ -70,16 +72,16 @@ const Sidebar = ({
     Legal_Officer: [
       { id: 'home', label: 'Home', icon: Home, path: '/legalofficer/dashboard', badge: null },
     ],
-    SiteSupervisor: [
+    Site_Supervisor: [
       { id: 'home', label: 'Home', icon: Home, path: '/site_supervisor/home', badge: null },
-      { id: 'projects', label: 'Projects', icon: Projects, path: '/site_supervisor/projects' },
-      { id: 'labors', label: 'Labors', icon: Labors, path: '/site_supervisor/labors', badge: null },
-      { id: 'progress', label: 'Progress', icon: BadgeCheck, path: '/site_supervisor/progress', badge: null },
-      { id: 'materials', label: 'Materials', icon: Materials, path: '/site_supervisor/materials', badge: '12' },
-      { id: 'inventory', label: 'Inventory', icon: Inventory, path: '/site_supervisor/inventory', badge: '5' },
-      { id: 'to do', label: 'To-Do', icon: TodoList, path: '/site_supervisor/to-do', badge: '5' },
-      { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/site_supervisor/calendar', badge: null },
-      { id: 'settings', label: 'Settings', icon: Settings, path: '/site_supervisor/settings', badge: '5' }
+      { id: 'projects', label: 'Projects', icon: Projects, path: `/site_supervisor/${employeeId}/projects` },
+      { id: 'labors', label: 'Labors', icon: Labors, path: `/site_supervisor/${employeeId}/labors`, badge: null },
+      { id: 'progress', label: 'Progress', icon: BadgeCheck, path: `/site_supervisor/${employeeId}/progress`, badge: null },
+      { id: 'materials', label: 'Materials', icon: Materials, path: `/site_supervisor/${employeeId}/materials`, badge: '12' },
+      { id: 'inventory', label: 'Inventory', icon: Inventory, path: `/site_supervisor/${employeeId}/inventory`, badge: '5' },
+      { id: 'to do', label: 'To-Do', icon: TodoList, path: `/site_supervisor/${employeeId}/to-do`, badge: '5' },
+      { id: 'calendar', label: 'Calendar', icon: Calendar, path: `/site_supervisor/${employeeId}/calendar`, badge: null },
+      { id: 'settings', label: 'Settings', icon: Settings, path: `/site_supervisor/${employeeId}/settings`, badge: '5' }
 
     ],
     Supplier: [

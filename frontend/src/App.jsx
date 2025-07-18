@@ -1,8 +1,8 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-
-
+import ProtectedRoute from './Components/Employee/ProtectedRoute';
+import Unauthorized from './Pages/Unauthorized';  
 
 import Example from './Pages/Example'
 import FinancialOfficer from './Pages/Financial_officer/FinancialOfficer'
@@ -43,6 +43,8 @@ const App = () => {
             <Route path="/sqs/*" element={<SQS/>}/>
             <Route path="/supplier/*" element={<Supplier/>}/>
             <Route path="/project_owner/*" element={<ProjectOwner/>}/>
+
+            <Route path="/unauthorized" element={<Unauthorized/>}/>
            
 
 
@@ -50,7 +52,13 @@ const App = () => {
             <Route path="/" element={<Home/>}/>
             <Route path="/admin/*" element={<Admin/>}/>
             <Route path="/financial_officer/*" element={<FinancialOfficer/>}/>
-            <Route path="/site_supervisor/*" element={<SiteSupervisor/>}/>
+
+            <Route path="/site_supervisor/:employeeId" element={
+  <ProtectedRoute allowedRoles={['Site_Supervisor']}>
+    <SiteSupervisor />
+  </ProtectedRoute>
+} />
+
             <Route path="/example/*" element={<Example/>}/>
             <Route path="/designer/*" element={<Designer/>}/>
             <Route path='/director/*' element={<Director/>}/>

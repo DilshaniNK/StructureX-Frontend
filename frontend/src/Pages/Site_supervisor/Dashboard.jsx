@@ -1,5 +1,6 @@
 import React from 'react'
 import axios from 'axios'
+import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import WorkerDistributionChart from '../../Components/Site_supervisor/WorkerDistributionChart'
 import InventoryChart from '../../Components/Site_supervisor/InventoryChart'
@@ -104,7 +105,7 @@ const TodayTasks = ({ tasks }) => (
 )
 
 const Dashboard = () => {
-  const EMPLOYEE_ID = "EMP_001";
+  const EMPLOYEE_ID = useParams().employeeId || EMPLOYEE_ID; // Use employeeId from URL or default
 
   const[projects,setProjects]=useState([])
   const[activeCount,setActiveCount ]= useState(0)
@@ -117,6 +118,7 @@ useEffect(() => {
       .then((response) => {
         setProjects(response.data);
         setActiveCount(response.data.filter(p => p.status === "Active").length);
+        
        
       })
       .catch((err) => {

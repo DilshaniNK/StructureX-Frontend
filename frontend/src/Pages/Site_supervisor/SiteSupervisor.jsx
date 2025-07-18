@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation ,useParams} from 'react-router-dom';
 import Navbar from '../../Components/Employee/Navbar';
 import Sidebar from '../../Components/Employee/Sidebar';
 
@@ -15,7 +15,7 @@ import S_calendar from './Calendar';
 
 export default function SiteSupervisor() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const userRole = 'SiteSupervisor'; // Change this based on your user's actual role
+  const userRole = 'Site_Supervisor'; // Change this based on your user's actual role
   const userName = 'Nadun';
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,12 +23,13 @@ export default function SiteSupervisor() {
   const handleSidebarNavigate = (id, path) => {
     navigate(path);
   };
+  const { employeeId } = useParams();
 
   // Determine active item based on current path
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path.includes('/site_supervisor/home') || path === '/') return 'home';
-    if (path.includes('/site_supervisor/projects')) return 'projects';
+    if (path.includes(`/site_supervisor/${employeeId}`) || path === '/') return 'home';
+    if (path.includes(`/site_supervisor/${employeeId}/projects`)) return 'projects';
     if (path.includes('/site_supervisor/project_details')) return 'project_details';
     if (path.includes('/site_supervisor/to-do')) return 'to do';
     if (path.includes('/site_supervisor/progress')) return 'progress';

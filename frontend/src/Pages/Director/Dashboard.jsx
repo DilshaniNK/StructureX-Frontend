@@ -1,31 +1,33 @@
 // pages/Director/Overview.jsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import OverviewStats from '../../Components/Director/OverviewStats';
 import RecentProjects from '../../Components/Director/RecentProjects';
 import UpcomingSiteVisits from '../../Components/Director/UpcomingSiteVisits';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const projects = [
-    {
-      id: 1, name: "Sunset Villa Complex", status: "ongoing", progress: 75, manager: "John Smith", location: "Downtown"
-    },
-    {
-      id: 2, name: "Green Heights Apartments", status: "ongoing", progress: 45, manager: "Sarah Davis", location: "North Side"
-    },
-    {
-      id: 3, name: "Commercial Plaza", status: "hold", progress: 30, manager: "Robert Brown", location: "Business District"
-    },
-    {
-      id: 4, name: "Riverside Homes", status: "finished", progress: 100, manager: "Emily Chen", location: "Riverside"
-    }
-  ];
+  const [projects,setProjects] = useState([]);
+  const[loading,setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchProject = async () =>{
+      try{
+        const res = await fetch('http://localhost:8086/api/v1/director/get_all_projects');
+        const data = await res.json();
+        setProjects(data);
+      }catch(err){
+        alert("failed ti load projects")
+      }finally{
+        setLoading(false);
+      }
+    };
+    fetchProject();
+  }, []);
   const siteVisits = [
     { id: 1, project: "Green Heights Apartments", date: "2024-06-11", inspector: "Sarah Davis", status: "scheduled" },
   ];
   const navigate = useNavigate();
-
+  if(loading) return <div>Loading ...</div>
   return (
   
 

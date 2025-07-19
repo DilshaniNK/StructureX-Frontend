@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Building, Link,Lock } from 'lucide-react';
+import NewProjectForm from './NewProjectForm';
 
 const ClientDetailsDisplay = () => {
   const [clientsWithPlan, setClientsWithPlan] = useState([]);
   const [clientsWithoutPlan, setClientsWithoutPlan] = useState([]);
+  const[showProjectForm,setShowProjectForm] = useState(false);
+  const [selectedClient,setSelectedClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('withPlan'); // New state for active tab
@@ -11,6 +14,42 @@ const ClientDetailsDisplay = () => {
   useEffect(() => {
     fetchClients();
   }, []);
+
+  const handleInitializeProject = (client) =>{
+    setSelectedClient(client);
+    setShowProjectForm(true);
+
+  }
+
+  const handleProjectFormClose = () =>{
+    setShowProjectForm(false)
+    setSelectedClient(null);
+  }
+
+  const handleAddProject = async (projectData) =>{
+    try{
+      const response = await fetch("http://localhost:8086/api/v1/director/initiate_project",{
+        method: 'POST',
+        headers: {
+          'Content-type' : 'application/json'
+        },
+        body: JSON.stringify({
+          ...projectData,
+          client_id: selectedClient.client_id
+        }),
+      });
+      if(response.ok){
+        setShowProjectForm(false);
+        setSelectedClient(null);
+        alert("success")
+
+      }else{
+        alert("error")
+      }
+    }catch(err){
+      alert(err.message);
+    }
+  }
 
   const fetchClients = async () => {
     try {
@@ -105,6 +144,7 @@ const ClientDetailsDisplay = () => {
                    {planStatus ? (
                     <button
                       className='bg-[#FAAD00] hover:bg-black text-black hover:text-white cursor-pointer font-semibold px-4 py-2 rounded-full shadow transition-colors'
+                      onClick={() => handleInitializeProject(client)}
                       >
                         Initialize Project
                       </button>
@@ -270,6 +310,13 @@ const ClientDetailsDisplay = () => {
           />
         )}
       </div>
+      {showProjectForm && (
+        <NewProjectForm 
+          onClose={handleProjectFormClose}
+          onAdd={handleAddProject}
+          client={selectedClient}
+        />
+      )}
     </div>
   );
 };

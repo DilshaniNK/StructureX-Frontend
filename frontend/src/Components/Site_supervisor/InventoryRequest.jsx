@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Send, Package, Wrench, Calendar, MapPin, Hash, CheckCircle, AlertCircle, User, Clock, Eye, Check, X, ArrowRight } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 export default function InventoryRequest({ title, items = [], projects = [], type = 'Material', userRole = 'Site Supervisor', sessionUser = 'John Smith' }) {
 
   const [sites, setSites] = useState([]);
   const [selectedSite, setSelectedSite] = useState('');
+  const [projectId, setProjectId] = useState('');
   const [submitted, setSubmitted] = useState([]);
   const [toolSubmitted, setToolSubmitted] = useState([]);
   const [materials, setMaterials] = useState([
-    { name: '', quantity: '', priority: 'Medium' }
+    { name: '', quantity: '', priority: 'medium' }
   ]);
-  const [approvalStatus, setApprovalStatus] = useState('pending');
+
+
+  const { employeeId } = useParams();
+
+
   const [requestType, setRequestType] = useState(type);
 
   //fetch projects
@@ -21,6 +27,16 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
     fetchMaterialRequests();
     fetchToolRequests();
   }, []);
+
+   useEffect(() => {
+  if (selectedSite) {
+    const selectedSiteObj = sites.find(site => site.projectId === selectedSite);
+    if (selectedSiteObj) {
+      setProjectId(selectedSiteObj.projectId); // ✅ Now it's correctly set
+    }
+  }
+}, [selectedSite, sites]);
+
 
   const fetchSites = async () => {
     try {
@@ -70,7 +86,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
   };
 
   const handleAdd = () => {
-    setMaterials([...materials, { name: '', quantity: '', priority: 'Medium' }]);
+    setMaterials([...materials, { name: '', quantity: '', priority: 'medium' }]);
   };
 
   const handleRemove = (index) => {
@@ -80,9 +96,14 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
     }
   };
 
+ 
+
 
   //create a new request
   const handleSubmit = async () => {
+
+   
+
     if (!selectedSite) {
       alert('Please select a project site.');
       return;
@@ -99,12 +120,16 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
         return;
       }
     }
-
+     
     const requestPayload = {
-      approvalStatus: 'pending',
+      pmApproval:0,
+      qsApproval: 0,
       requestType: requestType.toLowerCase(),
       date: new Date().toISOString().split('T')[0],
-      projectId: parseInt(selectedSite),
+      projectId: selectedSite,
+      siteSupervisorId: employeeId,
+      qsId:"",
+      isReceived: 0,
       materials: materials.map((r) => ({
         materialName: r.name,
         quantity: parseInt(r.quantity),
@@ -120,7 +145,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
       );
       showNotification(`${requestType} request submitted to Senior QS for approval!`, 'success');
       setSubmitted((prev) => [...prev, response.data]);
-      setMaterials([{ name: '', quantity: '', priority: 'Medium' }]);
+      setMaterials([{ name: '', quantity: '', priority: 'medium' }]);
       setSelectedSite('');
     } catch (error) {
       console.error('Submission failed:', error);
@@ -129,62 +154,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
   };
 
 
-  const handleQSAction = (requestId, action, comments = '') => {
-    setSubmitted(prev => prev.map(req => {
-      if (req.id === requestId) {
-        if (action === 'approve') {
-          return {
-            ...req,
-            status: 'QS Approved - Pending Admin',
-            workflow: 'ADMIN_REVIEW',
-            qsApprovalDate: new Date().toLocaleString(),
-            comments: comments || 'Approved by Senior QS'
-          };
-        } else {
-          return {
-            ...req,
-            status: 'QS Rejected',
-            workflow: 'REJECTED',
-            qsApprovalDate: new Date().toLocaleString(),
-            comments: comments || 'Rejected by Senior QS'
-          };
-        }
-      }
-      return req;
-    }));
-
-    const actionText = action === 'approve' ? 'approved' : 'rejected';
-    showNotification(`Request ${actionText} by Senior QS`, action === 'approve' ? 'success' : 'error');
-  };
-
-  const handleAdminAction = (requestId, action, comments = '') => {
-    setSubmitted(prev => prev.map(req => {
-      if (req.id === requestId) {
-        if (action === 'approve') {
-          return {
-            ...req,
-            status: 'Approved - Ready for Collection',
-            workflow: 'COMPLETED',
-            adminApprovalDate: new Date().toLocaleString(),
-            comments: req.comments + '\n' + (comments || 'Approved by Admin - Ready for collection')
-          };
-        } else {
-          return {
-            ...req,
-            status: 'Admin Rejected',
-            workflow: 'REJECTED',
-            adminApprovalDate: new Date().toLocaleString(),
-            comments: req.comments + '\n' + (comments || 'Rejected by Admin')
-          };
-        }
-      }
-      return req;
-    }));
-
-    const actionText = action === 'approve' ? 'approved' : 'rejected';
-    showNotification(`Request ${actionText} by Admin`, action === 'approve' ? 'success' : 'error');
-  };
-
+ 
 
   // show notification messsage
   const showNotification = (message, type = 'success') => {
@@ -196,19 +166,11 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
     setTimeout(() => notification.remove(), 4000);
   };
 
-  //priority colors setup
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return 'text-red-600 bg-red-50 border-red-200';
-      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'low': return 'text-green-600 bg-green-50 border-green-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
+  
 
   // Show only relevant requests based on current page type
   const materialRequests = type === 'Material'
-    ? submitted.filter(entry => entry.requestType === 'materials')
+    ? submitted.filter(entry => entry.requestType === 'material')
     : [];
 
   const toolRequests = type === 'Tool'
@@ -216,103 +178,12 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
     : [];
 
 
-  // Get status color based on approval status
-  const getStatusColor = (status) => {
-    if (status.includes('pending')) return 'text-orange-600 bg-orange-100';
-    if (status.includes('approved') || status.includes('Ready')) return 'text-green-600 bg-green-100';
-    if (status.includes('rejected')) return 'text-red-600 bg-red-100';
-    return 'text-gray-600 bg-gray-100';
-  };
+ 
+  
 
-  const getWorkflowSteps = (workflow, status) => {
-    const steps = [
-      { label: 'Site Supervisor', icon: User, completed: true },
-      { label: 'Senior QS Review', icon: Eye, completed: workflow !== 'QS_REVIEW' },
-      { label: 'Admin Approval', icon: CheckCircle, completed: workflow === 'COMPLETED' }
-    ];
-    return steps;
-  };
+  
 
-  const renderWorkflowProgress = (entry) => {
-    const steps = getWorkflowSteps(entry.workflow, entry.status);
-
-    return (
-      <div className="flex items-center justify-between mb-4 p-3 bg-slate-50 rounded-lg">
-        {steps.map((step, index) => (
-          <div key={index} className="flex items-center">
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${step.completed ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
-              }`}>
-              <step.icon className="w-4 h-4" />
-            </div>
-            <span className={`ml-2 text-sm ${step.completed ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-              {step.label}
-            </span>
-            {index < steps.length - 1 && (
-              <ArrowRight className="w-4 h-4 text-gray-400 mx-3" />
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const renderActionButtons = (entry) => {
-    if (userRole === 'Senior QS' && entry.workflow === 'QS_REVIEW') {
-      return (
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={() => {
-              const comments = prompt('Add comments (optional):');
-              handleQSAction(entry.id, 'approve', comments);
-            }}
-            className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors"
-          >
-            <Check className="w-4 h-4" />
-            Approve
-          </button>
-          <button
-            onClick={() => {
-              const comments = prompt('Reason for rejection:');
-              if (comments) handleQSAction(entry.id, 'reject', comments);
-            }}
-            className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Reject
-          </button>
-        </div>
-      );
-    }
-
-    if (userRole === 'Admin' && entry.workflow === 'ADMIN_REVIEW') {
-      return (
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={() => {
-              const comments = prompt('Add comments (optional):');
-              handleAdminAction(entry.id, 'approve', comments);
-            }}
-            className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors"
-          >
-            <Check className="w-4 h-4" />
-            Approve & Release
-          </button>
-          <button
-            onClick={() => {
-              const comments = prompt('Reason for rejection:');
-              if (comments) handleAdminAction(entry.id, 'reject', comments);
-            }}
-            className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Reject
-          </button>
-        </div>
-      );
-    }
-
-    return null;
-  };
+    
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -331,14 +202,14 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                   {title || `${type} Request System`}
                 </h1>
                 <p className="text-slate-600 text-lg">
-                  Workflow: Site Supervisor → Senior QS → Admin
+                  Workflow: Site Supervisor → project Manager → QS
                 </p>
               </div>
             </div>
             <div className="text-right">
               <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">
                 <div className="font-medium">Logged in as</div>
-                <div className="text-sm">{sessionUser}</div>
+                <div className="text-sm">{}</div>
                 <div className="text-xs text-blue-600">{userRole}</div>
               </div>
             </div>
@@ -453,7 +324,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                     className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md"
                   >
                     <Send className="w-4 h-4" />
-                    Submit to Senior QS
+                    Submit to PM
                   </button>
                 </div>
               </div>
@@ -538,17 +409,13 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2">
-                            <span className={`px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ${getStatusColor(entry.approvalStatus)}`}>
-                              {entry.approvalStatus}
+                            <span className={`px-4 py-2 rounded-xl text-xs font-semibold shadow-sm `}>
+                              {entry.pmApproval === 1 ? 'Approved' : entry.pmApproval === 0 ? 'Rejected' : 'Pending'  }
                             </span>
                           </div>
                         </div>
 
-                        {/* Workflow Progress */}
-                        <div className="mb-6">
-                          {renderWorkflowProgress(entry)}
-                        </div>
-
+                        
                         {/* Request Details Grid */}
                         <div className="bg-slate-50/50 rounded-xl p-5 mb-6">
                           <div className="grid grid-cols-3 gap-4">
@@ -580,7 +447,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                               <div key={i} className="bg-white border border-slate-200/60 rounded-xl p-4 hover:shadow-sm transition-shadow">
                                 <div className="flex justify-between items-start mb-3">
                                   <span className="font-semibold text-slate-800 text-sm leading-tight">{r.materialName}</span>
-                                  <span className={`px-3 py-1 rounded-lg text-xs font-medium border shadow-sm ${getPriorityColor(r.priority)}`}>
+                                  <span className={`px-3 py-1 rounded-lg text-xs font-medium border shadow-sm `}>
                                     {r.priority}
                                   </span>
                                 </div>
@@ -596,9 +463,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="pt-4 border-t border-slate-200/60">
-                          {renderActionButtons(entry)}
-                        </div>
+                        
                       </div>
                     ))}
                   </div>
@@ -637,16 +502,13 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2">
-                            <span className={`px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ${getStatusColor(entry.approvalStatus)}`}>
-                              {entry.approvalStatus}
+                            <span className={`px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ${entry.pmApproval === 1 ? 'bg-green-100 text-green-700' : entry.pmApproval === 0 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                              {entry.pmApproval}
                             </span>
                           </div>
                         </div>
 
-                        {/* Workflow Progress */}
-                        <div className="mb-6">
-                          {renderWorkflowProgress(entry)}
-                        </div>
+                       
 
                         {/* Request Details Grid */}
                         <div className="bg-slate-50/50 rounded-xl p-5 mb-6">
@@ -679,7 +541,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                               <div key={i} className="bg-white border border-slate-200/60 rounded-xl p-4 hover:shadow-sm transition-shadow">
                                 <div className="flex justify-between items-start mb-3">
                                   <span className="font-semibold text-slate-800 text-sm leading-tight">{r.materialName}</span>
-                                  <span className={`px-3 py-1 rounded-lg text-xs font-medium border shadow-sm ${getPriorityColor(r.priority)}`}>
+                                  <span className={`px-3 py-1 rounded-lg text-xs font-medium border shadow-sm `}>
                                     {r.priority}
                                   </span>
                                 </div>
@@ -694,10 +556,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                           </div>
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="pt-4 border-t border-slate-200/60">
-                          {renderActionButtons(entry)}
-                        </div>
+                        
                       </div>
                     ))}
                   </div>

@@ -127,12 +127,7 @@ const TodoList = () => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        {/* <div>
-          <h1 className="text-3xl font-bold text-gray-900">To-Do List</h1>
-          <p className="text-gray-600 mt-2">Manage your tasks and stay organized</p>
-        </div> */}
         <button
           onClick={() => setShowAddForm(true)}
           className="mt-4 sm:mt-0 px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center"
@@ -144,7 +139,7 @@ const TodoList = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Tasks</p>
@@ -156,7 +151,7 @@ const TodoList = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Completed</p>
@@ -168,7 +163,7 @@ const TodoList = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Pending</p>
@@ -180,7 +175,7 @@ const TodoList = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Overdue</p>
@@ -233,7 +228,6 @@ const TodoList = () => {
         </div>
       </div>
 
-      {/* Todo List */}
       <div className="space-y-4">
         {filteredTodos.map((todo) => (
           <div key={todo.id} className={`bg-white p-6 rounded-xl shadow-sm border transition-all duration-200 ${
@@ -280,10 +274,7 @@ const TodoList = () => {
                       {isOverdue(todo.dueDate) && !todo.completed && ' (Overdue)'}
                     </span>
                   </div>
-                  <span>•</span>
-                  <span>Project: {todo.project}</span>
-                  <span>•</span>
-                  <span>Assignee: {todo.assignee}</span>
+                  
                 </div>
               </div>
             </div>
@@ -291,21 +282,11 @@ const TodoList = () => {
         ))}
       </div>
 
-      {/* Add Task Form Modal */}
       {showAddForm && (
         <div className="fixed inset-0  backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
           <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Task</h3>
             <form className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Enter task title"
-                />
-              </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
@@ -315,16 +296,6 @@ const TodoList = () => {
                 ></textarea>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
                   <input
@@ -332,31 +303,15 @@ const TodoList = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
-              </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                  <option>Downtown Office Complex</option>
-                  <option>Residential Towers</option>
-                  <option>Shopping Mall Renovation</option>
-                  <option>Administration</option>
-                  <option>All Projects</option>
+                  <option>Pending</option>
+                  <option>Completed</option>
+                  <option>Reject</option>
                 </select>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                  <option>You</option>
-                  <option>John Smith</option>
-                  <option>Sarah Johnson</option>
-                  <option>Mike Chen</option>
-                  <option>Lisa Wong</option>
-                  <option>David Park</option>
-                </select>
-              </div>
-              
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"

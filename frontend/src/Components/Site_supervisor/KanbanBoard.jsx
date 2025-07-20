@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useParams } from "react-router-dom"; 
 
 const API_BASE = "http://localhost:8086/api/v1/site_supervisor";
-const EMPLOYEE_ID = "EMP_001";
+
 
 const initialTasks = {
   todo: [],
@@ -15,10 +16,12 @@ export default function KanbanBoard() {
   const [taskName, setTaskName] = useState("");
   const [taskDate, setTaskDate] = useState("");
 
+  const { employeeId } = useParams();
+
   // Fetch tasks from backend on component mount
   useEffect(() => {
     axios
-      .get(`${API_BASE}/todo/sp/${EMPLOYEE_ID}`)
+      .get(`${API_BASE}/todo/sp/${employeeId}`)
       .then((res) => {
         const allTasks = Array.isArray(res.data) ? res.data : [res.data];
         const newTasks = { todo: [], inProgress: [], done: [] };
@@ -55,7 +58,7 @@ export default function KanbanBoard() {
     if (!taskName || !taskDate) return alert("Please enter task and date");
 
     const newTaskPayload = {
-      employeeId: EMPLOYEE_ID,
+      employeeId: employeeId,
       status: "pending",
       description: taskName,
       date: taskDate,
@@ -96,7 +99,7 @@ export default function KanbanBoard() {
 
     const updatePayload = {
       taskId: taskToMove.id,
-      employeeId: EMPLOYEE_ID,
+      employeeId: employeeId,
       status: statusMap[to],
       description: taskToMove.name,
       date: taskToMove.date,

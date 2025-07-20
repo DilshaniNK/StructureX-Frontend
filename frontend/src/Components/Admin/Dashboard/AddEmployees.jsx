@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { User, Mail, Phone, MapPin, Building, Calendar, Eye, EyeOff, Save, X, Upload, CheckCircle } from 'lucide-react';
+import axios from 'axios';
 
 const AddEmployeeForm = () => {
   const [formData, setFormData] = useState({
-    fullName: '',
+    name: '',
     email: '',
-    contactNumber: '', // Changed from 'contact' to match backend
+    phone_number: '',
     address: '',
-    employeeType: '',
-    joinDate: '',
-    salary: '',
-    password: '',
+    type: '',
+    joined_date: '',
     confirmPassword: '',
     profileImage: null
   });
@@ -32,9 +31,8 @@ const AddEmployeeForm = () => {
     'Site_Supervisor',
     'Legal_Officer',
     'Director',
-    'Architect',
-    'Finance_Department',
-    'System_Administrator'
+    'Designer',
+    'Finance_Department'
   ];
 
   const handleInputChange = (e) => {
@@ -72,18 +70,13 @@ const AddEmployeeForm = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
+    if (!formData.name.trim()) newErrors.name = 'Full name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
-    if (!formData.contactNumber.trim()) newErrors.contactNumber = 'Contact number is required';
+    if (!formData.phone_number.trim()) newErrors.phone_number = 'Phone number is required';
     if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.employeeType) newErrors.employeeType = 'Employee type is required';
-    if (!formData.joinDate) newErrors.joinDate = 'Join date is required';
-    if (!formData.salary.trim()) newErrors.salary = 'Salary is required';
-    if (!formData.password) newErrors.password = 'Password is required';
-    else if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
-    if (!formData.confirmPassword) newErrors.confirmPassword = 'Confirm password is required';
-    else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    if (!formData.type) newErrors.type = 'Employee type is required';
+    if (!formData.joined_date) newErrors.joined_date = 'Join date is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -93,79 +86,79 @@ const AddEmployeeForm = () => {
     if (e && e.preventDefault) {
       e.preventDefault();
     }
-    
-    console.log('Submit button clicked!'); // Debug log
-    console.log('Form data:', formData); // Debug log
-    
+
     if (!validateForm()) {
-      console.log('Form validation failed:', errors);
       return;
     }
 
     setIsSubmitting(true);
     setSubmitSuccess(false);
-    
+
     try {
-      // Prepare data for backend (exclude confirmPassword and profileImage for now)
-      const employeeData = {
-        fullName: formData.fullName,
-        email: formData.email,
-        contactNumber: formData.contactNumber,
-        address: formData.address,
-        employeeType: formData.employeeType,
-        joinDate: formData.joinDate,
-        salary: parseFloat(formData.salary), // Convert to number
-        password: formData.password
-      };
-
-      console.log('Sending employee data:', employeeData);
-
-      const response = await fetch(`${API_BASE_URL}/admin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(employeeData)
-      });
-
-      console.log('Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response error:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("phone_number", formData.phone_number);
+      formDataToSend.append("address", formData.address);
+      formDataToSend.append("type", formData.type);
+      formDataToSend.append("joined_date", formData.joined_date);
+      formDataToSend.append("availability", true);
+      if (formData.profileImage) {
+        formDataToSend.append("profile_image", formData.profileImage);
       }
 
-      const result = await response.json();
-      console.log('Employee created successfully:', result);
-      
+      const response = await axios.post(`${API_BASE_URL}/admin/add_employee`, formDataToSend, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      console.log('Employee created successfully:', response.data);
       setSubmitSuccess(true);
-      
-      // Reset form after successful submission
+
       setTimeout(() => {
         setFormData({
-          fullName: '',
+          name: '',
           email: '',
-          contactNumber: '',
+          phone_number: '',
           address: '',
-          employeeType: '',
-          joinDate: '',
-          salary: '',
+          type: '',
+          joined_date: '',
           password: '',
           confirmPassword: '',
           profileImage: null
         });
         setPreviewImage(null);
+        fileInputRef.current.value = null;
         setSubmitSuccess(false);
       }, 3000);
 
     } catch (error) {
       console.error('Error creating employee:', error);
-      alert(`Error creating employee: ${error.message}`);
+
+      let errorMessage = 'Failed to create employee';
+      if (error.response) {
+        if (error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data && error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response.status === 400) {
+          errorMessage = 'Invalid request data. Please check all fields.';
+        } else {
+          errorMessage = `Server error: ${error.response.status}`;
+        }
+      } else if (error.request) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else {
+        errorMessage = error.message;
+      }
+
+      alert(`Error creating employee: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   const formatEmployeeType = (type) => {
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -248,13 +241,13 @@ const AddEmployeeForm = () => {
                 </label>
                 <input
                   type="text"
-                  name="fullName"
-                  value={formData.fullName}
+                  name="name"
+                  value={formData.name}
                   onChange={handleInputChange}
-                  className={`w-full bg-gray-700 border ${errors.fullName ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
+                  className={`w-full bg-gray-700 border ${errors.name ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
                   placeholder="Enter full name"
                 />
-                {errors.fullName && <p className="text-red-400 text-sm mt-1">{errors.fullName}</p>}
+                {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name}</p>}
               </div>
 
               <div>
@@ -277,20 +270,20 @@ const AddEmployeeForm = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Contact Number *
+                  Phone Number *
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <input
                     type="tel"
-                    name="contactNumber"
-                    value={formData.contactNumber}
+                    name="phone_number"
+                    value={formData.phone_number}
                     onChange={handleInputChange}
-                    className={`w-full bg-gray-700 border ${errors.contactNumber ? 'border-red-500' : 'border-gray-600'} rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
-                    placeholder="Enter contact number"
+                    className={`w-full bg-gray-700 border ${errors.phone_number ? 'border-red-500' : 'border-gray-600'} rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
+                    placeholder="Enter phone number"
                   />
                 </div>
-                {errors.contactNumber && <p className="text-red-400 text-sm mt-1">{errors.contactNumber}</p>}
+                {errors.phone_number && <p className="text-red-400 text-sm mt-1">{errors.phone_number}</p>}
               </div>
             </div>
           </div>
@@ -331,10 +324,10 @@ const AddEmployeeForm = () => {
                   Employee Type *
                 </label>
                 <select
-                  name="employeeType"
-                  value={formData.employeeType}
+                  name="type"
+                  value={formData.type}
                   onChange={handleInputChange}
-                  className={`w-full bg-gray-700 border ${errors.employeeType ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
+                  className={`w-full bg-gray-700 border ${errors.type ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
                 >
                   <option value="">Select employee type</option>
                   {employeeTypes.map(type => (
@@ -343,7 +336,7 @@ const AddEmployeeForm = () => {
                     </option>
                   ))}
                 </select>
-                {errors.employeeType && <p className="text-red-400 text-sm mt-1">{errors.employeeType}</p>}
+                {errors.type && <p className="text-red-400 text-sm mt-1">{errors.type}</p>}
               </div>
 
               <div>
@@ -354,85 +347,13 @@ const AddEmployeeForm = () => {
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <input
                     type="date"
-                    name="joinDate"
-                    value={formData.joinDate}
+                    name="joined_date"
+                    value={formData.joined_date}
                     onChange={handleInputChange}
-                    className={`w-full bg-gray-700 border ${errors.joinDate ? 'border-red-500' : 'border-gray-600'} rounded-lg pl-10 pr-4 py-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
+                    className={`w-full bg-gray-700 border ${errors.joined_date ? 'border-red-500' : 'border-gray-600'} rounded-lg pl-10 pr-4 py-3 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
                   />
                 </div>
-                {errors.joinDate && <p className="text-red-400 text-sm mt-1">{errors.joinDate}</p>}
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Salary *
-                </label>
-                <input
-                  type="number"
-                  name="salary"
-                  value={formData.salary}
-                  onChange={handleInputChange}
-                  className={`w-full bg-gray-700 border ${errors.salary ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
-                  placeholder="Enter salary amount"
-                />
-                {errors.salary && <p className="text-red-400 text-sm mt-1">{errors.salary}</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Security Information */}
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-6">
-              Security Information
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Password *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className={`w-full bg-gray-700 border ${errors.password ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
-                    placeholder="Enter password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Confirm Password *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    className={`w-full bg-gray-700 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-600'} rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all`}
-                    placeholder="Confirm password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                  >
-                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
+                {errors.joined_date && <p className="text-red-400 text-sm mt-1">{errors.joined_date}</p>}
               </div>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../../Components/QS/Layout';
 import CalendarCard from '../../Components/Financial_officer/CalenderCard';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
@@ -13,6 +14,28 @@ import MonthlyCostBarChart from '../../Components/Financial_officer/CostBarChart
 import ProjectStatusChart from '../../Components/Financial_officer/ProjectStatusChart';
 
 function Dashboard() {
+  const navigate = useNavigate();
+
+  // Navigation handlers for quick links
+  const handleQuickLinkNavigation = (page) => {
+    switch(page) {
+      case 'projects':
+        navigate('/qs/projects');
+        break;
+      case 'boqs':
+        navigate('/qs/boq');
+        break;
+      case 'material-requests':
+        navigate('/qs/requests');
+        break;
+      case 'site-visits':
+        navigate('/qs/projects'); // Assuming site visits are in projects
+        break;
+      default:
+        break;
+    }
+  };
+
   // Sample data for quick demo
   const todoItems = [
     { id: 1, task: 'Update BOQ for Project A', deadline: '2025-06-20', priority: 'High' },
@@ -79,22 +102,34 @@ function Dashboard() {
           <div className="mt-8">
             <h3 className="text-xl font-bold mb-4">Quick Links</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer">
+              <div 
+                onClick={() => handleQuickLinkNavigation('projects')}
+                className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer"
+              >
                 <HomeWorkIcon className="text-amber-500 text-3xl mb-2" />
                 <span className="text-gray-700 font-medium">Projects</span>
               </div>
               
-              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer">
+              <div 
+                onClick={() => handleQuickLinkNavigation('boqs')}
+                className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer"
+              >
                 <DescriptionIcon className="text-amber-500 text-3xl mb-2" />
                 <span className="text-gray-700 font-medium">BOQs</span>
               </div>
               
-              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer">
+              <div 
+                onClick={() => handleQuickLinkNavigation('material-requests')}
+                className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer"
+              >
                 <ShoppingCartIcon className="text-amber-500 text-3xl mb-2" />
                 <span className="text-gray-700 font-medium">Material Requests</span>
               </div>
               
-              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer">
+              <div 
+                onClick={() => handleQuickLinkNavigation('site-visits')}
+                className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer"
+              >
                 <DirectionsWalkIcon className="text-amber-500 text-3xl mb-2" />
                 <span className="text-gray-700 font-medium">Site Visits</span>
               </div>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Eye, Download, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { Eye, Download, FileText, Upload, X, Plus } from 'lucide-react';
 
 // Utility function for class names
 const cn = (...classes) => classes.filter(Boolean).join(' ');
@@ -13,6 +13,8 @@ const Button = ({ children, className, variant = 'default', size = 'default', di
     default: 'bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white shadow-md hover:shadow-lg',
     outline: 'border border-gray-300 hover:bg-[#FAAD00]/10 hover:text-gray-900 bg-white',
     secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-900',
+    success: 'bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg',
+    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg',
   };
 
   const sizes = {
@@ -87,18 +89,146 @@ const Badge = ({ children, variant = 'default', className, ...props }) => {
   );
 };
 
-const Project = () => {
-  const projectData = {
-    name: "Luxury Villa Construction",
-    progress: 65,
-    remainingDays: 45,
-    totalBudget: 250000,
-    paidAmount: 150000,
-    pendingAmount: 100000,
+// File Upload Modal Component
+const FileUploadModal = ({ isOpen, onClose, onUpload }) => {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [documentName, setDocumentName] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setDocumentName(file.name.replace(/\.[^/.]+$/, "")); // Remove file extension
+    }
   };
 
-  // Document data with PDF paths
-  const projectDocuments = [
+  const handleUpload = async () => {
+    if (!selectedFile || !documentName.trim()) return;
+
+    setIsUploading(true);
+    
+    try {
+      // Simulate upload process - replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const newDocument = {
+        id: Date.now(),
+        name: documentName,
+        lastUpdated: "Just uploaded",
+        pdfPath: URL.createObjectURL(selectedFile),
+        iconColor: "blue",
+        file: selectedFile
+      };
+      
+      onUpload(newDocument);
+      
+      // Reset form
+      setSelectedFile(null);
+      setDocumentName('');
+      onClose();
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Upload Document</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* File Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select File
+            </label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#FAAD00] transition-colors">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="file-upload"
+              />
+              <label
+                htmlFor="file-upload"
+                className="cursor-pointer flex flex-col items-center"
+              >
+                <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                <span className="text-sm text-gray-600">
+                  {selectedFile ? selectedFile.name : "Click to select file"}
+                </span>
+                <span className="text-xs text-gray-400 mt-1">
+                  PDF, DOC, DOCX, JPG, PNG (Max 10MB)
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Document Name Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Document Name
+            </label>
+            <input
+              type="text"
+              value={documentName}
+              onChange={(e) => setDocumentName(e.target.value)}
+              placeholder="Enter document name"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+            />
+          </div>
+
+          {/* Upload Button */}
+          <div className="flex space-x-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              disabled={isUploading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpload}
+              className="flex-1"
+              disabled={!selectedFile || !documentName.trim() || isUploading}
+            >
+              {isUploading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Project = () => {
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [projectDocuments, setProjectDocuments] = useState([
     {
       id: 1,
       name: "Architectural Plans",
@@ -120,7 +250,16 @@ const Project = () => {
       pdfPath: "/documents/structural-drawings.pdf",
       iconColor: "purple",
     },
-  ];
+  ]);
+
+  const projectData = {
+    name: "Luxury Villa Construction",
+    progress: 65,
+    remainingDays: 45,
+    totalBudget: 250000,
+    paidAmount: 150000,
+    pendingAmount: 100000,
+  };
 
   // Work progress timeline data
   const workProgressItems = [
@@ -154,21 +293,31 @@ const Project = () => {
     },
   ];
 
+  // Handle document upload
+  const handleDocumentUpload = (newDocument) => {
+    setProjectDocuments(prev => [...prev, newDocument]);
+  };
+
   // Handle document view
   const handleViewDocument = (pdfPath) => {
-    // Open PDF in new tab for viewing
     window.open(pdfPath, '_blank');
   };
 
   // Handle document download
   const handleDownloadDocument = (pdfPath, fileName) => {
-    // Create a temporary link element to trigger download
     const link = document.createElement('a');
     link.href = pdfPath;
     link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Handle document delete
+  const handleDeleteDocument = (documentId) => {
+    if (window.confirm('Are you sure you want to delete this document?')) {
+      setProjectDocuments(prev => prev.filter(doc => doc.id !== documentId));
+    }
   };
 
   // Get status badge variant and background color
@@ -253,49 +402,84 @@ const Project = () => {
           {/* Project Documents */}
           <Card className="shadow-lg border border-gray-200">
             <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b border-gray-200 p-4">
-              <CardTitle className="text-gray-800 text-lg">Project Documents</CardTitle>
-              <CardDescription className="text-gray-600 text-sm">Plans, drawings, and contracts</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-gray-800 text-lg">Project Documents</CardTitle>
+                  <CardDescription className="text-gray-600 text-sm">Plans, drawings, and contracts</CardDescription>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setIsUploadModalOpen(true)}
+                  className="flex items-center space-x-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Upload</span>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3 pt-4">
-              {projectDocuments.map((document) => {
-                const iconColors = getIconColorClasses(document.iconColor);
-                return (
-                  <div
-                    key={document.id}
-                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50 hover:shadow-md transition-shadow duration-200"
+              {projectDocuments.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">No documents uploaded yet</p>
+                  <Button
+                    onClick={() => setIsUploadModalOpen(true)}
+                    variant="outline"
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 ${iconColors.bg} rounded-full`}>
-                        <FileText className={`h-5 w-5 ${iconColors.text}`} />
+                    <Plus className="h-4 w-4 mr-2" />
+                    Upload First Document
+                  </Button>
+                </div>
+              ) : (
+                projectDocuments.map((document) => {
+                  const iconColors = getIconColorClasses(document.iconColor);
+                  return (
+                    <div
+                      key={document.id}
+                      className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50 hover:shadow-md transition-shadow duration-200"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 ${iconColors.bg} rounded-full`}>
+                          <FileText className={`h-5 w-5 ${iconColors.text}`} />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{document.name}</p>
+                          <p className="text-sm text-gray-600">{document.lastUpdated}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{document.name}</p>
-                        <p className="text-sm text-gray-600">{document.lastUpdated}</p>
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="hover:bg-blue-50 hover:border-blue-300"
+                          onClick={() => handleViewDocument(document.pdfPath)}
+                          title="View Document"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="hover:bg-green-50 hover:border-green-300"
+                          onClick={() => handleDownloadDocument(document.pdfPath, document.name)}
+                          title="Download Document"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="hover:bg-red-50 hover:border-red-300 text-red-600"
+                          onClick={() => handleDeleteDocument(document.id)}
+                          title="Delete Document"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="hover:bg-blue-50 hover:border-blue-300"
-                        onClick={() => handleViewDocument(document.pdfPath)}
-                        title="View Document"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="hover:bg-green-50 hover:border-green-300"
-                        onClick={() => handleDownloadDocument(document.pdfPath, document.name)}
-                        title="Download Document"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </CardContent>
           </Card>
 
@@ -400,6 +584,13 @@ const Project = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* File Upload Modal */}
+      <FileUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onUpload={handleDocumentUpload}
+      />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../../Components/SQS/Layout';
 import CalendarCard from '../../Components/Financial_officer/CalenderCard';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
@@ -16,8 +17,14 @@ import MonthlyCostBarChart from '../../Components/Financial_officer/CostBarChart
 import ProjectStatusChart from '../../Components/Financial_officer/ProjectStatusChart';
 
 function Dashboard() {
+  const navigate = useNavigate();
+  
   // State to control customer registration section visibility
   const [showCustomerRegistration, setShowCustomerRegistration] = useState(false);
+  
+  // State to control QS assignment overlay
+  const [showQSAssignmentOverlay, setShowQSAssignmentOverlay] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
 
   // Sample data for quick demo
   const todoItems = [
@@ -62,6 +69,47 @@ function Dashboard() {
     { id: 1, name: 'John Anderson', type: 'Individual', registeredDate: '2025-06-22', status: 'Pending' },
     { id: 2, name: 'Sarah Mitchell', type: 'Business Owner', registeredDate: '2025-06-21', status: 'Approved' },
     { id: 3, name: 'Michael Johnson', type: 'Contractor', registeredDate: '2025-06-20', status: 'Under Review' },  ];
+
+  // Function to handle opening QS assignment overlay
+  const handleAssignQS = (project) => {
+    setSelectedProject(project);
+    setShowQSAssignmentOverlay(true);
+  };
+
+  // Function to handle QS assignment
+  const handleQSAssignment = (qsOfficer) => {
+    console.log(`Assigning ${qsOfficer.name} to project ${selectedProject.name}`);
+    // Here you would typically make an API call to assign the QS officer
+    setShowQSAssignmentOverlay(false);
+    setSelectedProject(null);
+  };
+
+  // Navigation handlers for quick links
+  const handleQuickLinkNavigation = (page) => {
+    switch(page) {
+      case 'projects':
+        navigate('/sqs/projects');
+        break;
+      case 'boqs':
+        navigate('/sqs/boq');
+        break;
+      case 'material-requests':
+        navigate('/sqs/requests');
+        break;
+      case 'site-visits':
+        navigate('/sqs/projects'); // Assuming site visits are in projects
+        break;
+      case 'assign-qs':
+        // Scroll to QS assignment section or open overlay
+        document.getElementById('qs-assignment-section')?.scrollIntoView({ behavior: 'smooth' });
+        break;
+      case 'register-customer':
+        setShowCustomerRegistration(true);
+        break;
+      default:
+        break;
+    }
+  };
   return (
     <div>
       {/* Toggle Button for Customer Registration Section */}
@@ -193,7 +241,7 @@ function Dashboard() {
       )}
 
       {/* QS Officer Assignment Section */}
-      <div className="flex flex-col xl:flex-row gap-4 mb-8">
+      <div id="qs-assignment-section" className="flex flex-col xl:flex-row gap-4 mb-8">
         <div className="w-full xl:w-2/3 bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
             <AssignmentIndIcon className="mr-2 text-amber-500" />
@@ -230,7 +278,10 @@ function Dashboard() {
                         </span>
                       </td>
                       <td className="py-3">
-                        <button className="bg-amber-500 text-white px-3 py-1 rounded hover:bg-amber-600 text-sm">
+                        <button 
+                          onClick={() => handleAssignQS(project)}
+                          className="bg-amber-500 text-white px-3 py-1 rounded hover:bg-amber-600 text-sm"
+                        >
                           Assign QS
                         </button>
                       </td>
@@ -296,32 +347,50 @@ function Dashboard() {
           <div className="mt-8">
             <h3 className="text-xl font-bold mb-4">Quick Links</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer">
+              <div 
+                onClick={() => handleQuickLinkNavigation('projects')}
+                className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer"
+              >
                 <HomeWorkIcon className="text-amber-500 text-3xl mb-2" />
                 <span className="text-gray-700 font-medium">Projects</span>
               </div>
               
-              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer">
+              <div 
+                onClick={() => handleQuickLinkNavigation('boqs')}
+                className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer"
+              >
                 <DescriptionIcon className="text-amber-500 text-3xl mb-2" />
                 <span className="text-gray-700 font-medium">BOQs</span>
               </div>
               
-              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer">
+              <div 
+                onClick={() => handleQuickLinkNavigation('material-requests')}
+                className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer"
+              >
                 <ShoppingCartIcon className="text-amber-500 text-3xl mb-2" />
                 <span className="text-gray-700 font-medium">Material Requests</span>
               </div>
               
-              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer">
+              <div 
+                onClick={() => handleQuickLinkNavigation('site-visits')}
+                className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer"
+              >
                 <DirectionsWalkIcon className="text-amber-500 text-3xl mb-2" />
                 <span className="text-gray-700 font-medium">Site Visits</span>
               </div>
 
-              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer">
+              <div 
+                onClick={() => handleQuickLinkNavigation('assign-qs')}
+                className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer"
+              >
                 <AssignmentIndIcon className="text-amber-500 text-3xl mb-2" />
                 <span className="text-gray-700 font-medium">Assign QS</span>
               </div>
 
-              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer">
+              <div 
+                onClick={() => handleQuickLinkNavigation('register-customer')}
+                className="bg-white p-4 rounded-lg shadow-md border-l-4 border-amber-500 flex flex-col items-center hover:bg-gray-50 cursor-pointer"
+              >
                 <BusinessIcon className="text-amber-500 text-3xl mb-2" />
                 <span className="text-gray-700 font-medium">Register Customer</span>
               </div>
@@ -406,6 +475,96 @@ function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* QS Assignment Overlay */}
+      {showQSAssignmentOverlay && (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50">
+          <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl border border-white/50">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">
+                Assign QS Officer to: {selectedProject?.name}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowQSAssignmentOverlay(false);
+                  setSelectedProject(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <h3 className="font-medium text-gray-700 mb-2">Project Details:</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><strong>Project:</strong> {selectedProject?.name}</div>
+                <div><strong>Type:</strong> {selectedProject?.type}</div>
+                <div><strong>Client:</strong> {selectedProject?.client}</div>
+                <div>
+                  <strong>Priority:</strong> 
+                  <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                    selectedProject?.priority === 'High' ? 'bg-red-100 text-red-600' : 
+                    selectedProject?.priority === 'Medium' ? 'bg-yellow-100 text-yellow-600' : 
+                    'bg-green-100 text-green-600'
+                  }`}>
+                    {selectedProject?.priority}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-3">Available QS Officers</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full border border-gray-200 rounded-lg">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Name</th>
+                      <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Expertise</th>
+                      <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Current Projects</th>
+                      <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {qsOfficers.map((officer) => (
+                      <tr key={officer.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium text-gray-800">{officer.name}</td>
+                        <td className="py-3 px-4 text-gray-600">{officer.expertise}</td>
+                        <td className="py-3 px-4 text-center">
+                          <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-sm font-medium">
+                            {5 - officer.availableProjects}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <button
+                            onClick={() => handleQSAssignment(officer)}
+                            className="bg-amber-500 text-white px-4 py-2 rounded text-sm font-medium hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          >
+                            Assign
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div className="flex justify-end pt-4 border-t">
+              <button
+                onClick={() => {
+                  setShowQSAssignmentOverlay(false);
+                  setSelectedProject(null);
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

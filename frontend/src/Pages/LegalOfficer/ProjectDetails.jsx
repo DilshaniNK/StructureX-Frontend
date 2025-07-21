@@ -1,111 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Upload, Plus, FileText, Clock, CheckCircle, AlertCircle, Calendar, User, Edit3, Download } from 'lucide-react';
+import axios from 'axios';
 import DocumentUploadModal from './DocumentUpdate';
 import ProcessModal from './ProcessModel';
 import StatusUpdateModal from './StatusUpdate';
-
- const mockProjects = [
-  {
-    id: '1',
-    name: 'Downtown Commercial Complex',
-    description: 'Mixed-use development project requiring comprehensive legal documentation',
-    status: 'active',
-    assignedLegalOfficer: 'Sarah Mitchell',
-    createdAt: '2024-01-15',
-    deadline: '2024-06-30'
-  },
-  {
-    id: '2',
-    name: 'Residential Tower Phase II',
-    description: 'Second phase of residential development with zoning considerations',
-    status: 'pending',
-    assignedLegalOfficer: 'Sarah Mitchell',
-    createdAt: '2024-02-01',
-    deadline: '2024-08-15'
-  },
-  {
-    id: '3',
-    name: 'Industrial Park Expansion',
-    description: 'Expansion of existing industrial facilities with environmental clearances',
-    status: 'active',
-    assignedLegalOfficer: 'Sarah Mitchell',
-    createdAt: '2024-01-30',
-    deadline: '2024-07-20'
-  }
-];
-
- const mockLegalDocuments = [
-  {
-    id: '1',
-    projectId: '1',
-    title: 'Master Development Agreement',
-    description: 'Primary contract for the downtown complex development',
-    fileName: 'master_development_agreement.pdf',
-    fileSize: 2458742,
-    uploadedBy: 'Sarah Mitchell',
-    uploadedAt: '2024-02-15T10:30:00Z',
-    type: 'contract'
-  },
-  {
-    id: '2',
-    projectId: '1',
-    title: 'Land Purchase Agreement',
-    description: 'Agreement for land acquisition',
-    fileName: 'land_purchase_agreement.pdf',
-    fileSize: 1234567,
-    uploadedBy: 'Sarah Mitchell',
-    uploadedAt: '2024-02-10T14:20:00Z',
-    type: 'agreement'
-  }
-];
- const mockLegalProcesses = [
-  {
-    id: '1',
-    projectId: '1',
-    name: 'Land Ownership Verification',
-    description: 'Verify clear title and ownership of all land parcels',
-    status: 'completed',
-    startDate: '2024-02-01',
-    expectedEndDate: '2024-02-28',
-    actualEndDate: '2024-02-25',
-    responsibleParty: 'Internal Legal Team',
-    createdBy: 'Sarah Mitchell',
-    createdAt: '2024-02-01T09:00:00Z',
-    lastUpdated: '2024-02-25T16:30:00Z',
-    notes: ['Initial verification completed', 'All documents verified with county records'],
-    attachments: ['title_search_report.pdf']
-  },
-  {
-    id: '2',
-    projectId: '1',
-    name: 'Environmental Clearance',
-    description: 'Obtain environmental impact assessment and clearances',
-    status: 'pending',
-    startDate: '2024-02-15',
-    expectedEndDate: '2024-04-15',
-    responsibleParty: 'Environmental Consultants Inc.',
-    createdBy: 'Sarah Mitchell',
-    createdAt: '2024-02-15T11:00:00Z',
-    lastUpdated: '2024-02-20T14:00:00Z',
-    notes: ['Initial assessment submitted', 'Awaiting government review'],
-    attachments: ['environmental_assessment.pdf']
-  },
-  {
-    id: '3',
-    projectId: '2',
-    name: 'Zoning Compliance Review',
-    description: 'Review and ensure compliance with local zoning requirements',
-    status: 'unsuccessful',
-    startDate: '2024-02-05',
-    expectedEndDate: '2024-03-05',
-    responsibleParty: 'City Planning Department',
-    createdBy: 'Sarah Mitchell',
-    createdAt: '2024-02-05T08:30:00Z',
-    lastUpdated: '2024-03-10T12:00:00Z',
-    notes: ['Initial application rejected', 'Height restrictions exceeded', 'Resubmission required with modifications'],
-    attachments: ['zoning_application.pdf', 'rejection_notice.pdf']
-  }
-];
 
 export default function ProjectDetails({ projectId, onBack, user }) {
   const [showDocumentModal, setShowDocumentModal] = useState(false);
@@ -113,10 +11,59 @@ export default function ProjectDetails({ projectId, onBack, user }) {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedProcess, setSelectedProcess] = useState(null);
   const [activeTab, setActiveTab] = useState('documents');
+  const [project, setProject] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [processes, setProcesses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const project = mockProjects.find(p => p.id === projectId);
-  const documents = mockLegalDocuments.filter(d => d.projectId === projectId);
-  const processes = mockLegalProcesses.filter(p => p.projectId === projectId);
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      try {
+        setLoading(true);
+
+        // const projectResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/projects/${projectId}`);
+        // setProject(projectResponse.data);
+
+        // For now, create a mock project based on the projectId
+        setProject({
+          id: projectId,
+          name: `Project ${projectId}`,
+          deadline: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 90 days from now
+        });
+
+        // Fetch documents for this project
+        const documentsResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/document`);
+        const projectDocuments = documentsResponse.data.filter(doc => doc.project_id === projectId);
+        setDocuments(projectDocuments);
+
+        // const processesResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/processes/${projectId}`);
+        // setProcesses(processesResponse.data);
+
+        // For now, use empty array for processes
+        setProcesses([]);
+
+      } catch (error) {
+        console.error('Error fetching project data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (projectId) {
+      fetchProjectData();
+    }
+  }, [projectId, user]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading project details...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!project) {
     return <div>Project not found</div>;
@@ -169,10 +116,9 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                 </button>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
-                  <p className="text-sm text-gray-500 mt-1">{project.description}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setShowDocumentModal(true)}
@@ -196,25 +142,6 @@ export default function ProjectDetails({ projectId, onBack, user }) {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Project Info */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Project Status</h3>
-              <p className="mt-1 text-lg font-semibold text-gray-900 capitalize">{project.status}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Assigned Legal Officer</h3>
-              <p className="mt-1 text-lg font-semibold text-gray-900">{project.assignedLegalOfficer}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Deadline</h3>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
-                {new Date(project.deadline).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* Tabs */}
         <div className="border-b border-gray-200 mb-8">
@@ -226,11 +153,10 @@ export default function ProjectDetails({ projectId, onBack, user }) {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.key
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.key
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 {tab.label}
                 {tab.count > 0 && (
@@ -249,9 +175,9 @@ export default function ProjectDetails({ projectId, onBack, user }) {
             {documents.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
                 <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No documents uploaded</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No documents found</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Upload your first legal document to get started.
+                  No legal documents found for this project.
                 </p>
                 <button
                   onClick={() => setShowDocumentModal(true)}
@@ -266,31 +192,26 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                 <div key={document.id} className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-medium text-gray-900">{document.title}</h3>
-                      <p className="text-sm text-gray-500 mt-1">{document.description}</p>
-                      
+                      <h2 className="text-sm text-gray-500 mt-1">Project ID: {document.project_id}</h2>
+                      <h3 className="text-lg font-medium text-gray-900">{document.description}</h3>
                       <div className="flex items-center space-x-6 mt-4 text-sm text-gray-500">
                         <div className="flex items-center">
-                          <FileText className="h-4 w-4 mr-1" />
-                          <span>{document.fileName}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <span>{formatFileSize(document.fileSize)}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <User className="h-4 w-4 mr-1" />
-                          <span>{document.uploadedBy}</span>
-                        </div>
-                        <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
-                          <span>{new Date(document.uploadedAt).toLocaleDateString()}</span>
+                          <span>{new Date(document.upload_date).toLocaleDateString()}</span>
                         </div>
                       </div>
                     </div>
-                    
-                    <button className="ml-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                      <Download className="h-5 w-5" />
-                    </button>
+
+                    <div className="ml-4 flex space-x-2">
+                      <a
+                        href={document.document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <Download className="h-5 w-5" />
+                      </a>
+                    </div>
                   </div>
                 </div>
               ))
@@ -329,7 +250,7 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                       </div>
                       <p className="text-sm text-gray-600">{process.description}</p>
                     </div>
-                    
+
                     <button
                       onClick={() => handleStatusUpdate(process.id)}
                       className="ml-4 inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
@@ -338,7 +259,7 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                       Update Status
                     </button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="font-medium text-gray-500">Start Date:</span>
@@ -357,7 +278,7 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                       <p className="text-gray-900">{new Date(process.lastUpdated).toLocaleDateString()}</p>
                     </div>
                   </div>
-                  
+
                   {process.notes.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <h4 className="text-sm font-medium text-gray-900 mb-2">Recent Notes:</h4>

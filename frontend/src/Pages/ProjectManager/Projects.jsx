@@ -4,6 +4,14 @@ function Projects() {
   const [activeTab, setActiveTab] = useState('ongoing')
   const [selectedProject, setSelectedProject] = useState(null)
   const [activeSection, setActiveSection] = useState('overview')
+  const [showUpdateForm, setShowUpdateForm] = useState(false)
+  const [updateFormData, setUpdateFormData] = useState({
+    id: '',
+    name: '',
+    date: '',
+    location: '',
+    tools: ''
+  })
 
   // WBS Data with milestones and sub-tasks
   const [wbsData, setWbsData] = useState([
@@ -254,6 +262,38 @@ function Projects() {
         image: '/Projects/site2.png'
       }
     ],
+    pending: [
+      {
+        id: 'P004',
+        name: 'Shopping Mall Complex',
+        code: 'SMC-2025-001',
+        location: 'Kandy City',
+        startDate: '2025-09-01',
+        estimatedEndDate: '2026-08-30',
+        status: 'Pending',
+        description: 'Machine A , Machine B ',
+      },
+      {
+        id: 'P005',
+        name: 'Eco-Friendly Housing Project',
+        code: 'EHP-2025-002',
+        location: 'Gampaha District',
+        startDate: '2025-11-15',
+        estimatedEndDate: '2027-05-30',
+        status: 'Pending',
+        description: 'Machine A , Machine B '
+      },
+      {
+        id: 'P006',
+        name: 'Hospital Expansion Wing',
+        code: 'HEW-2025-003',
+        location: 'Colombo 08',
+        startDate: '2025-12-01',
+        estimatedEndDate: '2027-01-15',
+        status: 'Pending',
+        description: 'Machine A , Machine B '
+      }
+    ],
     finished: [
       {
         id: 'P003',
@@ -273,6 +313,42 @@ function Projects() {
   const handleProjectSelect = (project) => {
     setSelectedProject(project)
     setActiveSection('overview')
+  }
+
+  const handleUpdateClick = (project) => {
+    setUpdateFormData({
+      id: project.code,
+      name: project.name,
+      date: project.startDate,
+      location: project.location || '',
+      tools: project.tools || ''
+    })
+    setShowUpdateForm(true)
+  }
+
+  const handleUpdateFormSubmit = (e) => {
+    e.preventDefault()
+    // Here you would typically update the project data
+    console.log('Updating project:', updateFormData)
+    setShowUpdateForm(false)
+    // You can add your update logic here
+  }
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target
+    setUpdateFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  // Get all projects for the main table
+  const getAllProjects = () => {
+    return [
+      ...projectsData.ongoing,
+      ...projectsData.pending,
+      ...projectsData.finished
+    ]
   }
 
   const toggleMilestone = (taskId, isSubTask = false, parentId = null) => {
@@ -314,6 +390,8 @@ function Projects() {
         return 'bg-green-100 text-green-800'
       case 'delayed':
         return 'bg-red-100 text-red-800'
+      case 'pending':
+        return 'bg-orange-100 text-orange-800'
       case 'not started':
         return 'bg-yellow-100 text-yellow-800'
       default:
@@ -328,25 +406,52 @@ function Projects() {
         {projects.map(project => (
           <div
             key={project.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition duration-200 cursor-pointer transform hover:-translate-y-1"
-            onClick={() => handleProjectSelect(project)}
+            className={`bg-white border border-gray-200 rounded-lg p-4 transition duration-200 transform ${activeTab === 'pending'
+              ? 'hover:shadow-md'
+              : 'hover:shadow-lg cursor-pointer hover:-translate-y-1'
+              }`}
+            onClick={() => activeTab !== 'pending' && handleProjectSelect(project)}
           >
-            <img
-              src={project.image}
-              alt={project.name}
-              className="w-full h-48 object-cover rounded-lg mb-4"
-            />
+            {/* Only show image for non-pending projects */}
+            {activeTab !== 'pending' && (
+              <img
+                src={project.image}
+                alt={project.name}
+                className="w-full h-48 object-cover rounded-lg mb-4"
+              />
+            )}
+
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">{project.name}</h3>
-              <p className="text-sm text-gray-600 mb-2"><span className="font-medium">ID:</span> {project.code}</p>
-              <p className="text-sm text-gray-600 mb-2"><span className="font-medium">Location:</span> {project.location}</p>
+              <p className="text-sm text-gray-600 mb-2"><span className="font-bold">ID:</span> {project.code}</p>
+              <p className="text-sm text-gray-600 mb-2"><span className="font-bold">Location:</span> {project.location}</p>
+
+              {/* Show description for pending projects */}
+              {activeTab === 'pending' && project.description && (
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-3">
+                  <h4 className="font-medium text-blue-900 mb-1 text-sm">Description:</h4>
+                  <p className="text-blue-800 text-xs leading-relaxed">{project.description}</p>
+                </div>
+              )}
+
+              {/* Show start date and due date for pending projects */}
+              {activeTab === 'pending' && (
+                <div className="mb-2">
+                  <p className="text-sm text-gray-600"><span className="font-bold">Start Date:</span> {project.startDate}</p>
+                  <p className="text-sm text-gray-600"><span className="font-bold">Due Date:</span> {project.estimatedEndDate}</p>
+                </div>
+              )}
+
               <div className="flex justify-between items-center">
                 <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(project.status)}`}>
                   {project.status}
                 </span>
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                  View Details →
-                </button>
+                {/* Only show "View Details" button for non-pending projects */}
+                {activeTab !== 'pending' && (
+                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    View Details →
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -640,7 +745,7 @@ function Projects() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Value (LKR)
                       </th>
-                    
+
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -675,7 +780,7 @@ function Projects() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                           Rs {item.value.toLocaleString()}
                         </td>
-                       
+
                       </tr>
                     ))}
                   </tbody>
@@ -693,25 +798,6 @@ function Projects() {
                 </table>
               </div>
             </div>
-
-            {/* Summary Cards */}
-            {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <h4 className="font-medium text-green-900">Total Items</h4>
-                <p className="text-2xl font-bold text-green-700">10</p>
-                <p className="text-sm text-green-600">Materials listed</p>
-              </div>
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h4 className="font-medium text-blue-900">Average Rate</h4>
-                <p className="text-2xl font-bold text-blue-700">Rs 70,537,500</p>
-                <p className="text-sm text-blue-600">Per material type</p>
-              </div>
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                <h4 className="font-medium text-yellow-900">Last Updated</h4>
-                <p className="text-2xl font-bold text-yellow-700">Today</p>
-                <p className="text-sm text-yellow-600">June 19, 2025</p>
-              </div>
-            </div> */}
           </div>
         )
 
@@ -744,22 +830,9 @@ function Projects() {
               </div>
             </div>
 
-            {/* Installment Plan Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h4 className="text-xl font-semibold text-gray-900 mb-6">Payment Schedule & Installments</h4>
 
-              {/* Progress Bar */}
-              {/* <div className="mb-6">
-                <div className="flex justify-between text-sm text-gray-600 mb-2">
-                  <span>Payment Progress</span>
-                  <span>60% Complete</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-300" style={{ width: '60%' }}></div>
-                </div>
-              </div> */}
-
-              {/* Installment Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-gray-50 border-b">
@@ -769,7 +842,6 @@ function Projects() {
                       <th className="px-4 py-3 font-medium text-gray-900">Due Date</th>
                       <th className="px-4 py-3 font-medium text-gray-900">Amount (LKR)</th>
                       <th className="px-4 py-3 font-medium text-gray-900">Status</th>
-                      {/* <th className="px-4 py-3 font-medium text-gray-900">Actions</th> */}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -781,9 +853,7 @@ function Projects() {
                       <td className="px-4 py-3">
                         <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Paid</span>
                       </td>
-                      {/* <td className="px-4 py-3">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">View Receipt</button>
-                      </td> */}
+
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="px-4 py-3">2</td>
@@ -793,9 +863,7 @@ function Projects() {
                       <td className="px-4 py-3">
                         <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Paid</span>
                       </td>
-                      {/* <td className="px-4 py-3">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">View Receipt</button>
-                      </td> */}
+
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="px-4 py-3">3</td>
@@ -805,9 +873,7 @@ function Projects() {
                       <td className="px-4 py-3">
                         <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Paid</span>
                       </td>
-                      {/* <td className="px-4 py-3">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">View Receipt</button>
-                      </td> */}
+
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="px-4 py-3">4</td>
@@ -817,9 +883,7 @@ function Projects() {
                       <td className="px-4 py-3">
                         <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Pending</span>
                       </td>
-                      {/* <td className="px-4 py-3">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">Generate Invoice</button>
-                      </td> */}
+
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="px-4 py-3">5</td>
@@ -829,9 +893,7 @@ function Projects() {
                       <td className="px-4 py-3">
                         <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Upcoming</span>
                       </td>
-                      {/* <td className="px-4 py-3">
-                        <button className="text-gray-400 text-sm cursor-not-allowed">Scheduled</button>
-                      </td> */}
+
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="px-4 py-3">6</td>
@@ -841,9 +903,7 @@ function Projects() {
                       <td className="px-4 py-3">
                         <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Upcoming</span>
                       </td>
-                      {/* <td className="px-4 py-3">
-                        <button className="text-gray-400 text-sm cursor-not-allowed">Scheduled</button>
-                      </td> */}
+
                     </tr>
                   </tbody>
                 </table>
@@ -866,35 +926,7 @@ function Projects() {
                   </div>
                 </div>
               </div>
-
-              {/* Payment Terms */}
-              {/* <div className="mt-6 p-4 border border-gray-200 rounded-lg">
-                <h5 className="font-medium text-gray-900 mb-3">Payment Terms & Conditions</h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                  <div>
-                    <p><strong>Late Payment Penalty:</strong> 2% per month</p>
-                    <p><strong>Early Payment Discount:</strong> 1% for payments made 30 days early</p>
-                  </div>
-                  <div>
-                    <p><strong>Payment Method:</strong> Bank Transfer to Company Account</p>
-                    <p><strong>Currency:</strong> Sri Lankan Rupees (LKR)</p>
-                  </div>
-                </div>
-              </div> */}
             </div>
-
-            {/* Financial Actions */}
-            {/* <div className="flex flex-wrap gap-4">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200">
-                Generate Payment Report
-              </button>
-              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition duration-200">
-                Download Invoice
-              </button>
-              <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition duration-200">
-                Update Payment Plan
-              </button>
-            </div> */}
           </div>
         )
 
@@ -922,251 +954,6 @@ function Projects() {
           </div>
         )
 
-      // case 'visits':
-      //   return (
-      //     <div className="space-y-6">
-      //       <div className="flex justify-between items-center">
-      //         <h3 className="text-lg font-semibold text-gray-900">Site Visit Logs</h3>
-      //         <div className='flex space-x-2'>
-      //           <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm">
-      //             Setup A Visit
-      //           </button>
-      //           <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
-      //             Add Visit Log
-      //           </button>
-      //         </div>
-      //       </div>
-      //       <div className="space-y-4">
-      //         {[
-      //           { date: 'June 15, 2024', officer: 'Mike Johnson', notes: 'Foundation work progressing well. No issues identified.' },
-      //           { date: 'June 10, 2024', officer: 'Sarah Davis', notes: 'Material delivery completed on schedule.' }
-      //         ].map((visit, index) => (
-      //           <div key={index} className="p-4 bg-gray-50 rounded-lg">
-      //             <div className="flex justify-between items-start mb-2">
-      //               <h4 className="font-medium text-gray-900">{visit.date} - {visit.officer}</h4>
-      //               <button className="text-blue-600 hover:text-blue-800 text-sm">View Photos</button>
-      //             </div>
-      //             <p className="text-gray-600">{visit.notes}</p>
-      //           </div>
-      //         ))}
-      //       </div>
-      //     </div>
-      //   )
-
-      // case 'updates':
-      //   return (
-      //     <div className="space-y-6">
-      //       <h3 className="text-lg font-semibold text-gray-900">Daily Site Updates</h3>
-      //       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      //         <div className="lg:col-span-1">
-      //           <div className="bg-white rounded-lg border border-gray-200 p-4">
-      //             <div className="flex items-center justify-between mb-4">
-      //               <h4 className="text-lg font-semibold text-gray-900">
-      //                 {calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-      //               </h4>
-      //               <div className="flex space-x-1">
-      //                 <button
-      //                   onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))}
-      //                   className="p-1 hover:bg-gray-100 rounded transition-colors"
-      //                 >
-      //                   <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-      //                     <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-      //                   </svg>
-      //                 </button>
-      //                 <button
-      //                   onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))}
-      //                   className="p-1 hover:bg-gray-100 rounded transition-colors"
-      //                 >
-      //                   <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-      //                     <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-      //                   </svg>
-      //                 </button>
-      //               </div>
-      //             </div>
-
-      //             <div className="grid grid-cols-7 gap-1 mb-2">
-      //               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-      //                 <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-      //                   {day}
-      //                 </div>
-      //               ))}
-      //             </div>
-
-      //             <div className="grid grid-cols-7 gap-1">
-      //               {generateCalendarDays().map((day, index) => {
-      //                 const hasUpdate = dailyUpdates.some(update =>
-      //                   new Date(update.date).toDateString() === day?.toDateString()
-      //                 );
-      //                 const isSelected = selectedDate && day &&
-      //                   day.toDateString() === selectedDate.toDateString();
-      //                 const isToday = day && day.toDateString() === new Date().toDateString();
-
-      //                 return (
-      //                   <button
-      //                     key={index}
-      //                     onClick={() => day && setSelectedDate(day)}
-      //                     disabled={!day}
-      //                     className={`
-      //                       aspect-square flex items-center justify-center text-sm rounded transition-colors relative
-      //                       ${!day ? 'invisible' : ''}
-      //                       ${isSelected ? 'bg-blue-500 text-white' : ''}
-      //                       ${!isSelected && isToday ? 'bg-blue-100 text-blue-700 font-semibold' : ''}
-      //                       ${!isSelected && !isToday ? 'hover:bg-gray-100 text-gray-700' : ''}
-      //                       ${day && day.getMonth() !== calendarDate.getMonth() ? 'text-gray-400' : ''}
-      //                     `}
-      //                   >
-      //                     {day?.getDate()}
-      //                     {hasUpdate && (
-      //                       <div className={`absolute bottom-1 right-1 w-2 h-2 rounded-full ${isSelected ? 'bg-white' : 'bg-green-500'
-      //                         }`}></div>
-      //                     )}
-      //                   </button>
-      //                 );
-      //               })}
-      //             </div>
-
-      //             <div className="mt-4 text-xs text-gray-500">
-      //               <div className="flex items-center space-x-4">
-      //                 <div className="flex items-center space-x-1">
-      //                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-      //                   <span>Has updates</span>
-      //                 </div>
-      //                 <div className="flex items-center space-x-1">
-      //                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-      //                   <span>Selected</span>
-      //                 </div>
-      //               </div>
-      //             </div>
-      //           </div>
-      //         </div>
-
-      //         <div className="lg:col-span-2">
-      //           <div className="bg-white rounded-lg border border-gray-200 p-6">
-      //             <div className="flex justify-between items-center mb-4">
-      //               <h4 className="text-lg font-semibold text-gray-900">
-      //                 {selectedDate ?
-      //                   `Updates for ${selectedDate.toLocaleDateString('en-US', {
-      //                     weekday: 'long',
-      //                     year: 'numeric',
-      //                     month: 'long',
-      //                     day: 'numeric'
-      //                   })}` :
-      //                   'Select a date to view updates'
-      //                 }
-      //               </h4>
-      //               {selectedDate && (
-      //                 <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm">
-      //                   Add Update
-      //                 </button>
-      //               )}
-      //             </div>
-
-      //             {selectedDate ? (
-      //               <div className="space-y-4">
-      //                 {getUpdatesForDate(selectedDate).length > 0 ? (
-      //                   getUpdatesForDate(selectedDate).map((update, index) => (
-      //                     <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-      //                       <div className="flex justify-between items-start mb-2">
-      //                         <div className="flex items-center space-x-2">
-      //                           <span className="text-sm font-medium text-gray-900">{update.time}</span>
-      //                           <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-      //                             {update.type}
-      //                           </span>
-      //                         </div>
-      //                         <div className="flex space-x-2">
-      //                           <button className="text-blue-600 hover:text-blue-800 text-xs">Edit</button>
-      //                           <button className="text-red-600 hover:text-red-800 text-xs">Delete</button>
-      //                         </div>
-      //                       </div>
-      //                       <p className="text-gray-700 mb-2">{update.description}</p>
-      //                       {update.author && (
-      //                         <div className="text-xs text-gray-500">
-      //                           Updated by: <span className="font-medium">{update.author}</span>
-      //                         </div>
-      //                       )}
-      //                       {update.attachments && update.attachments.length > 0 && (
-      //                         <div className="mt-2">
-      //                           <div className="flex flex-wrap gap-2">
-      //                             {update.attachments.map((attachment, idx) => (
-      //                               <button
-      //                                 key={idx}
-      //                                 className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
-      //                               >
-      //                                 📎 {attachment}
-      //                               </button>
-      //                             ))}
-      //                           </div>
-      //                         </div>
-      //                       )}
-      //                     </div>
-      //                   ))
-      //                 ) : (
-      //                   <div className="text-center py-8">
-      //                     <div className="text-gray-400 mb-2">
-      //                       <svg className="w-12 h-12 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-      //                         <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
-      //                       </svg>
-      //                     </div>
-      //                     <p className="text-gray-500 text-sm">No updates recorded for this date</p>
-      //                     <button className="mt-2 text-blue-600 hover:text-blue-800 text-sm">
-      //                       Add the first update
-      //                     </button>
-      //                   </div>
-      //                 )}
-      //               </div>
-      //             ) : (
-      //               <div className="text-center py-12">
-      //                 <div className="text-gray-400 mb-4">
-      //                   <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-      //                     <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-      //                   </svg>
-      //                 </div>
-      //                 <p className="text-gray-500">Click on a date in the calendar to view daily updates</p>
-      //                 <p className="text-gray-400 text-sm mt-1">Dates with updates are marked with a green dot</p>
-      //               </div>
-      //             )}
-      //           </div>
-      //         </div>
-      //       </div>
-      //     </div>
-      //   )
-
-
-
-      // case 'todos':
-      //   return (
-      //     <div className="space-y-6">
-      //       <h3 className="text-lg font-semibold text-gray-900">To-Do Tasks</h3>
-      //       <div className="space-y-4">
-      //         {[
-      //           { task: 'Review material delivery schedule', priority: 'High', due: 'June 20, 2024', completed: false },
-      //           { task: 'Submit weekly progress report', priority: 'Medium', due: 'June 18, 2024', completed: true },
-      //           { task: 'Coordinate with electrical contractor', priority: 'Low', due: 'June 25, 2024', completed: false }
-      //         ].map((todo, index) => (
-      //           <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-      //             <input
-      //               type="checkbox"
-      //               defaultChecked={todo.completed}
-      //               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-      //             />
-      //             <div className="flex-1">
-      //               <span className={`${todo.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-      //                 {todo.task}
-      //               </span>
-      //             </div>
-      //             <span className={`text-xs px-2 py-1 rounded-full ${todo.priority === 'High' ? 'bg-red-100 text-red-800' :
-      //               todo.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-      //                 'bg-green-100 text-green-800'
-      //               }`}>
-      //               {todo.priority}
-      //             </span>
-      //             <span className="text-sm text-gray-600">Due: {todo.due}</span>
-      //           </div>
-      //         ))}
-      //       </div>
-      //     </div>
-      //   )
-
       default:
         return <div>Select a section to view details</div>
     }
@@ -1176,6 +963,7 @@ function Projects() {
     if (!selectedProject) return null
 
     return (
+      
       <div className="space-y-6">
         <button
           onClick={() => setSelectedProject(null)}
@@ -1186,13 +974,25 @@ function Projects() {
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex flex-col lg:flex-row gap-6 mb-8">
-            <img
-              src={selectedProject.image}
-              alt={selectedProject.name}
-              className="w-full lg:w-80 h-64 object-cover rounded-lg"
-            />
+            {/* Only show image for non-pending projects */}
+            {selectedProject.status !== 'Pending' && (
+              <img
+                src={selectedProject.image}
+                alt={selectedProject.name}
+                className="w-full lg:w-80 h-64 object-cover rounded-lg"
+              />
+            )}
             <div className="flex-1 space-y-4">
               <h2 className="text-2xl font-bold text-gray-900">{selectedProject.name}</h2>
+
+              {/* Show description for pending projects */}
+              {selectedProject.description && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-900 mb-2">Project Description</h4>
+                  <p className="text-blue-800 text-sm leading-relaxed">{selectedProject.description}</p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <span className="font-medium text-gray-700">Project ID:</span>
@@ -1216,45 +1016,77 @@ function Projects() {
                     {selectedProject.status}
                   </span>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-700">Client:</span>
-                  <p className="text-gray-600">{selectedProject.owner}</p>
-                </div>
-                <div className="md:col-span-2">
-                  <span className="font-medium text-gray-700">Assigned Team Members:</span>
-                  <p className="text-gray-600">{selectedProject.teamMembers.join(', ')}</p>
-                </div>
+                {/* Only show owner for non-pending projects */}
+                {selectedProject.status !== 'Pending' && (
+                  <div>
+                    <span className="font-medium text-gray-700">Client:</span>
+                    <p className="text-gray-600">{selectedProject.owner}</p>
+                  </div>
+                )}
+                {/* Only show team members for non-pending projects */}
+                {selectedProject.status !== 'Pending' && (
+                  <div className="md:col-span-2">
+                    <span className="font-medium text-gray-700">Assigned Team Members:</span>
+                    <p className="text-gray-600">{selectedProject.teamMembers.join(', ')}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="border-b border-gray-200">
-            <nav className="flex flex-wrap -mb-px space-x-8">
-              {[
-                { id: 'overview', label: 'Overview' },
-                { id: 'design', label: 'Design/Plans' },
-                { id: 'wbs', label: 'WBS & Milestones' },
-                { id: 'boq', label: 'BOQ Summary' },
-                { id: 'financial', label: 'Financial' },
-                { id: 'materials', label: 'Materials' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveSection(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeSection === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
+          {/* Only show tabs for non-pending projects */}
+          {selectedProject.status !== 'Pending' && (
+            <>
+              <div className="border-b border-gray-200">
+                <nav className="flex flex-wrap -mb-px space-x-8">
+                  {[
+                    { id: 'overview', label: 'Overview' },
+                    { id: 'design', label: 'Design/Plans' },
+                    { id: 'wbs', label: 'WBS & Milestones' },
+                    { id: 'boq', label: 'BOQ Summary' },
+                    { id: 'financial', label: 'Financial' },
+                    { id: 'materials', label: 'Materials' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveSection(tab.id)}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeSection === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
 
-          <div className="mt-6">
-            {renderSectionContent()}
-          </div>
+              <div className="mt-6">
+                {renderSectionContent()}
+              </div>
+            </>
+          )}
+
+          {/* Simple view for pending projects */}
+          {/* {selectedProject.status === 'Pending' && (
+            <div className="mt-6">
+              <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
+                <div className="flex items-center mb-4">
+                  <svg className="w-6 h-6 text-orange-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-orange-900">Project Status: Pending</h3>
+                </div>
+                <p className="text-orange-800 mb-4">
+                  This project is scheduled to begin on <span className="font-semibold">{selectedProject.startDate}</span> and 
+                  is expected to be completed by <span className="font-semibold">{selectedProject.estimatedEndDate}</span>.
+                </p>
+                <p className="text-orange-700 text-sm">
+                  Detailed project information including WBS, BOQ, and financial details will be available once the project begins.
+                </p>
+              </div>
+            </div>
+          )} */}
         </div>
       </div>
     )
@@ -1265,11 +1097,144 @@ function Projects() {
       <div className="max-w-7xl mx-auto">
         {!selectedProject ? (
           <>
+            {/* Main Projects Table */}
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">Initial Projects</h2>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Project ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Project Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {getAllProjects().map((project, index) => (
+                      <tr key={project.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {project.code}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {project.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {project.startDate}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => handleUpdateClick(project)}
+                            className="bg-amber-400 hover:bg-amber-200 text-black px-3 py-1 rounded text-xs transition duration-200"
+                          >
+                            Update
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Update Form Modal */}
+            {showUpdateForm && (
+              <div className="fixed inset-0   backdrop-blur-[2px] h-full w-full z-50">
+                <div className="relative top-20 mx-auto p-5  w-96 shadow-lg border-2 border-amber-400 rounded-md bg-white">
+                  <div className="mt-3">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Update Project</h3>
+                    <form onSubmit={handleUpdateFormSubmit}>
+                      <div className="space-y-4">
+                        {/* Project ID (readonly) */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Project ID
+                          </label>
+                          <input
+                            type="text"
+                            value={updateFormData.id}
+                            readOnly
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
+                          />
+                        </div>
+
+                        {/* Project Name (readonly) */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Project Name
+                          </label>
+                          <input
+                            type="text"
+                            value={updateFormData.name}
+                            readOnly
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
+                          />
+                        </div>
+
+                     
+
+                        {/* Location (editable) */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Location
+                          </label>
+                          <input
+                            type="text"
+                            name="location"
+                            value={updateFormData.location}
+                            onChange={handleFormChange}
+                            placeholder="Enter location"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+
+                        {/* Tools (editable) */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tools
+                          </label>
+                          <textarea
+                            name="tools"
+                            value={updateFormData.tools}
+                            onChange={handleFormChange}
+                            placeholder="Enter tools (e.g., Machine A, Machine B, etc.)"
+                            rows="3"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Form Actions */}
+                      <div className="flex justify-end space-x-3 mt-6">
+                        <button
+                          type="button"
+                          onClick={() => setShowUpdateForm(false)}
+                          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition duration-200"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-amber-400 hover:bg-amber-200 text-black rounded-md transition duration-200"
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between items-center mb-8">
-              {/* <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Projects</h1>
-                <p className="text-gray-600">Manage and track your construction projects</p>
-              </div> */}
               <div className="flex space-x-2">
                 <button
                   onClick={() => setActiveTab('ongoing')}
@@ -1279,6 +1244,15 @@ function Projects() {
                     }`}
                 >
                   Ongoing Projects
+                </button>
+                <button
+                  onClick={() => setActiveTab('pending')}
+                  className={`px-4 py-2 rounded-md font-medium transition duration-200 ${activeTab === 'pending'
+                    ? 'bg-amber-400 text-white'
+                    : 'bg-white text-amber-400 border border-amber-400 hover:bg-blue-50'
+                    }`}
+                >
+                  Pending Projects
                 </button>
                 <button
                   onClick={() => setActiveTab('finished')}
@@ -1295,7 +1269,9 @@ function Projects() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">
-                  {activeTab === 'ongoing' ? 'Ongoing Projects' : 'Finished Projects'}
+                  {activeTab === 'ongoing' ? 'Ongoing Projects' :
+                    activeTab === 'pending' ? 'Pending Projects' :
+                      'Finished Projects'}
                 </h2>
               </div>
 

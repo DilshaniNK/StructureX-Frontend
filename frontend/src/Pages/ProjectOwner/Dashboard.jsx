@@ -503,7 +503,7 @@ const Dashboard = () => {
             )}
             <div className="space-y-1">
               <Label htmlFor="payment-amount" className="text-sm font-semibold text-gray-700">
-                Payment Amount ($)
+                Payment Amount (Rs.)
               </Label>
               <Input
                 id="payment-amount"
@@ -633,7 +633,7 @@ const Dashboard = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Total Value:</span>
-                  <span className="font-bold text-[#FAAD00]">${projectData.totalBudget.toLocaleString()}</span>
+                  <span className="font-bold text-[#FAAD00]">Rs.{projectData.totalBudget.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -790,7 +790,7 @@ const Dashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-green-600">${projectData.paidAmount.toLocaleString()}</div>
+              <div className="text-xl font-bold text-green-600">Rs.{projectData.paidAmount.toLocaleString()}</div>
               <p className="text-xs text-gray-600 mt-1">
                 {Math.round((projectData.paidAmount / projectData.totalBudget) * 100)}% of total budget
               </p>
@@ -805,7 +805,7 @@ const Dashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-red-600">${projectData.pendingAmount.toLocaleString()}</div>
+              <div className="text-xl font-bold text-red-600">Rs.{projectData.pendingAmount.toLocaleString()}</div>
               <p className="text-xs text-gray-600 mt-1">Due in next phase</p>
             </CardContent>
           </Card>

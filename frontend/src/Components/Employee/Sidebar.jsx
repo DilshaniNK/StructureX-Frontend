@@ -33,20 +33,13 @@ const Sidebar = ({
    const { employeeId } = useParams(); //get employeeId from URL params
 
   const menuItems = {
-    Example: [
-      { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/', badge: null },
-      { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/admin/profile', badge: null },
-      { id: 'users', label: 'User Management', icon: Users, path: '/users', badge: '12' },
-      { id: 'security', label: 'Security', icon: Shield, path: '/security', badge: null },
-      { id: 'settings', label: 'Settings', icon: Settings, path: '/settings', badge: null }
-    ],
     Designer: [
-      { id: 'home', label: 'Home', icon: Home, path: '/designer/home', badge: null },
-      { id: 'initialize', label: 'Project Initialization', icon: Rocket, path: '/designer/initialize' },
-      { id: 'ongoing', label: 'Ongoing Projects', icon: Loader, path: '/designer/ongoing', badge: null },
-      { id: 'completed', label: 'Completed Projects', icon: BadgeCheck, path: '/designer/completed', badge: null },
-      { id: 'notification', label: 'Notifications', icon: Bell, path: '/designer/notifications', badge: '12' },
-      { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/designer/chat', badge: '5' }
+      { id: 'home', label: 'Home', icon: Home, path: `/designer/${employeeId}/home`, badge: null },
+      { id: 'initialize', label: 'Project Initialization', icon: Rocket, path: `/designer/${employeeId}/initialize` },
+      { id: 'ongoing', label: 'Ongoing Projects', icon: Loader, path: `/designer/${employeeId}/ongoing`, badge: null },
+      { id: 'completed', label: 'Completed Projects', icon: BadgeCheck, path: `/designer/${employeeId}/completed`, badge: null },
+      { id: 'notification', label: 'Notifications', icon: Bell, path: `/designer/${employeeId}/notifications`, badge: '12' },
+      { id: 'chat', label: 'Chat', icon: MessageSquare, path: `/designer/${employeeId}/chat`, badge: '5' }
     ],
 
     Project_Manager: [

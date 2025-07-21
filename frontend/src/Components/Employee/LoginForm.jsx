@@ -88,6 +88,9 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
         case "admin":
           navigate("/admin/dashboard");
           break;
+        case "Designer":
+          navigate(`/designer/${employeeId}`);
+          break;
         default:
           navigate("/unauthorized");
       }

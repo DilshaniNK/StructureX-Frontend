@@ -390,8 +390,8 @@ const Project = () => {
               </div>
               <div className="p-4 bg-gradient-to-r from-green-50 to-green-100/50 rounded-lg border border-green-200">
                 <h4 className="font-semibold mb-2 text-gray-800">Budget Status</h4>
-                <p className="text-lg font-semibold text-green-600">${projectData.paidAmount.toLocaleString()} paid</p>
-                <p className="text-sm text-gray-600">${projectData.pendingAmount.toLocaleString()} pending</p>
+                <p className="text-lg font-semibold text-green-600">Rs.{projectData.paidAmount.toLocaleString()} paid</p>
+                <p className="text-sm text-gray-600">Rs.{projectData.pendingAmount.toLocaleString()} pending</p>
               </div>
             </div>
           </CardContent>

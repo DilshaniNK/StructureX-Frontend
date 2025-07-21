@@ -90,7 +90,7 @@ export default function ProjDetails({ project, userRole }) {
         <div className='max-w-7xl mx-auto px-6 py-8'>
           <div className='flex items-center justify-between mb-4'>
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">{project.title}</h1>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">{project.name}</h1>
               <p className='text-lg text-gray-600 max-w-3xl leading-relaxed'>{project.description}</p>
             </div>
             <div className='px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium'>
@@ -124,7 +124,7 @@ export default function ProjDetails({ project, userRole }) {
           <InfoCard
             icon={<CalendarTodayIcon />}
             label="Remaining Time"
-            value={project.remainingTime}
+            value={project.startDate-project.dueDate}
             color="purple"
           />
         </div>
@@ -148,7 +148,7 @@ export default function ProjDetails({ project, userRole }) {
               </div>
               <div className='flex justify-between items-center py-2 border-b border-gray-100'>
                 <span className='text-gray-600'>End Date</span>
-                <span className='font-semibold'>{project.endDate}</span>
+                <span className='font-semibold'>{project.dueDate}</span>
               </div>
               <div className='flex justify-between items-center py-2'>
                 <span className='text-gray-600'>Status</span>
@@ -213,13 +213,13 @@ export default function ProjDetails({ project, userRole }) {
               <div className='bg-green-50 p-4 rounded-lg border border-green-200'>
                 <div className='text-sm text-green-600 font-medium mb-1'>Estimated Value</div>
                 <div className='text-2xl font-bold text-green-900'>
-                  {project.financials?.estimated || 'N/A'}
+                  {project.financials?.estimatedValue || 'N/A'}
                 </div>
               </div>
               <div className='bg-red-50 p-4 rounded-lg border border-red-200'>
                 <div className='text-sm text-red-600 font-medium mb-1'>Amount Spent</div>
                 <div className='text-2xl font-bold text-red-900'>
-                  {project.financials?.spent || 'N/A'}
+                  {project.financials?.amountSpent || 'N/A'}
                 </div>
               </div>
               <div className='bg-purple-50 p-4 rounded-lg border border-purple-200'>

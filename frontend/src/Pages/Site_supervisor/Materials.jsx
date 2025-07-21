@@ -13,12 +13,8 @@ export default function MaterialsPage() {
   return (
     <Inventory
       title="Materials Request Form"
-  type="Materials"
-  items={materials}
-  projects={[
-    'Colombo Highrise Project',
-    'Galle Road Mall Construction',
-  ]}
+  type="Material"
+ 
     />
   );
 }

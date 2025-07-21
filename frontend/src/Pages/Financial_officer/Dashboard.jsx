@@ -1,5 +1,6 @@
-import React from 'react';
+import React,{useState,useEffect} from 'react';
 import CostBarChart from '../../Components/Financial_officer/CostBarChart';
+import axios from 'axios';
 
 import { 
   Building2, 
@@ -64,10 +65,30 @@ const LaborPieChart = () => (
 
 const Dashboard = () => {
 
+  const [projects, setProjects] = useState([]);
+  const [activeCount, setActiveCount] = useState(0);
+
+  useEffect(() => {
+    axios.get("http://localhost:8086/api/v1/financial_officer")
+ // Replace with your API endpoint
+      .then((response) => {
+        setProjects(response.data);
+
+        setActiveCount(response.data.filter(p => p.status === "Active").length);
+       
+      })
+      .catch((err) => {
+        console.error("Error fetching projects:", err);
+        
+      });
+  }, []);
+
+   
+
   const summaryCards = [
     {
       title: "Ongoing Projects",
-      value: "12",
+      value: activeCount,
       icon: Building2,
       trend: "+2 from last month",
       color: "blue",
@@ -117,29 +138,9 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Financial Dashboard</h1>
-              <p className="text-gray-600 mt-1">
-                Welcome back! Here's your financial overview for today.
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Total Budget</p>
-                <p className="text-2xl font-bold text-gray-900">Rs. 2.4M</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-9xl mx-auto px-6 py-8">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {summaryCards.map((card, index) => {

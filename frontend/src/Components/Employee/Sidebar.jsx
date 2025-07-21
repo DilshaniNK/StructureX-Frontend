@@ -11,15 +11,15 @@ import TodoList from '@mui/icons-material/ListAltOutlined';
 // ADDED this import
 
 
-import { 
-  Home, Users, BarChart3,ChartSpline ,BookmarkCheck ,ClipboardPenLine ,UserRoundSearch , Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader, FileText, Truck, Package, Receipt, icons,FolderOpen,User,MapPin
+import {
+  Home, Users, BarChart3, ChartSpline, BookmarkCheck, ClipboardPenLine, UserRoundSearch, Clipboard, BadgeCheck, BookOpen, Shield, ChevronRight, Bell, MessageSquare, Settings, LogOut, Rocket, Loader, FileText, Truck, Package, Receipt, icons, FolderOpen, User, MapPin
 } from 'lucide-react';
 
 
 
 
-const Sidebar = ({ 
-  userRole = 'Designer', 
+const Sidebar = ({
+  userRole = 'Designer',
   activeItem = 'home',
   onNavigate,
   isSidebarOpen,
@@ -67,8 +67,10 @@ const Sidebar = ({
 
       { id: 'settings', label: 'Settings', icon: Settings, path: '/financial_officer/settings', badge: '5' }
     ],
-    Legal_Officer: [
+    LegalOfficer: [
       { id: 'home', label: 'Home', icon: Home, path: '/legalofficer/dashboard', badge: null },
+      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/legalofficer/chat', badge: null },
+
     ],
     SiteSupervisor: [
       { id: 'home', label: 'Home', icon: Home, path: '/site_supervisor/home', badge: null },
@@ -84,7 +86,7 @@ const Sidebar = ({
     ],
     Supplier: [
       { id: 'home', label: 'Home', icon: Home, path: '/supplier/home', badge: null },
-      { id: 'catalogue', label: 'Product Catalogue', icon: Projects, path: '/supplier/catalogue'},
+      { id: 'catalogue', label: 'Product Catalogue', icon: Projects, path: '/supplier/catalogue' },
       { id: 'quotations', label: 'Quotations', icon: FileText, path: '/supplier/quotations', badge: null },
       { id: 'orders', label: 'Material Orders', icon: Materials, path: '/supplier/orders', badge: '12' },
       { id: 'delivery', label: 'Delivery Information', icon: Truck, path: '/supplier/delivery', badge: '5' },
@@ -94,12 +96,12 @@ const Sidebar = ({
       { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/supplier/messages', badge: null }
     ],
     Director: [
-      { id: 'home', label: 'Home', icon: Home, path: '/director/home', badge: null},
-      { id: 'projects', label: 'Projects', icon: FolderOpen, path: '/director/projects'},
-      { id: 'teammanagment', label: 'Team Management', icon: User, path: '/director/teammanagment'},
-      { id: 'sitevisit', label: 'Site Visite', icon: MapPin, path: '/director/sitevisit'},
-      { id: 'inventory', label: 'Inventory', icon: Package, path: '/director/inventory'},
-      { id: 'documents', label: 'Documents', icon: FileText, path: '/director/documents'},
+      { id: 'home', label: 'Home', icon: Home, path: '/director/home', badge: null },
+      { id: 'projects', label: 'Projects', icon: FolderOpen, path: '/director/projects' },
+      { id: 'teammanagment', label: 'Team Management', icon: User, path: '/director/teammanagment' },
+      { id: 'sitevisit', label: 'Site Visite', icon: MapPin, path: '/director/sitevisit' },
+      { id: 'inventory', label: 'Inventory', icon: Package, path: '/director/inventory' },
+      { id: 'documents', label: 'Documents', icon: FileText, path: '/director/documents' },
 
 
     ]
@@ -223,8 +225,8 @@ const Sidebar = ({
                       <div className="flex items-center space-x-2">
                         {item.badge && (
                           <span className={`px-2 py-1 text-xs font-bold rounded-full transition-colors duration-300 ${isActive
-                              ? 'bg-white/20 text-white backdrop-blur-sm'
-                              : 'bg-[#FAAD00] text-white'
+                            ? 'bg-white/20 text-white backdrop-blur-sm'
+                            : 'bg-[#FAAD00] text-white'
                             }`}>
                             {item.badge}
                           </span>

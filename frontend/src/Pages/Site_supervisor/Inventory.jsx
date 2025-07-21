@@ -10,15 +10,7 @@ export default function ToolsPage() {
     <Inventory
       title="Tool Request Form"
   type="Tool"
-  items={[
-    { name: 'Drill' },
-    { name: 'Hammer' },
-    { name: 'Screwdriver' },
-  ]}
-  projects={[
-    'Colombo Highrise Project',
-    'Galle Road Mall Construction',
-  ]}
+  
     />
   );
 }

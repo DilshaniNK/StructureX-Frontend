@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Search, 
-  Filter, 
-  Eye, 
-  Edit, 
-  Trash2, 
-  Plus, 
+import axios from "axios";
+import {
+  Search,
+  Eye,
+  Edit,
+  Trash2,
+  Plus,
   Calendar,
   DollarSign,
   TrendingUp,
@@ -19,128 +19,46 @@ import {
   GraduationCap,
   ShoppingBag,
   Dumbbell
-} from 'lucide-react';
-
-const sampleProjects = [
-  { 
-    id: 1, 
-    name: "Luxury Tower A - Phase 1", 
-    budget: 50000000, 
-    spent: 42000000, 
-    status: "Active",
-    category: "Housing",
-    location: "Colombo 03",
-    startDate: "2024-01-15",
-    expectedCompletion: "2025-06-30",
-    manager: "John Silva",
-    progress: 84
-  },
-  { 
-    id: 2, 
-    name: "Golden Gate Bridge Renovation", 
-    budget: 30000000, 
-    spent: 28000000, 
-    status: "Completed",
-    category: "Infrastructure",
-    location: "Kandy",
-    startDate: "2023-03-10",
-    expectedCompletion: "2024-02-15",
-    manager: "Sarah Fernando",
-    progress: 100
-  },
-  { 
-    id: 3, 
-    name: "Central Mall Complex B", 
-    budget: 70000000, 
-    spent: 40000000, 
-    status: "Active",
-    category: "Commercial",
-    location: "Galle",
-    startDate: "2024-05-20",
-    expectedCompletion: "2025-12-01",
-    manager: "Mike Perera",
-    progress: 57
-  },
-  { 
-    id: 4, 
-    name: "Southern Highway Extension", 
-    budget: 90000000, 
-    spent: 75000000, 
-    status: "On Hold",
-    category: "Infrastructure",
-    location: "Matara",
-    startDate: "2023-08-01",
-    expectedCompletion: "2025-03-15",
-    manager: "David Rajapaksa",
-    progress: 83
-  },
-  { 
-    id: 5, 
-    name: "Corporate Office Park", 
-    budget: 60000000, 
-    spent: 60000000, 
-    status: "Completed",
-    category: "Commercial",
-    location: "Negombo",
-    startDate: "2023-01-05",
-    expectedCompletion: "2024-01-30",
-    manager: "Lisa Mendis",
-    progress: 100
-  },
-  { 
-    id: 6, 
-    name: "International School Campus", 
-    budget: 45000000, 
-    spent: 12000000, 
-    status: "Pending",
-    category: "Educational",
-    location: "Mount Lavinia",
-    startDate: "2024-08-01",
-    expectedCompletion: "2026-05-15",
-    manager: "Robert De Silva",
-    progress: 27
-  }
-];
+} from "lucide-react";
 
 const ProjectsPage = () => {
+  const [projects, setProjects] = useState([]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [sortBy, setSortBy] = useState("name");
-  const [viewMode, setViewMode] = useState("table"); // table or cards
 
-  // Count-up animation states
   const [housingCount, setHousingCount] = useState(0);
   const [commercialCount, setCommercialCount] = useState(0);
   const [educationCount, setEducationCount] = useState(0);
   const [infrastructureCount, setInfrastructureCount] = useState(0);
 
   useEffect(() => {
-    const animateCount = (target, setter) => {
-      let current = 0;
-      const increment = Math.ceil(target / 30);
-      const interval = setInterval(() => {
-        current += increment;
-        if (current >= target) {
-          current = target;
-          clearInterval(interval);
-        }
-        setter(current);
-      }, 100);
-    };
+    axios.get("http://localhost:8086/api/v1/financial_officer")
+ // Replace with your API endpoint
+      .then((response) => {
+        setProjects(response.data);
+       
 
-    animateCount(15, setHousingCount);
-    animateCount(8, setCommercialCount);
-    animateCount(6, setEducationCount);
-    animateCount(12, setInfrastructureCount);
+        // Optional: Count categories from response data
+        setHousingCount(response.data.filter(p => p.type === "Housing").length);
+        setCommercialCount(response.data.filter(p => p.type === "Commercial").length);
+        setEducationCount(response.data.filter(p => p.type === "Educational").length);
+        setInfrastructureCount(response.data.filter(p => p.type === "Infrastructure").length);
+      })
+      .catch((err) => {
+        console.error("Error fetching projects:", err);
+        
+      });
   }, []);
 
-  const filteredProjects = sampleProjects.filter((project) => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.manager.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.location.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch = project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.location?.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesStatus = statusFilter === "All" || project.status === statusFilter;
-    const matchesCategory = categoryFilter === "All" || project.category === categoryFilter;
+    const matchesCategory = categoryFilter === "All" || project.type === categoryFilter;
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
@@ -156,6 +74,23 @@ const ProjectsPage = () => {
         return a.name.localeCompare(b.name);
     }
   });
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-LK", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -187,8 +122,10 @@ const ProjectsPage = () => {
     }
   };
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
+
+  //project type wise
+  const getCategoryIcon = (type) => {
+    switch (type) {
       case "Housing":
         return <Building className="h-5 w-5" />;
       case "Commercial":
@@ -202,47 +139,22 @@ const ProjectsPage = () => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-LK', {
-      style: 'currency',
-      currency: 'LKR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-LK', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  //for budget and spent cards
+  const totalBudget = projects.reduce((sum, p) => sum + p.estimatedValue, 0);
+  const totalSpent = projects.reduce((sum, p) => sum + p.amountSpent, 0);
 
-  const totalBudget = sampleProjects.reduce((sum, project) => sum + project.budget, 0);
-  const totalSpent = sampleProjects.reduce((sum, project) => sum + project.spent, 0);
-  const activeProjects = sampleProjects.filter(p => p.status === "Active").length;
-  const completedProjects = sampleProjects.filter(p => p.status === "Completed").length;
+  //for project status cards
+  const activeProjects = projects.filter(p => p.status === "Active").length;
+  const completedProjects = projects.filter(p => p.status === "Completed").length;
+  
+
+
+
+
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Project Portfolio</h1>
-                <p className="mt-1 text-sm text-gray-500">Manage and monitor all construction projects</p>
-              </div>
-              <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                <Plus className="h-4 w-4 mr-2" />
-                New Project
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Overview Stats */}
@@ -351,6 +263,7 @@ const ProjectsPage = () => {
               />
             </div>
             
+            {/*filter by project status */}
             <div className="flex gap-4">
               <select
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
@@ -364,6 +277,7 @@ const ProjectsPage = () => {
                 <option value="On Hold">On Hold</option>
               </select>
               
+              {/*filter by project type */}
               <select
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 value={categoryFilter}
@@ -376,6 +290,7 @@ const ProjectsPage = () => {
                 <option value="Infrastructure">Infrastructure</option>
               </select>
               
+              {/* sort */}
               <select
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 value={sortBy}
@@ -384,7 +299,7 @@ const ProjectsPage = () => {
                 <option value="name">Sort by Name</option>
                 <option value="budget">Sort by Budget</option>
                 <option value="progress">Sort by Progress</option>
-                <option value="status">Sort by Status</option>
+                
               </select>
             </div>
           </div>
@@ -424,24 +339,24 @@ const ProjectsPage = () => {
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
                             <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                              {getCategoryIcon(project.category)}
+                              {getCategoryIcon(project.type)}
                             </div>
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">{project.name}</div>
                             <div className="text-sm text-gray-500 flex items-center">
                               <MapPin className="h-3 w-3 mr-1" />
-                              {project.location} • {project.manager}
+                              {project.location} 
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 font-medium">
-                          {formatCurrency(project.budget)}
+                          {formatCurrency(project.estimatedValue)}
                         </div>
                         <div className="text-sm text-gray-500">
-                          Spent: {formatCurrency(project.spent)}
+                          Spent: {formatCurrency(project.amountSpent)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -474,7 +389,7 @@ const ProjectsPage = () => {
                         </div>
                         <div className="flex items-center">
                           <Clock className="h-3 w-3 mr-1" />
-                          Due: {formatDate(project.expectedCompletion)}
+                          Due: {formatDate(project.dueDate)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -485,14 +400,9 @@ const ProjectsPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900 transition-colors">
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button className="text-green-600 hover:text-green-900 transition-colors">
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button className="text-red-600 hover:text-red-900 transition-colors">
-                            <Trash2 className="h-4 w-4" />
+                          <button className="text-blue-600 hover:text-blue-900 transition-colors"
+                            onClick={() => window.location.href = `/financial_officer/project_details?id=${project.projectId}`}>
+                              <Eye className="h-4 w-4" />
                           </button>
                         </div>
                       </td>

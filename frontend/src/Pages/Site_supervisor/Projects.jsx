@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect} from 'react';
+import axios from 'axios';
 import { 
   Calendar, 
   MapPin, 
@@ -22,6 +23,23 @@ import {
 const Projects = () => {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const[project,setProjects]=useState([])
+  const[totalProjects, setTotalProjects] = useState(0)
+ 
+
+  useEffect(() => {
+    axios.get("http://localhost:8086/api/v1/financial_officer")
+ // Replace with your API endpoint
+      .then((response) => {
+        setProjects(response.data);
+        setTotalProjects(response.data.filter(p => p.status === "Active").length);
+       
+      })
+      .catch((err) => {
+        console.error("Error fetching projects:", err);
+        
+      });
+  }, []);
 
   const projects = [
     {
@@ -156,7 +174,7 @@ const Projects = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Projects</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-3xl font-bold text-gray-900">{project.length}</p>
               </div>
               <div className="bg-blue-100 p-3 rounded-lg">
                 <Activity className="h-6 w-6 text-blue-600" />
@@ -168,7 +186,7 @@ const Projects = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">In Progress</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.inProgress}</p>
+                <p className="text-3xl font-bold text-blue-600">{totalProjects}</p>
               </div>
               <div className="bg-blue-100 p-3 rounded-lg">
                 <TrendingUp className="h-6 w-6 text-blue-600" />

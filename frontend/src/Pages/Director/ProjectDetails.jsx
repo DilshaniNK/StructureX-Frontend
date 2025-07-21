@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { X, ChevronLeft, ChevronRight, MapPin, Calendar, DollarSign, Users, Phone, Building, Tag } from 'lucide-react';
+import axios from 'axios';
 
 const ProjectDetails = () => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
-
-    const location = useLocation();
+    const [project,setProject] = useState(null);
+    const[loading,setLoading] = useState(true);
     const { id } = useParams();
-    const project = location.state?.project;
+    
+    useEffect(() =>{
+        const fetchProject = async () =>{
+            try{
+                const response = await axios.get(`http://localhost:8086/api/v1/director/get_project_by_id/${id}`);
+                setProject(response.data);
+            }catch(err){
+                alert("faild to load project")
+            }finally{
+                setLoading(false);
+            }
+        };
+        fetchProject()
+    },[id]);
+
+    if(loading) return <div className='p-6 text-center'>Loading ...</div>;
+    if(!project)return <div className='p-6 text-center text-red-500'>No project found</div>
 
     const nextImage = () =>{
         setCurrentImageIndex((prev) => (prev + 1) % project.images.length);
@@ -39,7 +56,7 @@ const ProjectDetails = () => {
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white mt-[50px]">
             {/* Header Section */}
             <div className="bg-white border-b border-gray-100">
                 <div className="max-w-6xl mx-auto px-6 py-8">
@@ -90,14 +107,14 @@ const ProjectDetails = () => {
                         {/* Main Image */}
                         <div className="relative mb-6">
                             <img
-                                src={project.images[currentImageIndex]}
+                                src={project.images && project.images.length > 0 ? project.images[currentImageIndex]: 'No images Available' }
                                 alt={`Project ${currentImageIndex + 1}`}
                                 className="w-full h-80 object-cover cursor-pointer hover:opacity-95 transition-opacity"
                                 onClick={openFullscreen}
                             />
                             
                             {/* Navigation Buttons */}
-                            {project.images.length > 1 && (
+                            {project.images && project.images.length > 1 && (
                                 <>
                                     <button
                                         onClick={prevImage}
@@ -116,7 +133,7 @@ const ProjectDetails = () => {
                         </div>
 
                         {/* Image Dots Navigation */}
-                        {project.images.length > 1 && (
+                        { project.images &&  project.images.length > 1 && (
                             <div className="flex justify-center space-x-2 mb-8">
                                 {project.images.map((_, index) => (
                                     <button
@@ -222,7 +239,7 @@ const ProjectDetails = () => {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
-                                {project.engineers.map((engineer, index) => (
+                                {(project.engineers || []).map((engineer, index) => (
                                     <tr key={index} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="text-gray-900">{engineer.name}</div>
@@ -260,7 +277,7 @@ const ProjectDetails = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
-                            {project.suppliers.map((supplier, index) => (
+                            {(project.suppliers || []).map((supplier, index) => (
                                 <tr key={index} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="text-gray-900">{supplier.material}</div>
@@ -288,7 +305,7 @@ const ProjectDetails = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center">
                     <div className="relative max-w-full max-h-full">
                         <img
-                            src={project.images[currentImageIndex]}
+                            src={project.images && project.images.length > 0 ? project.images[currentImageIndex] : 'not images available'}
                             alt={`Project ${currentImageIndex + 1}`}
                             className="max-w-full max-h-screen object-contain"
                         />
@@ -302,7 +319,7 @@ const ProjectDetails = () => {
                         </button>
                         
                         {/* Navigation in Fullscreen */}
-                        {project.images.length > 1 && (
+                        {project.image && project.images.length > 1 && (
                             <>
                                 <button
                                     onClick={prevImage}
@@ -320,9 +337,12 @@ const ProjectDetails = () => {
                         )}
                         
                         {/* Image Counter in Fullscreen */}
+                        {project.images && (
+
                         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-4 py-2 rounded">
                             {currentImageIndex + 1} / {project.images.length}
                         </div>
+                        )}
                     </div>
                 </div>
             )}

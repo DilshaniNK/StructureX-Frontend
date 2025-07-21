@@ -1,7 +1,6 @@
-// Components/Director/NewProjectModal.jsx
 import React, { useState } from 'react';
 
-const NewProjectForm = ({ onClose, onAdd }) => {
+const NewProjectForm = ({ onClose, onAdd, client }) => {
   const [projectName, setProjectName] = useState('');
   const [location, setLocation] = useState('');
   const [note, setNote] = useState('');
@@ -9,29 +8,20 @@ const NewProjectForm = ({ onClose, onAdd }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!projectName || !location) return;
-
-    const newProject = {
-      id: Date.now(),
+    onAdd({
       name: projectName,
       location,
-      status: 'Initialize',
-      progress: 0,
-      manager: 'To Assign',
-      supervisor: 'To Assign',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: 'TBD',
-      budget: 'TBD',
       note,
-      
-    };
-    onAdd(newProject);
-    onClose();
+    });
   };
 
   return (
-    <div className="fixed inset-0 z-50  backdrop-blur-sm flex items-center justify-center  p-4">
+    <div className="fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 shadow-lg">
         <h2 className="text-xl font-bold text-center">Add New Project</h2>
+        <div className="mb-2 text-sm text-gray-600">
+          For client: <span className="font-semibold">{client?.first_name} {client?.last_name}</span>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"

@@ -1,12 +1,13 @@
 // pages/Director/components/OverviewStats.jsx
 import React from 'react';
+
 import { FolderOpen, Play, Pause, CheckCircle } from 'lucide-react';
 
 const OverviewStats = ({ projects }) => {
   const total = projects.length;
   const ongoing = projects.filter(p => p.status === 'ongoing').length;
-  const hold = projects.filter(p => p.status === 'hold').length;
-  const finished = projects.filter(p => p.status === 'finished').length;
+  const hold = projects.filter(p => p.status === 'pending').length;
+  const finished = projects.filter(p => p.status === 'hold').length;
 
   const statItems = [
     { label: 'Total Projects', value: total, icon: <FolderOpen className="w-6 h-6 text-blue-600" />, bg: 'bg-blue-100' },

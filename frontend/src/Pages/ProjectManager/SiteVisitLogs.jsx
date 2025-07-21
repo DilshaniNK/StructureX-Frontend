@@ -1,150 +1,293 @@
-import React, { useState } from 'react';
-import { Plus, Check , Search, CircleCheckBig , CircleMinus , Calendar, Camera, Download, Filter, MapPin, Clock, User, Edit, X, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
+import {
+  Plus,
+  Check,
+  Search,
+  CircleCheckBig,
+  CircleMinus,
+  Calendar,
+  Camera,
+  Download,
+  Filter,
+  MapPin,
+  Clock,
+  User,
+  Edit,
+  X,
+  Save
+} from 'lucide-react';
 
-const SiteVisitLogs = () => {
-  const [showAddForm, setShowAddForm] = useState(false);
+const SiteVisitLogs = ({ setShowAddForm }) => {
+  // Custom CSS animations
+  const customStyles = `
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes numberCount {
+      from {
+        transform: scale(0.8);
+      }
+      to {
+        transform: scale(1);
+      }
+    }
+
+    @keyframes spinSlow {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulseSlow {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.6s ease-out forwards;
+      opacity: 0;
+    }
+
+    .animate-number-count {
+      animation: numberCount 0.5s ease-out;
+    }
+
+    .animate-spin-slow {
+      animation: spinSlow 3s linear infinite;
+    }
+
+    .animate-pulse-slow {
+      animation: pulseSlow 2s ease-in-out infinite;
+    }
+
+    /* Loading shimmer effect */
+    @keyframes shimmer {
+      0% {
+        background-position: -200px 0;
+      }
+      100% {
+        background-position: calc(200px + 100%) 0;
+      }
+    }
+
+    .shimmer {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200px 100%;
+      animation: shimmer 1.5s infinite;
+    }
+  `;
+
+  const [showAddForme, setShowAddForme] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [editingVisit, setEditingVisit] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [visits, setVisits] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [visits, setVisits] = useState([
-    {
-      id: 1,
-      date: '2024-11-20',
-      time: '10:30 AM',
-      visitor: 'John Smith',
-      role: 'Project Manager',
-      purpose: 'Weekly Progress Inspection',
-      remarks: 'Foundation work completed successfully. Minor delay in material delivery expected.',
-      images: ['photo1.jpg', 'photo2.jpg'],
-      weather: 'Sunny',
-      status: 'Completed',
-      project: 'Downtown Office Complex',
-      duration: '2 hours',
-      attendees: ['Site Supervisor', 'Safety Officer'],
-      findings: ['Foundation quality excellent', 'Material delivery schedule needs adjustment'],
-      recommendations: ['Order materials 2 days earlier', 'Increase safety signage']
-    },
-    {
-      id: 2,
-      date: '2024-11-18',
-      time: '2:15 PM',
-      visitor: 'Sarah Johnson',
-      role: 'Safety Inspector',
-      purpose: 'Safety Compliance Check',
-      remarks: 'All safety protocols being followed. Recommended additional signage for visitor area.',
-      images: ['safety1.jpg'],
-      weather: 'Cloudy',
-      status: 'Completed',
-      project: 'Residential Towers',
-      duration: '1.5 hours',
-      attendees: ['Site Manager', 'Safety Team'],
-      findings: ['Safety protocols compliant', 'Visitor area needs improvement'],
-      recommendations: ['Install additional safety signage', 'Create designated visitor path']
-    },
-    {
-      id: 3,
-      date: '2024-11-15',
-      time: '9:00 AM',
-      visitor: 'Mike Chen',
-      role: 'Client Representative',
-      purpose: 'Quality Review',
-      remarks: 'Overall satisfied with progress. Requested changes to interior layout discussed.',
-      images: ['interior1.jpg', 'interior2.jpg', 'interior3.jpg'],
-      weather: 'Rainy',
-      status: 'Follow-up Required',
-      project: 'Shopping Mall Renovation',
-      duration: '3 hours',
-      attendees: ['Project Manager', 'Architect', 'Interior Designer'],
-      findings: ['Quality meets standards', 'Interior layout needs revision'],
-      recommendations: ['Revise interior layout plan', 'Schedule follow-up meeting']
-    },
-    {
-      id: 4,
-      date: '2024-11-12',
-      time: '11:45 AM',
-      visitor: 'Lisa Wong',
-      role: 'Structural Engineer',
-      purpose: 'Structural Assessment',
-      remarks: 'Structural integrity excellent. Approved for next phase of construction.',
-      images: ['structure1.jpg'],
-      weather: 'Sunny',
-      status: 'Completed',
-      project: 'Downtown Office Complex',
-      duration: '2.5 hours',
-      attendees: ['Construction Manager', 'Site Engineer'],
-      findings: ['Structural integrity verified', 'Ready for next phase'],
-      recommendations: ['Proceed with next construction phase', 'Maintain current quality standards']
-    }
-  ]);
 
-  const request = [
-    {
-      id: 1,
-      date: '2024-11-20',
-      projectName: 'Down Flow',
-      note: 'can you visit it'
-    },
-    {
-      id: 2,
-      date: '2024-11-20',
-      projectName: 'Down Flow',
-      note: 'can you visit it'
-    },
-    {
-      id: 3,
-      date: '2024-11-20',
-      projectName: 'Down Flow',
-      note: 'can you visit it'
-    },
-    {
-      id: 4,
-      date: '2024-11-20',
-      projectName: 'Down Flow',
-      note: 'can you visit it'
-    },
-    {
-      id: 5,
-      date: '2024-11-20',
-      projectName: 'Down Flow',
-      note: 'can you visit it'
-    }
-  ];
+  // Visit requests state
+  const [visitRequests, setVisitRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Completed':
-        return 'text-green-600 bg-green-100';
-      case 'Follow-up Required':
-        return 'text-yellow-600 bg-yellow-100';
-      case 'Pending':
-        return 'text-blue-600 bg-blue-100';
-      default:
-        return 'text-gray-600 bg-gray-100';
+
+
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+
+
+  // Reject confirmation popup state
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [rejectRequestId, setRejectRequestId] = useState(null);
+
+
+  const [formData, setFormData] = useState({
+    project_id: '',
+    date: '',
+    description: '',
+    status: '',
+  });
+
+
+  // Fetch visits data from database
+  const fetchVisits = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('http://localhost:8086/api/v1/project_manager/visits', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 200) {
+        setVisits(response.data.visits || response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching visits:', error);
+      setErrorMessage('Failed to fetch visit logs');
+      setShowErrorAlert(true);
+    } finally {
+      setLoading(false);
     }
   };
 
+
+
+  // Fetch visit requests data from database
+  const fetchVisitRequests = async () => {
+    try {
+      setRequestsLoading(true);
+      const response = await axios.get('http://localhost:8086/api/v1/project_manager/request', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 200) {
+        console.log('Visit requests response:', response.data); // Debug log
+        // Enhanced logging to see the structure of each request
+        if (response.data && response.data.length > 0) {
+          console.log('First request object structure:', response.data[0]);
+          console.log('Available keys in first request:', Object.keys(response.data[0]));
+        }
+        setVisitRequests(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching visit requests:', error);
+      setErrorMessage('Failed to fetch visit requests');
+      setShowErrorAlert(true);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+
+
+  // Fetch visits on component mount
+  useEffect(() => {
+    fetchVisits();
+    fetchVisitRequests();
+  }, []);
+
+
+
+  // Filter visits based on search and date
   const filteredVisits = visits.filter(visit => {
-    const matchesSearch = visit.visitor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visit.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visit.role.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm ||
+      visit.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visit.project_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visit.status?.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesDate = !dateFilter || visit.date === dateFilter;
+
     return matchesSearch && matchesDate;
   });
 
-  const handleEdit = (visit) => {
-    setEditingVisit({ ...visit });
-    setShowEditForm(true);
+
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
 
-  const handleSaveEdit = () => {
-    setVisits(visits.map(visit =>
-      visit.id === editingVisit.id ? editingVisit : visit
-    ));
-    setShowEditForm(false);
-    setEditingVisit(null);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const payload = {
+      project_id: formData.project_id,
+      date: formData.date,
+      description: formData.description,
+      status: formData.status,
+    };
+    try {
+      const response = await axios.post('http://localhost:8086/api/v1/project_manager/add_visit', payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Response:', response);
+      console.log(payload);
+
+      if (response.status === 200) {
+        setSuccessMessage('Visit log added successfully');
+        setShowSuccessAlert(true);
+        setShowAddForme(false);
+        // Reset form
+        setFormData({
+          project_id: '',
+          date: '',
+          description: '',
+          status: '',
+        });
+        // Refresh the visits list
+        fetchVisits();
+      } else {
+        setErrorMessage('Failed to add visit log');
+        setShowErrorAlert(true);
+      }
+    } catch (error) {
+      console.error('Error adding visit log:', error);
+      setErrorMessage('An error occurred while adding the visit log');
+      setShowErrorAlert(true);
+    }
+  };
+
+
+
+  const handleSaveEdit = async () => {
+    try {
+      const response = await axios.put(`http://localhost:8086/api/v1/project_manager/visits/${editingVisit.id}`, editingVisit, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 200) {
+        setSuccessMessage('Visit log updated successfully');
+        setShowSuccessAlert(true);
+        setShowEditForm(false);
+        setEditingVisit(null);
+        fetchVisits(); // Refresh the list
+      } else {
+        setErrorMessage('Failed to update visit log');
+        setShowErrorAlert(true);
+      }
+    } catch (error) {
+      console.error('Error updating visit log:', error);
+      setErrorMessage('An error occurred while updating the visit log');
+      setShowErrorAlert(true);
+    }
+  };
+
+  const handleEdit = (visit) => {
+    setEditingVisit(visit);
+    setShowEditForm(true);
   };
 
   const generateReport = () => {
@@ -152,18 +295,140 @@ const SiteVisitLogs = () => {
   };
 
   const downloadReport = () => {
-    // In a real application, this would generate and download a PDF
-    alert('Site Visit Report downloaded successfully!');
+    setSuccessMessage('Site Visit Report downloaded successfully!');
+    setShowSuccessAlert(true);
   };
+
+
+
+  // Handle accept/reject visit requests
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      // Enhanced validation with detailed logging
+      console.log('Accept request called with ID:', requestId);
+      if (!requestId) {
+        console.error('Request ID is undefined');
+        setErrorMessage('Invalid request ID - ID is missing');
+        setShowErrorAlert(true);
+        return;
+      }
+
+      console.log('Making API call to accept request:', requestId);
+      const response = await axios.put(`http://localhost:8086/api/v1/project_manager/request/${requestId}/accept`, {}, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 200) {
+        setSuccessMessage('Visit request accepted and marked as completed!');
+        setShowSuccessAlert(true);
+        fetchVisitRequests(); // Refresh the requests list
+      } else {
+        setErrorMessage('Failed to accept visit request');
+        setShowErrorAlert(true);
+      }
+    } catch (error) {
+      console.error('Error accepting visit request:', error);
+      setErrorMessage('An error occurred while accepting the visit request');
+      setShowErrorAlert(true);
+    }
+  };
+
+
+
+  const handleRejectRequest = async (requestId) => {
+    try {
+      // Enhanced validation with detailed logging
+      console.log('Reject request called with ID:', requestId);
+      if (!requestId) {
+        console.error('Request ID is undefined');
+        setErrorMessage('Invalid request ID - ID is missing');
+        setShowErrorAlert(true);
+        return;
+      }
+
+      console.log('Making API call to reject request:', requestId);
+      const response = await axios.put(`http://localhost:8086/api/v1/project_manager/request/${requestId}/reject`, {}, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 200) {
+        setSuccessMessage('Visit request rejected and marked as cancelled!');
+        setShowSuccessAlert(true);
+        fetchVisitRequests(); // Refresh the requests list
+      } else {
+        setErrorMessage('Failed to reject visit request');
+        setShowErrorAlert(true);
+      }
+    } catch (error) {
+      console.error('Error rejecting visit request:', error);
+      setErrorMessage('An error occurred while rejecting the visit request');
+      setShowErrorAlert(true);
+    }
+  };
+
+
+
+  // Show reject confirmation popup
+  const showRejectConfirmation = (requestId) => {
+    console.log('showRejectConfirmation called with:', requestId);
+    if (!requestId) {
+      console.error('Cannot show reject confirmation - requestId is undefined');
+      setErrorMessage('Cannot process request - Invalid ID');
+      setShowErrorAlert(true);
+      return;
+    }
+    setRejectRequestId(requestId);
+    setShowRejectConfirm(true);
+  };
+
+
+
+
+  // Handle reject confirmation
+  const confirmReject = () => {
+    if (rejectRequestId) {
+      handleRejectRequest(rejectRequestId);
+    }
+    setShowRejectConfirm(false);
+    setRejectRequestId(null);
+  };
+
+
+
+  // Cancel reject confirmation
+  const cancelReject = () => {
+    setShowRejectConfirm(false);
+    setRejectRequestId(null);
+  };
+
+
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Completed':
+        return 'bg-green-100 text-green-700';
+      case 'Follow-up Required':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'Pending':
+        return 'bg-gray-100 text-gray-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+
 
   return (
     <div className="space-y-8">
+      {/* Inject custom CSS animations */}
+      <style>{customStyles}</style>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        {/* <div>
-          <h1 className="text-3xl font-bold text-gray-900">Site Visit Logs</h1>
-          <p className="text-gray-600 mt-2">Record and track all site visits and inspections</p>
-        </div> */}
         <div className="flex space-x-3 mt-4 sm:mt-0">
           <button
             onClick={generateReport}
@@ -173,7 +438,7 @@ const SiteVisitLogs = () => {
             Generate Report
           </button>
           <button
-            onClick={() => setShowAddForm(true)}
+            onClick={() => setShowAddForme(true)}
             className="px-4 py-2 bg-primary-500 bg-amber-400 text-gray-900 rounded-lg cursor-pointer hover:bg-amber-200 transition-colors flex items-center"
           >
             <Plus size={20} className="mr-2" />
@@ -184,100 +449,203 @@ const SiteVisitLogs = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Visits</p>
-              <p className="text-2xl font-bold text-gray-900">{visits.length}</p>
+        {loading ? (
+          // Loading skeleton cards with shimmer effect
+          <>
+            {[1, 2, 3, 4].map((index) => (
+              <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded shimmer mb-2"></div>
+                    <div className="h-8 bg-gray-200 rounded shimmer w-16"></div>
+                  </div>
+                  <div className="w-12 h-12 bg-gray-200 rounded-lg shimmer"></div>
+                </div>
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            {/* Total Visits Card */}
+            <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100 transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-yellow-50 group animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 transition-colors duration-300 group-hover:text-yellow-600">Total Visits</p>
+                  <p className="text-2xl font-bold text-gray-900 transition-all duration-500 transform group-hover:scale-110 group-hover:text-yellow-700">
+                    <span className="inline-block animate-number-count">{visits.length}</span>
+                  </p>
+                </div>
+                <div className=" bg-yellow-100 w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:bg-yellow-200 group-hover:rotate-12 group-hover:scale-110">
+                  <MapPin className="text-primary-600 transition-colors duration-300 group-hover:text-yellow-700" size={24} />
+                </div>
+              </div>
             </div>
-            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-              <MapPin className="text-primary-600" size={24} />
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">This Month</p>
-              <p className="text-2xl font-bold text-secondary-600">8</p>
+            {/* This Month Card */}
+            <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100 transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-yellow-50 group animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 transition-colors duration-300 group-hover:text-yellow-600">This Month</p>
+                  <p className="text-2xl font-bold text-secondary-600 transition-all duration-500 transform group-hover:scale-110 group-hover:text-yellow-700">
+                    <span className="inline-block animate-number-count">
+                      {visits.filter(visit => {
+                        const visitDate = new Date(visit.date);
+                        const currentDate = new Date();
+                        return visitDate.getMonth() === currentDate.getMonth() &&
+                          visitDate.getFullYear() === currentDate.getFullYear();
+                      }).length}
+                    </span>
+                  </p>
+                </div>
+                <div className=" bg-yellow-100 w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:bg-yellow-200 group-hover:rotate-12 group-hover:scale-110">
+                  <Calendar className="text-secondary-600 transition-colors duration-300 group-hover:text-yellow-700" size={24} />
+                </div>
+              </div>
             </div>
-            <div className="w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center">
-              <Calendar className="text-secondary-600" size={24} />
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pending Follow-up</p>
-              <p className="text-2xl font-bold text-yellow-600">2</p>
+            {/* Pending Card */}
+            <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100 transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-yellow-50 group animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 transition-colors duration-300 group-hover:text-yellow-600">Pending</p>
+                  <p className="text-2xl font-bold transition-all duration-500 transform group-hover:scale-110 group-hover:text-yellow-700">
+                    <span className="inline-block animate-number-count animate-pulse-slow">
+                      {visits.filter(visit => visit.status === 'pending').length}
+                    </span>
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:bg-yellow-200 group-hover:rotate-12 group-hover:scale-110">
+                  <Clock className="text-yellow-600 transition-colors duration-300 group-hover:text-yellow-700 animate-spin-slow" size={24} />
+                </div>
+              </div>
             </div>
-            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Clock className="text-yellow-600" size={24} />
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Unique Visitors</p>
-              <p className="text-2xl font-bold text-accent-600">12</p>
+            {/* Completed Visits Card */}
+            <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100 transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-yellow-50 group animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 transition-colors duration-300 group-hover:text-yellow-600">Completed Visits</p>
+                  <p className="text-2xl font-bold transition-all duration-500 transform group-hover:scale-110 group-hover:text-yellow-700">
+                    <span className="inline-block animate-number-count">
+                      {visits.filter(visit => visit.status === 'completed').length}
+                    </span>
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:bg-yellow-200 group-hover:rotate-12 group-hover:scale-110">
+                  <User className="text-yellow-600 transition-colors duration-300 group-hover:text-yellow-700" size={24} />
+                </div>
+              </div>
             </div>
-            <div className="w-12 h-12 bg-accent-100 rounded-lg flex items-center justify-center">
-              <User className="text-accent-600" size={24} />
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
-
+      {/* Request for Site Visit */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
-                <th className=" px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-                <tr key={request.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900"> 2022/05/12
-                      {/* {request.date} */}
-                      </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600"> Home Land
-                    {/* {request.projectName} */}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-gray-900">  can you visit it
-                      {/* {request.note} */}
-                    </div>
-                  </td>
-                  <td className=" flex px-6 py-4 whitespace-nowrap">
-                    <button className=" flex p-3 bg-green-500 text-gray-900 cursor-pointer hover:bg-green-300  rounded-lg py-2 font-medium m-2">
-                      <CircleCheckBig  size={20} className="m-1" />
-                      Accpeted
-                    </button>
-                    <button className=" flex p-3 bg-red-600 text-gray-900 cursor-pointer hover:bg-red-400  rounded-lg py-2 font-medium m-2">
-                      <CircleMinus size={20} className="m-1" />
-                      Rejected
-                    </button>
-                    {/* <button className="flex p-3 bg-amber-400 text-gray-900 cursor-pointer hover:bg-amber-200  rounded-lg py-2 font-medium m-2">
-                      <Check size={20} className="m-1" />
-                      Completed
-                    </button> */}
-                  </td>
-                </tr>
-            </tbody>
-          </table>
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Site Visit Requests</h2>
+          <p className="text-gray-600 mt-1">Manage incoming site visit requests</p>
         </div>
+
+        {requestsLoading ? (
+          <div className="p-6">
+            <div className="text-center py-8">
+              <p className="text-gray-500">Loading visit requests...</p>
+            </div>
+          </div>
+        ) : visitRequests.length === 0 ? (
+          <div className="p-6">
+            <div className="text-center py-8">
+              <p className="text-gray-500">No visit requests found.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">From Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">To Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {visitRequests.map((request, index) => {
+                  // Enhanced logging to debug the request object
+                  console.log(`Request ${index}:`, request);
+                  
+                  // Try to get the ID from various possible field names
+                  const requestId = request.id || request._id || request.requestId || request.visitRequestId;
+                  console.log(`Request ${index} ID:`, requestId);
+                  
+                  return (
+                    <tr key={requestId || index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">
+                          {request.projectId || request.project_id || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                        {request.fromDate || request.from_date ?
+                          new Date(request.fromDate || request.from_date).toLocaleDateString() :
+                          'N/A'
+                        }
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                        {request.toDate || request.to_date ?
+                          new Date(request.toDate || request.to_date).toLocaleDateString() :
+                          'N/A'
+                        }
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-gray-900 max-w-xs truncate" title={request.purpose}>
+                          {request.purpose || 'No note provided'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {request.status === 'pending' || !request.status ? (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                console.log('Accept button clicked for request:', request);
+                                console.log('Using ID:', requestId);
+                                handleAcceptRequest(requestId);
+                              }}
+                              className="flex items-center px-3 py-2 bg-green-500 text-white cursor-pointer hover:bg-green-600 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              <CircleCheckBig size={16} className="mr-1" />
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => {
+                                console.log('Reject button clicked for request:', request);
+                                console.log('Using ID:', requestId);
+                                showRejectConfirmation(requestId);
+                              }}
+                              className="flex items-center px-3 py-2 bg-red-500 text-white cursor-pointer hover:bg-red-600 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              <CircleMinus size={16} className="mr-1" />
+                              Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-gray-500 text-sm">
+                            {request.status === 'completed' ? 'Completed' : 
+                             request.status === 'cancelled' ? 'Cancelled' : 
+                             request.status === 'accepted' ? 'Accepted' : 'Rejected'}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
 
       {/* Search and Filter */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -307,187 +675,147 @@ const SiteVisitLogs = () => {
       </div>
 
       {/* Visit Logs */}
-      <div className="space-y-6">
-        {filteredVisits.map((visit) => (
-          <div key={visit.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center space-x-4 mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900">{visit.visitor}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(visit.status)}`}>
-                    {visit.status}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <Calendar size={16} className="mr-2" />
-                    {visit.date} at {visit.time}
-                  </div>
-                  <div className="flex items-center">
-                    <User size={16} className="mr-2" />
-                    {visit.role}
-                  </div>
-                  {/* <div className="flex items-center">
-                    <MapPin size={16} className="mr-2" />
-                    Weather: {visit.weather}
-                  </div> */}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Purpose</h4>
-                <p className="text-gray-600 mb-4">{visit.purpose}</p>
-
-                <h4 className="font-medium text-gray-900 mb-2">Remarks</h4>
-                <p className="text-gray-600">{visit.remarks}</p>
-              </div>
-
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Images ({visit.images.length})</h4>
-                <div className="flex items-center space-x-2">
-                  {visit.images.map((image, index) => (
-                    <div key={index} className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <Camera className="text-gray-400" size={20} />
-                    </div>
-                  ))}
-                  <button className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-primary-400 transition-colors">
-                    <Plus className="text-gray-400" size={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 pt-4 mt-6">
-              <div className="flex flex-wrap gap-3">
-                {/* <button className="px-3 py-1 text-sm bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors">
-                  View Details
-                </button> */}
-                <button
-                  onClick={() => handleEdit(visit)}
-                  className="px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
-                >
-                  <Edit size={16} className="mr-1" />
-                  Edit
-                </button>
-                <button className="px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                  Download Report
-                </button>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+        {loading ? (
+          <div className="col-span-full text-center py-8">
+            <p className="text-gray-500">Loading visit logs...</p>
           </div>
-        ))}
+        ) : filteredVisits.length === 0 ? (
+          <div className="col-span-full text-center py-8">
+            <p className="text-gray-500">No visit logs found. {searchTerm || dateFilter ? 'Try adjusting your filters.' : 'Add your first visit log!'}</p>
+          </div>
+        ) : (
+          filteredVisits.map((visit, index) => (
+            <div key={visit.id || index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-w-0">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h3 className="text-sm font-semibold text-gray-900 truncate">Project: {visit.project_id}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(visit.status)} whitespace-nowrap`}>
+                      {visit.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 text-xs text-gray-600">
+                    <div className="flex items-center">
+                      <Calendar size={14} className="mr-1 flex-shrink-0" />
+                      <span className="truncate">{new Date(visit.date).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <User size={14} className="mr-1 flex-shrink-0" />
+                      <span className="truncate">ID: {visit.id}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2 text-sm">Description</h4>
+                  <p className="text-gray-600 text-xs line-clamp-3">{visit.description || 'No description provided'}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-3 mt-4">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleEdit(visit)}
+                    className="px-2 py-1 text-xs border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors flex items-center"
+                  >
+                    <Edit size={12} className="mr-1" />
+                    Edit
+                  </button>
+                  {/* <button 
+                    onClick={() => handleDelete(visit.id)}
+                    className="px-2 py-1 text-xs border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors flex items-center"
+                  >
+                    <X size={12} className="mr-1" />
+                    Delete
+                  </button> */}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Add Visit Form Modal */}
-      {showAddForm && (
+      {showAddForme && (
         <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
           <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Log New Site Visit</h3>
-            <form className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                  <input
-                    type="time"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Visitor Name</label>
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Enter visitor name"
-                  />
-                </div>
-                {/* <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role/Position</label>
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="e.g., Project Manager, Inspector"
-                  />
-                </div> */}
-                 <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role/Position</label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                  <option>Project Manager</option>
-                  <option>Inspector</option>
-                  <option>Director</option>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {/* Project ID Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Project ID</label>
+                <select
+                  name="project_id"
+                  value={formData.project_id}
+                  onChange={handleChange}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  <option value="">Select Project</option>
+                  <option value="PJT001">PJT001</option>
+                  <option value="PJT002">PJT002</option>
+                  <option value="PJT003">PJT003</option>
+                  <option value="PJT004">PJT004</option>
+                  <option value="PJT005">PJT005</option>
                 </select>
               </div>
-              </div>
 
+              {/* Date Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Purpose of Visit</label>
+                <label className="block text-sm font-medium mb-1">Date</label>
                 <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="e.g., Weekly inspection, Safety check"
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 />
               </div>
 
-              {/* <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Weather Conditions</label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                  <option>Sunny</option>
-                  <option>Cloudy</option>
-                  <option>Rainy</option>
-                  <option>Windy</option>
-                  <option>Snow</option>
-                </select>
-              </div> */}
-
+              {/* Description Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea
+                  name="description"
                   rows={4}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Detailed observations, findings, or notes..."
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Detailed observations..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 ></textarea>
               </div>
 
+              {/* Status Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                <label className="block text-sm font-medium mb-1">Status</label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                >
                   <option>Completed</option>
                   <option>Follow-up Required</option>
                   <option>Pending</option>
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Attach Images</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-400 transition-colors">
-                  <Camera className="mx-auto text-gray-400 mb-2" size={24} />
-                  <p className="text-gray-600">Click to upload images or drag and drop</p>
-                  <p className="text-sm text-gray-500 mt-1">PNG, JPG up to 10MB each</p>
-                </div>
-              </div>
-
+              {/* Buttons */}
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-primary-500 bg-amber-400 text-gray-900 rounded-lg py-2 hover:bg-primary-600 transition-colors"
+                  className="flex-1 bg-amber-400 text-gray-900 rounded-lg py-2 hover:bg-amber-500"
                 >
                   Log Visit
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 hover:bg-gray-50 transition-colors"
+                  onClick={() => setShowAddForme(false)}
+                  className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
@@ -513,6 +841,15 @@ const SiteVisitLogs = () => {
             <form className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
+                  <input
+                    type="text"
+                    value={editingVisit.project_id}
+                    onChange={(e) => setEditingVisit({ ...editingVisit, project_id: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                   <input
                     type="date"
@@ -521,69 +858,14 @@ const SiteVisitLogs = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                  <input
-                    type="text"
-                    value={editingVisit.time}
-                    onChange={(e) => setEditingVisit({ ...editingVisit, time: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Visitor Name</label>
-                  <input
-                    type="text"
-                    value={editingVisit.visitor}
-                    onChange={(e) => setEditingVisit({ ...editingVisit, visitor: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role/Position</label>
-                  <input
-                    type="text"
-                    value={editingVisit.role}
-                    onChange={(e) => setEditingVisit({ ...editingVisit, role: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Purpose of Visit</label>
-                <input
-                  type="text"
-                  value={editingVisit.purpose}
-                  onChange={(e) => setEditingVisit({ ...editingVisit, purpose: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Weather Conditions</label>
-                <select
-                  value={editingVisit.weather}
-                  onChange={(e) => setEditingVisit({ ...editingVisit, weather: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                >
-                  <option>Sunny</option>
-                  <option>Cloudy</option>
-                  <option>Rainy</option>
-                  <option>Windy</option>
-                  <option>Snow</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   rows={4}
-                  value={editingVisit.remarks}
-                  onChange={(e) => setEditingVisit({ ...editingVisit, remarks: e.target.value })}
+                  value={editingVisit.description}
+                  onChange={(e) => setEditingVisit({ ...editingVisit, description: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 ></textarea>
               </div>
@@ -682,7 +964,7 @@ const SiteVisitLogs = () => {
               </div>
 
               {/* Visit Details */}
-              <div className="mb-8">
+              {/* <div className="mb-8">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Visit Details</h3>
                 <div className="space-y-4">
                   {visits.map((visit) => (
@@ -714,7 +996,7 @@ const SiteVisitLogs = () => {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div> */}
 
               {/* Report Footer */}
               <div className="border-t border-gray-200 pt-6">
@@ -729,6 +1011,53 @@ const SiteVisitLogs = () => {
           </div>
         </div>
       )}
+
+      {/* Reject Confirmation Modal */}
+      {showRejectConfirm && (
+        <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-2 border-red-400 rounded-xl p-6 w-full max-w-md">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <X className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Reject Visit Request</h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to reject this visit request? This action will mark the request as cancelled.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={confirmReject}
+                  className="flex-1 bg-red-500 text-white rounded-lg py-2 px-4 hover:bg-red-600 transition-colors font-medium"
+                >
+                  Yes, Reject
+                </button>
+                <button
+                  onClick={cancelReject}
+                  className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 px-4 hover:bg-gray-50 transition-colors font-medium"
+                >
+                  No, Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </div>
   );
 };

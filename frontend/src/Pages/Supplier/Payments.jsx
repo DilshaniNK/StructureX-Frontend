@@ -269,7 +269,7 @@ const Payments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              ${totalPending.toLocaleString()}
+              Rs.{totalPending.toLocaleString()}
             </div>
             <p className="text-xs text-gray-600 mt-1">
               {payments.filter((p) => p.status === "pending" || p.status === "overdue").length} invoices
@@ -286,7 +286,7 @@ const Payments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              ${totalPaid.toLocaleString()}
+              Rs.{totalPaid.toLocaleString()}
             </div>
             <p className="text-xs text-gray-600 mt-1">
               {payments.filter((p) => p.status === "paid").length} invoices
@@ -306,7 +306,7 @@ const Payments = () => {
               {lastPayment ? lastPayment.paidDate : "N/A"}
             </div>
             <p className="text-xs text-gray-600 mt-1">
-              {lastPayment ? `$${lastPayment.amount.toLocaleString()}` : "No payments yet"}
+              {lastPayment ? `Rs.${lastPayment.amount.toLocaleString()}` : "No payments yet"}
             </p>
           </CardContent>
         </Card>
@@ -364,7 +364,7 @@ const Payments = () => {
                   <TableCell className="font-medium text-gray-900">{payment.id}</TableCell>
                   <TableCell className="text-gray-700">{payment.project}</TableCell>
                   <TableCell className="font-medium text-gray-900">
-                    ${payment.amount.toLocaleString()}
+                    Rs.{payment.amount.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-gray-700">{payment.date}</TableCell>
                   <TableCell className="text-gray-700">{payment.dueDate}</TableCell>

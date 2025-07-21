@@ -343,7 +343,7 @@ const Invoices = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              ${submittedInvoices.filter((i) => i.status === "approved").reduce((sum, invoice) => sum + invoice.amount, 0).toLocaleString()}
+              Rs.{submittedInvoices.filter((i) => i.status === "approved").reduce((sum, invoice) => sum + invoice.amount, 0).toLocaleString()}
             </div>
             <p className="text-xs text-gray-600 mt-1">From approved invoices</p>
           </CardContent>
@@ -366,14 +366,14 @@ const Invoices = () => {
               <Select value={selectedOrder} onValueChange={setSelectedOrder}>
                 {pendingOrders.map((order) => (
                   <SelectItem key={order.id} value={order.id}>
-                    {order.id} - {order.project} (${order.amount.toLocaleString()})
+                    {order.id} - {order.project} (Rs.{order.amount.toLocaleString()})
                   </SelectItem>
                 ))}
               </Select>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="invoice-amount" className="text-sm font-semibold text-gray-700">Invoice Amount ($)</Label>
+              <Label htmlFor="invoice-amount" className="text-sm font-semibold text-gray-700">Invoice Amount (Rs.)</Label>
               <Input
                 id="invoice-amount"
                 type="number"
@@ -460,7 +460,7 @@ const Invoices = () => {
                         </div>
                       </div>
                       <div className="text-right space-y-2">
-                        <p className="font-bold text-lg text-gray-900">${order.amount.toLocaleString()}</p>
+                        <p className="font-bold text-lg text-gray-900">Rs.{order.amount.toLocaleString()}</p>
                         <Badge variant="delivered" className="flex items-center gap-1">
                           {getStatusIcon(order.status)}
                           {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -507,7 +507,7 @@ const Invoices = () => {
                   <TableCell className="font-medium text-gray-900">{invoice.id}</TableCell>
                   <TableCell className="text-gray-700">{invoice.orderId}</TableCell>
                   <TableCell className="text-gray-700">{invoice.project}</TableCell>
-                  <TableCell className="font-semibold text-gray-900">${invoice.amount.toLocaleString()}</TableCell>
+                  <TableCell className="font-semibold text-gray-900">Rs.{invoice.amount.toLocaleString()}</TableCell>
                   <TableCell className="text-gray-700">{invoice.submissionDate}</TableCell>
                   <TableCell>
                     <Badge 

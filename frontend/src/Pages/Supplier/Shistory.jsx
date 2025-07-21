@@ -398,7 +398,7 @@ getFullYear() === now.getFullYear()
     // Supply ID highlight
     doc.setFontSize(14)
     doc.setTextColor(...primaryColor)
-    doc.text(`Supply ID: ${supply.id}`, 20, 55)
+    doc.text(`Supply ID: Rs.{supply.id}`, 20, 55)
     
     // Generated Date
     doc.setFontSize(10)
@@ -435,7 +435,7 @@ getFullYear() === now.getFullYear()
         month: 'long', 
         day: 'numeric' 
       })],
-      ['Total Amount', `$${supply.amount.toLocaleString()}`],
+      ['Total Amount', `Rs.${supply.amount.toLocaleString()}`],
       ['Status', supply.status.charAt(0).toUpperCase() + supply.status.slice(1)],
       ['Items Count', `${supply.items.length} items`]
     ]
@@ -584,7 +584,7 @@ getFullYear() === now.getFullYear()
     
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    doc.text(`Average item value: $${(supply.amount / supply.items.length).toFixed(2)}`, 25, yPosition + 16)
+    doc.text(`Average item value: Rs.${(supply.amount / supply.items.length).toFixed(2)}`, 25, yPosition + 16)
     doc.text(`Supply efficiency: 100% (All items delivered)`, 25, yPosition + 22)
     
     // Footer section
@@ -649,7 +649,7 @@ getFullYear() === now.getFullYear()
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">${totalValue.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-600">Rs.{totalValue.toLocaleString()}</div>
             <p className="text-xs text-gray-600 mt-1">All supplies value</p>
           </CardContent>
         </Card>
@@ -756,7 +756,7 @@ getFullYear() === now.getFullYear()
                     </div>
                   </TableCell>
                   <TableCell className="text-gray-700">{supply.supplyDate}</TableCell>
-                  <TableCell className="font-medium text-gray-900">${supply.amount.toLocaleString()}</TableCell>
+                  <TableCell className="font-medium text-gray-900">Rs.{supply.amount.toLocaleString()}</TableCell>
                   <TableCell>
                     <Badge variant="completed" className="flex items-center gap-2 w-fit font-medium">
                       {supply.status.charAt(0).toUpperCase() + supply.status.slice(1)}
@@ -880,7 +880,7 @@ getFullYear() === now.getFullYear()
                   Total Amount
                 </Label>
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-                  <span className="text-xl font-bold text-green-700">${selectedSupply?.amount?.toLocaleString()}</span>
+                  <span className="text-xl font-bold text-green-700">Rs.{selectedSupply?.amount?.toLocaleString()}</span>
                 </div>
               </div>
               <div className="space-y-3">
@@ -919,7 +919,7 @@ getFullYear() === now.getFullYear()
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span>Total value: <span className="font-bold">${selectedSupply?.amount?.toLocaleString()}</span></span>
+                    <span>Total value: <span className="font-bold">Rs.{selectedSupply?.amount?.toLocaleString()}</span></span>
                   </div>
                 </div>
               </div>

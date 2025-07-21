@@ -31,7 +31,7 @@ const Home = () => {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Budget</p>
@@ -43,7 +43,7 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Active Projects</p>
@@ -55,7 +55,7 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Materials</p>
@@ -67,7 +67,7 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Team Members</p>
@@ -115,12 +115,6 @@ const Home = () => {
                 <h3 className="font-medium text-gray-900">Downtown Office Complex</h3>
                 <p className="text-sm text-gray-600">Due: March 15, 2025</p>
               </div>
-              {/* <div className="text-right">
-                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
-                  <div className="bg-primary-500 h-2 rounded-full" style={{ width: '75%' }}></div>
-                </div>
-                <span className="text-sm text-gray-600">75%</span>
-              </div> */}
               <button onClick={handleViewClick} className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
 
@@ -129,12 +123,6 @@ const Home = () => {
                 <h3 className="font-medium text-gray-900">Residential Towers</h3>
                 <p className="text-sm text-gray-600">Due: June 30, 2025</p>
               </div>
-              {/* <div className="text-right">
-                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
-                  <div className="bg-secondary-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                </div>
-                <span className="text-sm text-gray-600">45%</span>
-              </div> */}
               <button onClick={handleViewClick} className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
 
@@ -143,12 +131,6 @@ const Home = () => {
                 <h3 className="font-medium text-gray-900">Shopping Mall Renovation</h3>
                 <p className="text-sm text-gray-600">Due: April 20, 2025</p>
               </div>
-              {/* <div className="text-right">
-                <div className="w-24 bg-gray-200 rounded-full h-2 mb-2">
-                  <div className="bg-accent-500 h-2 rounded-full" style={{ width: '60%' }}></div>
-                </div>
-                <span className="text-sm text-gray-600">60%</span>
-              </div> */}
               <button onClick={handleViewClick} className="mt-4 sm:mt-0 cursor-pointer px-4 py-2 bg-amber-400 text-black rounded-lg hover:bg-primary-600 transition-colors flex items-center">View</button>
             </div>
           </div>

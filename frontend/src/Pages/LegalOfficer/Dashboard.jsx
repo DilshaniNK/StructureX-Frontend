@@ -1,239 +1,198 @@
-import React, { useState } from 'react';
-import { FileText, Plus, Calendar, Clock, CheckCircle, AlertCircle, Bell, LogOut, User, Search } from 'lucide-react';
-import ProjectDetail from './ProjectDetails';
-
- const mockProjects = [
-  {
-    id: '1',
-    name: 'Downtown Commercial Complex',
-    description: 'Mixed-use development project requiring comprehensive legal documentation',
-    status: 'active',
-    assignedLegalOfficer: 'Sarah Mitchell',
-    createdAt: '2024-01-15',
-    deadline: '2024-06-30'
-  },
-  {
-    id: '2',
-    name: 'Residential Tower Phase II',
-    description: 'Second phase of residential development with zoning considerations',
-    status: 'pending',
-    assignedLegalOfficer: 'Sarah Mitchell',
-    createdAt: '2024-02-01',
-    deadline: '2024-08-15'
-  },
-  {
-    id: '3',
-    name: 'Industrial Park Expansion',
-    description: 'Expansion of existing industrial facilities with environmental clearances',
-    status: 'active',
-    assignedLegalOfficer: 'Sarah Mitchell',
-    createdAt: '2024-01-30',
-    deadline: '2024-07-20'
-  }
-];
-
- const mockLegalProcesses = [
-  {
-    id: '1',
-    projectId: '1',
-    name: 'Land Ownership Verification',
-    description: 'Verify clear title and ownership of all land parcels',
-    status: 'completed',
-    startDate: '2024-02-01',
-    expectedEndDate: '2024-02-28',
-    actualEndDate: '2024-02-25',
-    responsibleParty: 'Internal Legal Team',
-    createdBy: 'Sarah Mitchell',
-    createdAt: '2024-02-01T09:00:00Z',
-    lastUpdated: '2024-02-25T16:30:00Z',
-    notes: ['Initial verification completed', 'All documents verified with county records'],
-    attachments: ['title_search_report.pdf']
-  },
-  {
-    id: '2',
-    projectId: '1',
-    name: 'Environmental Clearance',
-    description: 'Obtain environmental impact assessment and clearances',
-    status: 'pending',
-    startDate: '2024-02-15',
-    expectedEndDate: '2024-04-15',
-    responsibleParty: 'Environmental Consultants Inc.',
-    createdBy: 'Sarah Mitchell',
-    createdAt: '2024-02-15T11:00:00Z',
-    lastUpdated: '2024-02-20T14:00:00Z',
-    notes: ['Initial assessment submitted', 'Awaiting government review'],
-    attachments: ['environmental_assessment.pdf']
-  },
-  {
-    id: '3',
-    projectId: '2',
-    name: 'Zoning Compliance Review',
-    description: 'Review and ensure compliance with local zoning requirements',
-    status: 'unsuccessful',
-    startDate: '2024-02-05',
-    expectedEndDate: '2024-03-05',
-    responsibleParty: 'City Planning Department',
-    createdBy: 'Sarah Mitchell',
-    createdAt: '2024-02-05T08:30:00Z',
-    lastUpdated: '2024-03-10T12:00:00Z',
-    notes: ['Initial application rejected', 'Height restrictions exceeded', 'Resubmission required with modifications'],
-    attachments: ['zoning_application.pdf', 'rejection_notice.pdf']
-  }
-];
- const mockNotifications = [
-  {
-    id: '1',
-    type: 'status_updated',
-    title: 'Process Status Updated',
-    message: 'Land Ownership Verification for Downtown Commercial Complex has been completed',
-    projectId: '1',
-    createdAt: '2024-02-25T16:30:00Z',
-    read: false,
-    recipients: ['project_manager', 'director']
-  },
-  {
-    id: '2',
-    type: 'document_uploaded',
-    title: 'New Document Uploaded',
-    message: 'Master Development Agreement uploaded for Downtown Commercial Complex',
-    projectId: '1',
-    createdAt: '2024-02-15T10:30:00Z',
-    read: true,
-    recipients: ['project_manager', 'director', 'owner']
-  }
-];
+import React, { useEffect, useState } from 'react';
+import { FileText, Search, Calendar, ExternalLink, FolderOpen } from 'lucide-react';
+import axios from 'axios';
+import ProjectDetails from './ProjectDetails';
 
 export default function Dashboard({ user, onLogout }) {
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [documents, setDocuments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
 
-  const projects = mockProjects;
-  const notifications = mockNotifications.filter(n => !n.read);
+  useEffect(() => {
+    axios.get('http://localhost:8086/api/v1/legal_officer/document')
+      .then(res => {
+        setDocuments(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch legal documents:', err);
+        setLoading(false);
+      });
+  }, []);
 
-  const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDocs = documents.filter(doc =>
+    doc.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const handleSeeMore = (projectId) => {
+    setSelectedProjectId(projectId);
   };
 
-  const getProcessStats = (projectId) => {
-    const processes = mockLegalProcesses.filter(p => p.projectId === projectId);
-    return {
-      total: processes.length,
-      completed: processes.filter(p => p.status === 'completed').length,
-      pending: processes.filter(p => p.status === 'pending').length,
-      unsuccessful: processes.filter(p => p.status === 'unsuccessful').length
-    };
+  const handleBackToDashboard = () => {
+    setSelectedProjectId(null);
   };
 
-  if (selectedProject) {
+  // If a project is selected, show ProjectDetails
+  if (selectedProjectId) {
     return (
-      <ProjectDetail
-        projectId={selectedProject}
-        onBack={() => setSelectedProject(null)}
+      <ProjectDetails
+        projectId={selectedProjectId} 
+        onBack={handleBackToDashboard}
         user={user}
       />
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Main Content */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Projects Assigned for Legal Processing</h2>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-amber-50 rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-center">
+              <div className="p-3 text-amber-600 rounded-lg">
+                <FileText className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Documents</p>
+                <p className="text-2xl font-semibold text-gray-900">{documents.length}</p>
+              </div>
+            </div>
+          </div>
           
-          {/* Search Bar */}
+          <div className="bg-amber-50 rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-center">
+              <div className="p-3 text-amber-600 rounded-lg">
+                <FolderOpen className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Filtered Results</p>
+                <p className="text-2xl font-semibold text-gray-900">{filteredDocs.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-amber-50 rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-center">
+              <div className="p-3  rounded-lg">
+                <Search className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Search Active</p>
+                <p className="text-2xl font-semibold text-gray-900">{searchTerm ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Search Documents</h2>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
-              placeholder="Search projects..."
+              placeholder="Search by description..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
             />
           </div>
         </div>
 
-        {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map(project => {
-            const stats = getProcessStats(project.id);
-            return (
-              <div
-                key={project.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => setSelectedProject(project.id)}
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 leading-tight">
-                      {project.name}
-                    </h3>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
-                      {project.status}
-                    </span>
-                  </div>
-                  
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {project.description}
-                  </p>
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      <span>Due: {new Date(project.deadline).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Process Stats */}
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Legal Processes</span>
-                      <span className="font-medium text-gray-900">{stats.total} total</span>
-                    </div>
-                    <div className="flex items-center space-x-4 mt-2 text-xs">
-                      <div className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                        <span className="text-green-700">{stats.completed} completed</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 text-yellow-500 mr-1" />
-                        <span className="text-yellow-700">{stats.pending} pending</span>
-                      </div>
-                      {stats.unsuccessful > 0 && (
-                        <div className="flex items-center">
-                          <AlertCircle className="h-4 w-4 text-red-500 mr-1" />
-                          <span className="text-red-700">{stats.unsuccessful} unsuccessful</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {/* Documents Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">
+            Document Library
+          </h2>
 
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No projects found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {searchTerm ? 'Try adjusting your search terms.' : 'No projects assigned for legal processing.'}
-            </p>
-          </div>
-        )}
+          {/* Loading State */}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+              <p className="ml-4 text-gray-600">Loading documents...</p>
+            </div>
+          ) : filteredDocs.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-12 w-12 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No documents found</h3>
+              <p className="text-gray-500 max-w-md mx-auto">
+                {searchTerm 
+                  ? 'Try adjusting your search terms or clearing the search to see all documents.' 
+                  : 'No legal documents are currently available in the system.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredDocs.map(doc => (
+                <div 
+                  key={doc.id} 
+                  className=" rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-blue-200"
+                >
+                  {/* Project ID Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mr-3">
+                        <FileText className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Project ID</p>
+                        <p className="text-lg font-bold text-gray-900">{doc.project_id}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <h3 className="text-md font-semibold text-gray-800 mb-3 leading-tight">
+                    {doc.description}
+                  </h3>
+
+                  {/* Upload Date */}
+                  <div className="flex items-center text-sm text-gray-600 mb-4">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <span className="font-medium">Uploaded:</span>
+                    <span className="ml-1">{new Date(doc.upload_date).toLocaleDateString()}</span>
+                  </div>
+
+                  {/* Action Button */}
+                  <a
+                    href={doc.document_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 focus:ring-4 focus:ring-amber-200 transition-all duration-200 group-hover:shadow-md mr-3"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    View Document
+                  </a>
+
+                  <button
+                    onClick={() => handleSeeMore(doc.project_id)}
+                    className="inline-flex items-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 focus:ring-4 focus:ring-amber-200 transition-all duration-200"
+                  >
+                    See More
+                  </button>
+
+                </div>
+                
+              ))}
+              
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

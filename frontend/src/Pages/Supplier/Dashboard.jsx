@@ -423,7 +423,7 @@ const Dashboard = ({ setActiveSection }) => {
               <DollarSign className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">$45,280</div>
+              <div className="text-2xl font-bold text-green-600">Rs.45,280</div>
               <p className="text-xs text-gray-500">+12% from last month</p>
             </CardContent>
           </Card>
@@ -521,7 +521,7 @@ const Dashboard = ({ setActiveSection }) => {
                       <p className="text-xs text-gray-500">{order.date}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-800">${order.amount.toLocaleString()}</p>
+                      <p className="font-semibold text-gray-800">Rs.{order.amount.toLocaleString()}</p>
                       <Badge className={`${getStatusColor(order.status)} text-xs`}>{order.status}</Badge>
                     </div>
                   </div>
@@ -636,7 +636,7 @@ const Dashboard = ({ setActiveSection }) => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price ($) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price (Rs.) *</label>
                   <Input
                     type="number"
                     step="0.01"
@@ -728,14 +728,14 @@ const Dashboard = ({ setActiveSection }) => {
                     <option value="">Choose an order to invoice</option>
                     {mockPendingOrders.map((order) => (
                       <option key={order.id} value={order.id}>
-                        {order.id} - {order.project} (${order.amount.toLocaleString()})
+                        {order.id} - {order.project} (Rs.{order.amount.toLocaleString()})
                       </option>
                     ))}
                   </Select>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Amount ($) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Amount (Rs.) *</label>
                   <Input
                     type="number"
                     step="0.01"
@@ -838,7 +838,7 @@ const Dashboard = ({ setActiveSection }) => {
                         <p className="font-medium text-gray-800 mb-2">{item.name}</p>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Unit Price ($)</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Unit Price (Rs.)</label>
                             <Input
                               type="number"
                               step="0.01"
@@ -874,7 +874,7 @@ const Dashboard = ({ setActiveSection }) => {
                 
                 {/* Total Amount */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount ($) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount (Rs.) *</label>
                   <Input
                     type="number"
                     step="0.01"

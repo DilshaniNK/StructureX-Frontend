@@ -463,7 +463,7 @@ const Payments = () => {
           {/* Payment Amount Input */}
           <div className="space-y-2">
             <Label htmlFor="receipt-amount" className="text-sm font-semibold text-gray-700">
-              Payment Amount ($) *
+              Payment Amount (Rs.) *
             </Label>
             <Input
               id="receipt-amount"
@@ -573,7 +573,7 @@ const Payments = () => {
       <div className="space-y-3">
         <div className="space-y-1">
           <Label htmlFor="payment-amount" className="text-sm font-semibold text-gray-700">
-            Payment Amount ($)
+            Payment Amount (Rs.)
           </Label>
           <Input
             id="payment-amount"
@@ -655,7 +655,7 @@ const Payments = () => {
               <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">${projectData.totalBudget.toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-blue-600">Rs.{projectData.totalBudget.toLocaleString()}</div>
                     <p className="text-sm text-gray-600">Total project budget</p>
                   </div>
                   <div className="p-2 bg-blue-100 rounded-full">
@@ -675,7 +675,7 @@ const Payments = () => {
               <div className="p-4 bg-gradient-to-r from-green-50 to-green-100/50 rounded-lg border border-green-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-2xl font-bold text-green-600">${projectData.paidAmount.toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-green-600">Rs.{projectData.paidAmount.toLocaleString()}</div>
                     <Progress value={(projectData.paidAmount / projectData.totalBudget) * 100} className="mt-2" />
                     <p className="text-sm text-gray-600 mt-1">
                       {Math.round((projectData.paidAmount / projectData.totalBudget) * 100)}% completed
@@ -698,7 +698,7 @@ const Payments = () => {
               <div className="p-4 bg-gradient-to-r from-[#FAAD00]/10 to-[#FAAD00]/5 rounded-lg border border-[#FAAD00]/20">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <div className="text-2xl font-bold text-[#FAAD00]">${projectData.pendingAmount.toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-[#FAAD00]">Rs.{projectData.pendingAmount.toLocaleString()}</div>
                     <p className="text-sm text-gray-600">Amount remaining</p>
                   </div>
                   <div className="p-2 bg-[#FAAD00]/10 rounded-full">
@@ -732,7 +732,7 @@ const Payments = () => {
                       <DollarSign className="h-5 w-5 text-green-500" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">${payment.amount.toLocaleString()}</p>
+                      <p className="font-medium text-gray-900">Rs.{payment.amount.toLocaleString()}</p>
                       <p className="text-sm text-gray-600">{payment.description}</p>
                       <p className="text-sm text-[#FAAD00] font-medium">{payment.phase}</p>
                     </div>
@@ -763,7 +763,7 @@ const Payments = () => {
                       <AlertTriangle className="h-5 w-5 text-amber-500" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">${payment.amount.toLocaleString()}</p>
+                      <p className="font-medium text-gray-900">Rs.{payment.amount.toLocaleString()}</p>
                       <p className="text-sm text-gray-600">{payment.description}</p>
                       <p className="text-sm text-[#FAAD00] font-medium">{payment.phase}</p>
                     </div>
@@ -819,7 +819,7 @@ const Payments = () => {
                         <p className="font-medium text-gray-900">{file.name}</p>
                         <p className="text-sm text-gray-600">Uploaded {file.date}</p>
                         {file.amount > 0 && (
-                          <p className="text-sm text-[#FAAD00] font-medium">${file.amount.toLocaleString()}</p>
+                          <p className="text-sm text-[#FAAD00] font-medium">Rs.{file.amount.toLocaleString()}</p>
                         )}
                       </div>
                     </div>
@@ -886,7 +886,7 @@ const Payments = () => {
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold text-gray-800">Overall Payment Progress</h4>
                 <span className="text-sm font-medium text-[#FAAD00]">
-                  ${projectData.paidAmount.toLocaleString()} / ${projectData.totalBudget.toLocaleString()}
+                  Rs.{projectData.paidAmount.toLocaleString()} / Rs.{projectData.totalBudget.toLocaleString()}
                 </span>
               </div>
               <Progress value={(projectData.paidAmount / projectData.totalBudget) * 100} className="mb-2" />

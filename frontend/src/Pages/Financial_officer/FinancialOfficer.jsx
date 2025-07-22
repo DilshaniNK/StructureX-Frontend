@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation,useParams } from 'react-router-dom';
 import Navbar from '../../Components/Employee/Navbar';
 import Sidebar from '../../Components/Employee/Sidebar';
 
@@ -20,16 +20,17 @@ export default function Financial_officer() {
   const handleSidebarNavigate = (id, path) => {
     navigate(path);
   };
+  const { employeeId } = useParams(); //fetch employeeId from url
 
   // Determine active item based on current path
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path.includes('/financial_officer/home') || path === '/') return 'home';
-    if (path.includes('/financial_officer/projects')) return 'projects';
-    if (path.includes('/financial_officer/project_details')) return 'prohect_details';
-    if (path.includes('/financial_officer/calendar')) return 'calendar';
-    if (path.includes('/financial_officer/payments')) return 'payments';
-    if (path.includes('/financial_officer/daily_labors')) return 'labors';
+    if (path.includes('/home') || path === '/') return 'home';
+    if (path.includes('/projects')) return 'projects';
+    if (path.includes('/project_details')) return 'prohect_details';
+    if (path.includes('/calendar')) return 'calendar';
+    if (path.includes('/payments')) return 'payments';
+    if (path.includes('/daily_labors')) return 'labors';
     return 'home'; // default
   };
 

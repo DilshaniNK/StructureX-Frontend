@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { X, Upload, FileText, AlertCircle } from 'lucide-react';
+import { X, Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import axios from 'axios';
 
-export default function DocumentUpload({ projectId, onClose, user }) {
+export default function DocumentUpload({ projectId, onClose, user, onDocumentUploaded }) {
   const [formData, setFormData] = useState({
-    title: '',
+    project_id: projectId,
     description: '',
-    type: 'contract'
+    type: 'contract',
+    date: new Date().toISOString().split('T')[0] // Default to today's date
   });
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -26,7 +29,7 @@ export default function DocumentUpload({ projectId, onClose, user }) {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       validateAndSetFile(droppedFile);
@@ -40,11 +43,19 @@ export default function DocumentUpload({ projectId, onClose, user }) {
   };
 
   const validateAndSetFile = (selectedFile) => {
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif'
+    ];
     const maxSize = 10 * 1024 * 1024; // 10MB
 
     if (!allowedTypes.includes(selectedFile.type)) {
-      setErrors({ file: 'Only PDF and Word documents are allowed' });
+      setErrors({ file: 'Only PDF, Word documents, and images (JPEG, PNG, GIF) are allowed' });
       return;
     }
 
@@ -60,12 +71,12 @@ export default function DocumentUpload({ projectId, onClose, user }) {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
+    }
+
+    if (!formData.date) {
+      newErrors.date = 'Date is required';
     }
 
     if (!file) {
@@ -78,7 +89,7 @@ export default function DocumentUpload({ projectId, onClose, user }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -86,30 +97,52 @@ export default function DocumentUpload({ projectId, onClose, user }) {
     setUploading(true);
 
     try {
-      // Simulate file upload
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Create the document record (in a real app, this would be sent to the API)
-      const newDocument = {
-        id: Date.now().toString(),
-        projectId,
-        title: formData.title,
-        description: formData.description,
-        fileName: file.name,
-        fileSize: file.size,
-        uploadedBy: user.name,
-        uploadedAt: new Date().toISOString(),
-        type: formData.type
-      };
+      // Create FormData for file upload
+      const uploadFormData = new FormData();
+      uploadFormData.append('projectId', projectId); // ✅ match exactly with the @RequestParam name
+      uploadFormData.append('description', formData.description);
+      uploadFormData.append('type', formData.type);
+      uploadFormData.append('date', formData.date);
+      uploadFormData.append('document_url', file);
 
-      console.log('Document uploaded:', newDocument);
-      
+      console.log(uploadFormData);
+
+      // Make the actual API call to upload document to database
+      const response = await axios.post('http://localhost:8086/api/v1/legal_officer/add_document', uploadFormData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // If successful, use the response data
+      const newDocument = response.data;
+
+      console.log('Document uploaded successfully:', newDocument);
+
+      // Call the callback to refresh the documents list
+      if (onDocumentUploaded) {
+        onDocumentUploaded(newDocument);
+      }
+
       // Show success message and close modal
-      alert('Document uploaded successfully!');
-      onClose();
+      setSuccessMessage('Document uploaded successfully!');
+      setTimeout(() => {
+        onClose();
+      }, 1500); // Close after 1.5 seconds to show success message
     } catch (error) {
       console.error('Upload failed:', error);
-      setErrors({ submit: 'Upload failed. Please try again.' });
+      let errorMessage = 'Upload failed. Please try again.';
+
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        errorMessage = error.response.data.message || errorMessage;
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorMessage = 'Network error. Please check your connection.';
+      }
+
+      setErrors({ submit: errorMessage });
     } finally {
       setUploading(false);
     }
@@ -137,6 +170,13 @@ export default function DocumentUpload({ projectId, onClose, user }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+              <span className="text-green-700">{successMessage}</span>
+            </div>
+          )}
+
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
               <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
@@ -145,20 +185,50 @@ export default function DocumentUpload({ projectId, onClose, user }) {
           )}
 
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-              Document Title *
+            <label htmlFor="project_id" className="block text-sm font-medium text-gray-700 mb-2">
+              Project ID
             </label>
             <input
               type="text"
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.title ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="e.g., Master Development Agreement"
+              id="project_id"
+              value={projectId}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-lg cursor-not-allowed"
             />
-            {errors.title && <p className="text-red-600 text-xs mt-1">{errors.title}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+              Date *
+            </label>
+            <input
+              type="date"
+              id="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.date ? 'border-red-300' : 'border-gray-300'
+                }`}
+            />
+            {errors.date && <p className="text-red-600 text-xs mt-1">{errors.date}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
+              Document Type *
+            </label>
+            <select
+              id="type"
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="contract">Contract</option>
+              <option value="agreement">Agreement</option>
+              <option value="permit">Permit</option>
+              <option value="license">License</option>
+              <option value="compliance">Compliance</option>
+              <option value="other">Other</option>
+            </select>
           </div>
 
           <div>
@@ -170,43 +240,24 @@ export default function DocumentUpload({ projectId, onClose, user }) {
               rows={3}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.description ? 'border-red-300' : 'border-gray-300'
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.description ? 'border-red-300' : 'border-gray-300'
+                }`}
               placeholder="Brief description of the document and its purpose"
             />
             {errors.description && <p className="text-red-600 text-xs mt-1">{errors.description}</p>}
           </div>
 
           <div>
-            <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
-              Document Type
-            </label>
-            <select
-              id="type"
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="contract">Contract</option>
-              <option value="agreement">Agreement</option>
-              <option value="certificate">Certificate</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload File *
+              Upload Document/Image *
             </label>
             <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                dragActive
-                  ? 'border-blue-400 bg-blue-50'
-                  : errors.file
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
+                ? 'border-blue-400 bg-blue-50'
+                : errors.file
                   ? 'border-red-300 bg-red-50'
                   : 'border-gray-300 hover:border-gray-400'
-              }`}
+                }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
@@ -214,7 +265,15 @@ export default function DocumentUpload({ projectId, onClose, user }) {
             >
               {file ? (
                 <div className="flex items-center justify-center space-x-3">
-                  <FileText className="h-8 w-8 text-blue-500" />
+                  {file.type.startsWith('image/') ? (
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt="Preview"
+                      className="h-20 w-20 object-cover rounded-lg"
+                    />
+                  ) : (
+                    <FileText className="h-8 w-8 text-blue-500" />
+                  )}
                   <div className="text-left">
                     <p className="text-sm font-medium text-gray-900">{file.name}</p>
                     <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
@@ -236,14 +295,14 @@ export default function DocumentUpload({ projectId, onClose, user }) {
                         Drop files here or click to upload
                       </span>
                       <span className="mt-1 block text-xs text-gray-500">
-                        PDF, DOC, DOCX up to 10MB
+                        PDF, DOC, DOCX, JPG, PNG, GIF up to 10MB
                       </span>
                     </label>
                     <input
                       id="file-upload"
                       type="file"
                       className="sr-only"
-                      accept=".pdf,.doc,.docx"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
                       onChange={handleFileSelect}
                     />
                   </div>

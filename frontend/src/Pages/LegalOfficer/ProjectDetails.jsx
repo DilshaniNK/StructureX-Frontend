@@ -16,31 +16,24 @@ export default function ProjectDetails({ projectId, onBack, user }) {
   const [processes, setProcesses] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchDocuments = async () => {
+    try {
+      const documentsResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/legal_documents/${projectId}`);
+      setDocuments(documentsResponse.data);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
         setLoading(true);
 
-        // const projectResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/projects/${projectId}`);
-        // setProject(projectResponse.data);
-
-        // For now, create a mock project based on the projectId
-        setProject({
-          id: projectId,
-          name: `Project ${projectId}`,
-          deadline: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 90 days from now
-        });
-
-        // Fetch documents for this project
-        const documentsResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/document`);
-        const projectDocuments = documentsResponse.data.filter(doc => doc.project_id === projectId);
-        setDocuments(projectDocuments);
+        await fetchDocuments();
 
         // const processesResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/processes/${projectId}`);
         // setProcesses(processesResponse.data);
-
-        // For now, use empty array for processes
-        setProcesses([]);
 
       } catch (error) {
         console.error('Error fetching project data:', error);
@@ -65,9 +58,14 @@ export default function ProjectDetails({ projectId, onBack, user }) {
     );
   }
 
-  if (!project) {
-    return <div>Project not found</div>;
+  if (!projectId) {
+    return <div>Project ID not provided</div>;
   }
+
+  const handleDocumentUploaded = (newDocument) => {
+    setDocuments(prevDocuments => [...prevDocuments, newDocument]);
+    fetchDocuments(); // Re-fetch to ensure accuracy
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -115,7 +113,7 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                   <ArrowLeft className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">Project {projectId}</h1>
                 </div>
               </div>
 
@@ -188,33 +186,40 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                 </button>
               </div>
             ) : (
-              documents.map(document => (
-                <div key={document.id} className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h2 className="text-sm text-gray-500 mt-1">Project ID: {document.project_id}</h2>
-                      <h3 className="text-lg font-medium text-gray-900">{document.description}</h3>
-                      <div className="flex items-center space-x-6 mt-4 text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          <span>{new Date(document.upload_date).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="ml-4 flex space-x-2">
-                      <a
-                        href={document.document_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <Download className="h-5 w-5" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))
+              <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Upload Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Download</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {documents.map((document, idx) => (
+                      <tr key={document.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{idx + 1}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{document.description}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">{document.type}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(document.upload_date || document.date).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <a
+                            href={document.document_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
@@ -302,6 +307,7 @@ export default function ProjectDetails({ projectId, onBack, user }) {
           projectId={projectId}
           onClose={() => setShowDocumentModal(false)}
           user={user}
+          onDocumentUploaded={handleDocumentUploaded}
         />
       )}
 

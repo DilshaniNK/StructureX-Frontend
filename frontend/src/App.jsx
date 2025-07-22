@@ -30,13 +30,7 @@ const App = () => {
       <Router>
         <Routes>
           <Route>
-
-
-
             <Route path="/projectmanager/*" element={<ProjectManager />} />
-
-
-
 
             <Route path="/legal_officer/*" element={<LegalOfficer />} />
 
@@ -44,35 +38,27 @@ const App = () => {
             <Route path="/sqs/*" element={<SQS />} />
             <Route path="/supplier/*" element={<Supplier />} />
             <Route path="/project_owner/*" element={<ProjectOwner />} />
-
             <Route path="/unauthorized" element={<Unauthorized />} />
-
-
-
-
             <Route path="/" element={<Home />} />
             <Route path="/admin/*" element={<Admin />} />
-
-
             <Route path="/financial_officer/:employeeId/*" element={
               <ProtectedRoute allowedRoles={['Financial_Officer']}>
                 <FinancialOfficer />
               </ProtectedRoute>
             } />
-
             <Route path="/site_supervisor/:employeeId/*" element={
               <ProtectedRoute allowedRoles={['Site_Supervisor']}>
                 <SiteSupervisor />
               </ProtectedRoute>
             } />
-
-            <Route path="/example/*" element={<Example />} />
-            <Route path="/designer/*" element={<Designer />} />
+            {/* <Route path="/designer/*" element={<Designer />} /> */}
+            <Route path="/designer/:employeeId/*" element={
+              <ProtectedRoute allowedRoles={['Designer']}>
+                <Designer />
+              </ProtectedRoute>
+            } />
             <Route path='/director/*' element={<Director />} />
             <Route path='/directorcont/*' element={<DirectorCont />} />
-
-
-
           </Route>
         </Routes>
       </Router>

@@ -14,6 +14,7 @@ import Publish from '../../Components/Admin/Dashboard/Publish'
 import Support from '../../Components/Admin/Dashboard/Support'
 import Reports from '../../Components/Admin/Dashboard/Reports'
 import Analytics from '../../Components/Admin/Dashboard/Analatics'
+import AddSupplierPage from '../../Components/Admin/Dashboard/AddSupplier'
 
 export default function Admin() {
   return (
@@ -30,6 +31,7 @@ export default function Admin() {
           <Route path="publish" element={<Publish/>} />
           <Route path="contact-support" element={<Support/>} />
           <Route path="notification" element={<Notification/>} />
+          <Route path="add-supplier" element={<AddSupplierPage/>} />
         </Route>
       </Routes>
     </ThemeProvider>

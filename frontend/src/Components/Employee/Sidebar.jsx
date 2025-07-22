@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
 import Projects from '@mui/icons-material/FolderOpenOutlined';
 import Payments from '@mui/icons-material/ReceiptOutlined';
@@ -30,21 +30,16 @@ const Sidebar = ({
   const navigate = useNavigate();
   const location = useLocation();
 
+   const { employeeId } = useParams(); //get employeeId from URL params
+
   const menuItems = {
-    Example: [
-      { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/', badge: null },
-      { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/admin/profile', badge: null },
-      { id: 'users', label: 'User Management', icon: Users, path: '/users', badge: '12' },
-      { id: 'security', label: 'Security', icon: Shield, path: '/security', badge: null },
-      { id: 'settings', label: 'Settings', icon: Settings, path: '/settings', badge: null }
-    ],
     Designer: [
-      { id: 'home', label: 'Home', icon: Home, path: '/designer/home', badge: null },
-      { id: 'initialize', label: 'Project Initialization', icon: Rocket, path: '/designer/initialize' },
-      { id: 'ongoing', label: 'Ongoing Projects', icon: Loader, path: '/designer/ongoing', badge: null },
-      { id: 'completed', label: 'Completed Projects', icon: BadgeCheck, path: '/designer/completed', badge: null },
-      { id: 'notification', label: 'Notifications', icon: Bell, path: '/designer/notifications', badge: '12' },
-      { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/designer/chat', badge: '5' }
+      { id: 'home', label: 'Home', icon: Home, path: `/designer/${employeeId}/home`, badge: null },
+      { id: 'initialize', label: 'Project Initialization', icon: Rocket, path: `/designer/${employeeId}/initialize` },
+      { id: 'ongoing', label: 'Ongoing Projects', icon: Loader, path: `/designer/${employeeId}/ongoing`, badge: null },
+      { id: 'completed', label: 'Completed Projects', icon: BadgeCheck, path: `/designer/${employeeId}/completed`, badge: null },
+      { id: 'notification', label: 'Notifications', icon: Bell, path: `/designer/${employeeId}/notifications`, badge: '12' },
+      { id: 'chat', label: 'Chat', icon: MessageSquare, path: `/designer/${employeeId}/chat`, badge: '5' }
     ],
 
     Project_Manager: [
@@ -58,30 +53,28 @@ const Sidebar = ({
     ],
 
     FinancialOfficer: [
-      { id: 'home', label: 'Home', icon: Home, path: '/financial_officer/home', badge: null },
-      { id: 'projects', label: 'Projects', icon: Projects, path: '/financial_officer/projects' },
-      { id: 'payments', label: 'Payments', icon: Payments, path: '/financial_officer/payments', badge: null },
-
-      { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/financial_officer/calendar', badge: null },
-      { id: 'daily labors', label: 'Daily Labors', icon: Labors, path: '/financial_officer/daily_labors', badge: '12' },
-
-      { id: 'settings', label: 'Settings', icon: Settings, path: '/financial_officer/settings', badge: '5' }
+      { id: 'home', label: 'Home', icon: Home, path: `/financial_officer/${employeeId}/home`, badge: null },
+      { id: 'projects', label: 'Projects', icon: Projects, path: `/financial_officer/${employeeId}/projects` },
+      { id: 'payments', label: 'Payments', icon: Payments, path: `/financial_officer/${employeeId}/payments`, badge: null },
+      { id: 'calendar', label: 'Calendar', icon: Calendar, path: `/financial_officer/${employeeId}/calendar`, badge: null },
+      { id: 'daily labors', label: 'Daily Labors', icon: Labors, path: `/financial_officer/${employeeId}/daily_labors`, badge: '12' },
+      { id: 'settings', label: 'Settings', icon: Settings, path: `/financial_officer/${employeeId}/settings`, badge: '5' }
     ],
     LegalOfficer: [
       { id: 'home', label: 'Home', icon: Home, path: '/legalofficer/dashboard', badge: null },
       { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/legalofficer/chat', badge: null },
 
     ],
-    SiteSupervisor: [
-      { id: 'home', label: 'Home', icon: Home, path: '/site_supervisor/home', badge: null },
-      { id: 'projects', label: 'Projects', icon: Projects, path: '/site_supervisor/projects' },
-      { id: 'labors', label: 'Labors', icon: Labors, path: '/site_supervisor/labors', badge: null },
-      { id: 'progress', label: 'Progress', icon: BadgeCheck, path: '/site_supervisor/progress', badge: null },
-      { id: 'materials', label: 'Materials', icon: Materials, path: '/site_supervisor/materials', badge: '12' },
-      { id: 'inventory', label: 'Inventory', icon: Inventory, path: '/site_supervisor/inventory', badge: '5' },
-      { id: 'to do', label: 'To-Do', icon: TodoList, path: '/site_supervisor/to-do', badge: '5' },
-      { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/site_supervisor/calendar', badge: null },
-      { id: 'settings', label: 'Settings', icon: Settings, path: '/site_supervisor/settings', badge: '5' }
+    Site_Supervisor: [
+      { id: 'home', label: 'Home', icon: Home, path: `/site_supervisor/${employeeId}`, badge: null },
+      { id: 'projects', label: 'Projects', icon: Projects, path: `/site_supervisor/${employeeId}/projects` },
+      { id: 'labors', label: 'Labors', icon: Labors, path: `/site_supervisor/${employeeId}/labors`, badge: null },
+      { id: 'progress', label: 'Progress', icon: BadgeCheck, path: `/site_supervisor/${employeeId}/progress`, badge: null },
+      { id: 'materials', label: 'Materials', icon: Materials, path: `/site_supervisor/${employeeId}/materials`, badge: '12' },
+      { id: 'inventory', label: 'Inventory', icon: Inventory, path: `/site_supervisor/${employeeId}/inventory`, badge: '5' },
+      { id: 'to do', label: 'To-Do', icon: TodoList, path: `/site_supervisor/${employeeId}/to-do`, badge: '5' },
+      { id: 'calendar', label: 'Calendar', icon: Calendar, path: `/site_supervisor/${employeeId}/calendar`, badge: null },
+      { id: 'settings', label: 'Settings', icon: Settings, path: `/site_supervisor/${employeeId}/settings`, badge: '5' }
 
     ],
     Supplier: [

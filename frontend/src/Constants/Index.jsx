@@ -46,6 +46,16 @@ export const navbarLinks = [
         ],
     },
     {
+        title: "Suppliers",
+        links: [
+            {
+                label: "Add Supplier",
+                icon: UserPlus,
+                path: "/admin/add-supplier",
+            },
+        ],
+    },
+    {
         title: "Projects",
         links: [
             {

@@ -182,7 +182,7 @@ const Materials = () => {
       quantity: "500 bags",
       status: "Delivered",
       deliveryDate: "2024-01-10",
-      cost: "$2,500",
+      cost: "Rs.2,500",
     },
     {
       name: "Steel Rods",
@@ -190,7 +190,7 @@ const Materials = () => {
       quantity: "2 tons",
       status: "In Transit",
       deliveryDate: "2024-01-20",
-      cost: "$3,200",
+      cost: "Rs.3,200",
     },
     {
       name: "Bricks",
@@ -198,7 +198,7 @@ const Materials = () => {
       quantity: "10,000 pieces",
       status: "Delivered",
       deliveryDate: "2024-01-05",
-      cost: "$1,800",
+      cost: "Rs.1,800",
     },
     {
       name: "Sand",
@@ -206,7 +206,7 @@ const Materials = () => {
       quantity: "50 cubic meters",
       status: "Ordered",
       deliveryDate: "2024-01-25",
-      cost: "$1,200",
+      cost: "Rs.1,200",
     },
     {
       name: "Tiles",
@@ -214,7 +214,7 @@ const Materials = () => {
       quantity: "200 sq ft",
       status: "Pending",
       deliveryDate: "2024-02-01",
-      cost: "$2,800",
+      cost: "Rs.2,800",
     },
   ];
 
@@ -448,7 +448,7 @@ const Materials = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-[#FAAD00]">$11,500</div>
+              <div className="text-xl font-bold text-[#FAAD00]">Rs.11,500</div>
               <p className="text-xs text-gray-600 mt-1">Material expenses</p>
             </CardContent>
           </Card>
@@ -541,15 +541,15 @@ const Materials = () => {
             <CardContent className="space-y-3 pt-3">
               <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50/30">
                 <span className="font-semibold text-gray-800">Raw Materials</span>
-                <span className="font-bold text-gray-900">$8,700</span>
+                <span className="font-bold text-gray-900">Rs.8,700</span>
               </div>
               <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50/30">
                 <span className="font-semibold text-gray-800">Finishing Materials</span>
-                <span className="font-bold text-gray-900">$2,800</span>
+                <span className="font-bold text-gray-900">Rs.2,800</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[#FAAD00]/10 to-[#FAAD00]/5 rounded-lg border border-[#FAAD00]/30">
                 <span className="font-semibold text-gray-800">Total Material Cost</span>
-                <span className="font-bold text-[#FAAD00] text-lg">$11,500</span>
+                <span className="font-bold text-[#FAAD00] text-lg">Rs.11,500</span>
               </div>
             </CardContent>
           </Card>

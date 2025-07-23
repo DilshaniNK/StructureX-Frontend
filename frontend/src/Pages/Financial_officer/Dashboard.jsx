@@ -74,7 +74,7 @@ const Dashboard = () => {
       .then((response) => {
         setProjects(response.data);
 
-        setActiveCount(response.data.filter(p => p.status === "Active").length);
+        setActiveCount(response.data.filter(p => p.status === "ongoing").length);
        
       })
       .catch((err) => {
@@ -136,7 +136,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header Section */}
       
 

@@ -6,7 +6,7 @@ import { useLocation } from 'react-router-dom';
 
 export default function PaymentPlanCreator() {
   const [installments, setInstallments] = useState([
-    { dueDate: '', milestone: '', amount: '', status: 'Pending' }
+    { dueDate: '', paidDate: '', amount: '', status: 'upcoming' }
   ]);
 
   const [createdDate, setCreatedDate] = useState('');
@@ -19,6 +19,8 @@ export default function PaymentPlanCreator() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  
 
   function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -53,7 +55,7 @@ export default function PaymentPlanCreator() {
   }, [projectId]);
 
   const handleAddInstallment = () => {
-    setInstallments([...installments, { dueDate: '', milestone: '', amount: '', status: 'Pending' }]);
+    setInstallments([...installments, { dueDate: '', paidDate: '', amount: '', status: 'upcoming' }]);
   };
 
   const handleRemoveInstallment = (index) => {
@@ -81,7 +83,7 @@ export default function PaymentPlanCreator() {
 
     installments.forEach((item, i) => {
       doc.text(
-        `${i + 1}. Due: ${item.dueDate}, Milestone: ${item.milestone}, Amount: ${item.amount}, Status: ${item.status}`,
+        `${i + 1}. Due: ${item.dueDate}, Paid: ${item.paidDate}, Amount: ${item.amount}, Status: ${item.status}`,
         10,
         y
       );
@@ -92,7 +94,7 @@ export default function PaymentPlanCreator() {
   };
 
   const handleSavePlan = () => {
-    axios.post('http://localhost:8086/api/v1/financial_officer/payment_plan/full', {
+    axios.post('http://localhost:8086/api/v1/financial_officer', {
       projectId,
       totalAmount: Number(totalAmount),
       numberOfInstallments: Number(numberOfInstallments),
@@ -101,8 +103,8 @@ export default function PaymentPlanCreator() {
       installments
     })
       .then(() => {
-        setIsSaved(true);
-        setIsEditing(false);
+        setIsSaved(false);
+        setIsEditing(true);
         alert('Plan saved!');
       })
       .catch(() => alert('Failed to save plan'));
@@ -129,9 +131,9 @@ export default function PaymentPlanCreator() {
   };
 
   const handleDeletePlan = () => {
-    axios.delete(`http://localhost:8086/api/v1/financial_officer/payment_plan/full/${projectId}`)
+    axios.delete(`http://localhost:8086/api/v1/financial_officer/payment_plan/${projectId}`)
       .then(() => {
-        setInstallments([{ dueDate: '', milestone: '', amount: '', status: 'Pending' }]);
+        setInstallments([{ dueDate: '', paidDate: '', amount: '', status: 'upcoming' }]);
         setIsSaved(false);
         setIsEditing(false);
         alert('Deleted!');
@@ -199,10 +201,10 @@ export default function PaymentPlanCreator() {
             disabled={!isEditing}
           />
           <input
-            type="text"
-            value={inst.milestone}
-            onChange={(e) => handleInstallmentChange(index, 'milestone', e.target.value)}
-            placeholder="Milestone"
+            type="date"
+            value={inst.paidDate}
+            onChange={(e) => handleInstallmentChange(index, 'paidDate', e.target.value)}
+            
             className="border p-1 rounded"
             disabled={!isEditing}
           />
@@ -220,9 +222,10 @@ export default function PaymentPlanCreator() {
             className="border p-1 rounded"
             disabled={!isEditing}
           >
-            <option>Pending</option>
-            <option>Paid</option>
-            <option>Overdue</option>
+            <option>upcoming</option>
+            <option>paid</option>
+            <option>overdue</option>
+            <option>cancelled</option>
           </select>
           {isEditing && (
             <button onClick={() => handleRemoveInstallment(index)} className="text-red-600">

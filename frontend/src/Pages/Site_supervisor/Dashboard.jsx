@@ -105,7 +105,7 @@ const TodayTasks = ({ tasks }) => (
 )
 
 const Dashboard = () => {
-  const EMPLOYEE_ID = useParams().employeeId || EMPLOYEE_ID; // Use employeeId from URL or default
+  const {employeeId} = useParams()// Use the employeeId from URL params or default to EMPLOYEE_ID
 
   const[projects,setProjects]=useState([])
   const[activeCount,setActiveCount ]= useState(0)
@@ -113,11 +113,11 @@ const Dashboard = () => {
   const[tasks,setTaskList]= useState([])
 
 useEffect(() => {
-    axios.get("http://localhost:8086/api/v1/financial_officer")
+    axios.get(`http://localhost:8086/api/v1/site_supervisor/projects/${employeeId}`)
  // Replace with your API endpoint
       .then((response) => {
         setProjects(response.data);
-        setActiveCount(response.data.filter(p => p.status === "Active").length);
+        setActiveCount(response.data.filter(p => p.status === "ongoing").length);
         
        
       })
@@ -181,7 +181,7 @@ useEffect(() => {
 ]
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen  p-6">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         

@@ -30,16 +30,36 @@ const App = () => {
       <Router>
         <Routes>
           <Route>
-            <Route path="/projectmanager/*" element={<ProjectManager />} />
-            <Route path="/legalofficer/*" element={<LegalOfficer />} />
-            <Route path="/example/*" element={<Example/>}/>           
+            <Route path="/projectmanager/:employeeId/*" element={
+              <ProtectedRoute allowedRoles={['Project_Manager']}>
+                <ProjectManager />
+              </ProtectedRoute>
+            } />
+            <Route path="/legalofficer/:employeeId/*" element={
+              <ProtectedRoute allowedRoles={['Legal_Officer']}>
+                <LegalOfficer />
+              </ProtectedRoute>
+            } />
+            <Route path="/example/*" element={<Example />} />
             <Route path="/qs/*" element={<QS />} />
             <Route path="/sqs/*" element={<SQS />} />
-            <Route path="/supplier/*" element={<Supplier />} />
-            <Route path="/project_owner/*" element={<ProjectOwner />} />
+            <Route path="/supplier/:supplierId/*" element={
+              <ProtectedRoute allowedRoles={['Supplier']}>
+                <Supplier />
+              </ProtectedRoute>
+            } />
+            <Route path="/project_owner/:clientId/*" element={
+              <ProtectedRoute allowedRoles={['Project_Owner']}>
+                <ProjectOwner />
+              </ProtectedRoute>
+            } />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/" element={<Home />} />
-            <Route path="/admin/*" element={<Admin />} />
+            <Route path="/admin/:adminId/*" element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <Admin />
+              </ProtectedRoute>
+            } />
             <Route path="/financial_officer/:employeeId/*" element={
               <ProtectedRoute allowedRoles={['Financial_Officer']}>
                 <FinancialOfficer />
@@ -50,14 +70,18 @@ const App = () => {
                 <SiteSupervisor />
               </ProtectedRoute>
             } />
-            {/* <Route path="/designer/*" element={<Designer />} /> */}
+
+            <Route path="/example/*" element={<Example />} />
             <Route path="/designer/:employeeId/*" element={
               <ProtectedRoute allowedRoles={['Designer']}>
                 <Designer />
               </ProtectedRoute>
             } />
+
             <Route path='/director/:employeeId/*' element={<Director />} />
             <Route path='/directorcont/:employeeId/*' element={<DirectorCont />} />
+
+
           </Route>
         </Routes>
       </Router>

@@ -66,6 +66,7 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
 
   // Main login handler - unified for employee & client - adjust your API endpoint accordingly
   const handleLogin = async () => {
+
   if (!validateForm()) return;
 
   setIsLoading(true);
@@ -103,8 +104,24 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
       case "admin":
         navigate("/admin/dashboard");
         break;
-      default:
-        navigate("/unauthorized");
+      case "Project_Manager":
+          navigate(`/projectmanager/${employeeId}`);
+          break;
+        case "Legal_Officer":
+          navigate(`/legalofficer/${employeeId}`);
+          break;
+        default:
+          navigate("/unauthorized");
+      }
+
+      onClose(); // Optional: close modal
+
+    } catch (err) {
+      console.error(err);
+      alert("Login failed. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
+
     }
 
     onClose();

@@ -88,12 +88,16 @@ const Sidebar = ({
       { id: 'messages', label: 'Messages', icon: MessageSquare, path: `/supplier/${supplierId}/messages`, badge: null }
     ],
     Director: [
-      { id: 'home', label: 'Home', icon: Home, path: '/director/home', badge: null },
-      { id: 'projects', label: 'Projects', icon: FolderOpen, path: '/director/projects' },
-      { id: 'teammanagment', label: 'Team Management', icon: User, path: '/director/teammanagment' },
-      { id: 'sitevisit', label: 'Site Visite', icon: MapPin, path: '/director/sitevisit' },
-      { id: 'inventory', label: 'Inventory', icon: Package, path: '/director/inventory' },
-      { id: 'documents', label: 'Documents', icon: FileText, path: '/director/documents' },
+
+      { id: 'home', label: 'Home', icon: Home, path: `/director/${employeeId}/home`, badge: null },
+      { id: 'projects', label: 'Projects', icon: FolderOpen, path: `/director/${employeeId}/projects` },
+      { id: 'teammanagment', label: 'Team Management', icon: User, path: `/director/${employeeId}/teammanagment` },
+      { id: 'sitevisit', label: 'Site Visite', icon: MapPin, path: `/director/${employeeId}/sitevisit` },
+      { id: 'inventory', label: 'Inventory', icon: Package, path: `/director/${employeeId}/inventory` },
+      { id: 'documents', label: 'Documents', icon: FileText, path: `/director/${employeeId}/documents` },
+
+
+
     ]
   };
 

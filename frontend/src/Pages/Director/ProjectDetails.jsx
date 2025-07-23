@@ -30,8 +30,16 @@ const ProjectDetails = () => {
             
             try{
                 const response = await axios.get(`http://localhost:8086/api/v1/director/get_project_by_id/${id}`);
-                setProject(response.data);
-
+                const projectData = {
+                    ...response.data,
+                    images: response.data.image_url ? 
+                        Array.isArray(response.data.image_url) ?
+                        response.data.image_url :
+                        [response.data.image_url]
+                    : []
+                };
+                setProject(projectData);
+                console.log(projectData);
                 if(response.data.pm_id){
                     const pmData = await fetchEmployeeById(response.data.pm_id);
                     setProjectManager(pmData);
@@ -137,12 +145,24 @@ const ProjectDetails = () => {
                     <div className="lg:col-span-2">
                         {/* Main Image */}
                         <div className="relative mb-6">
-                            <img
-                                src={project.images && project.images.length > 0 ? project.images[currentImageIndex]: 'No images Available' }
-                                alt={`Project ${currentImageIndex + 1}`}
-                                className="w-full h-80 object-cover cursor-pointer hover:opacity-95 transition-opacity"
-                                onClick={openFullscreen}
-                            />
+                            {project.images && project.images.length > 0 ? (
+                                <img 
+                                    src={project.images[currentImageIndex]}
+                                    alt={`Project ${currentImageIndex + 1}`}
+                                    className='w-full h-80 object-cover cursor-pointer hover:opacity-95 transition-opacity'
+                                    onClick={openFullscreen}
+                                    onError={(e) =>{
+                                        console.log("Image failed to load :", e);
+
+                                    }}
+                                />
+
+                            ):(
+                                <div className="w-full h-80 bg-gray-200 flex items-center justify-center">
+                                    <p className="text-gray-500">No image available</p>
+                                </div>
+                            )}
+                           
                             
                             {/* Navigation Buttons */}
                             {project.images && project.images.length > 1 && (
@@ -241,7 +261,7 @@ const ProjectDetails = () => {
                                     <h4 className="font-medium text-gray-900">QS Officer</h4>
                                     <p className="text-gray-600 mt-1">{seniorQsOfficer?.name || 'Not Assigned'}</p>
                                 </div>
-                                <div className="border-l-4 border-gray-200 pl-4">
+                                <div className="border-l-4 border-gray-200 pl-4"> 
                                     <h4 className="font-medium text-gray-900">Designer</h4>
                                     <p className="text-gray-600 mt-1">{project.designer}</p>
                                 </div>

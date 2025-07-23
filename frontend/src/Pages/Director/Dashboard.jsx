@@ -3,12 +3,14 @@ import React, { useEffect, useState } from 'react';
 import OverviewStats from '../../Components/Director/OverviewStats';
 import RecentProjects from '../../Components/Director/RecentProjects';
 import UpcomingSiteVisits from '../../Components/Director/UpcomingSiteVisits';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Users, Plus, TrendingUp, Eye, BarChart3, Calendar, Building2 } from 'lucide-react';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const EMPLOYEE_ID = useParams().employeeId || EMPLOYEE_ID;
+  const BASE_URL = `/director/${EMPLOYEE_ID}`;
   
   useEffect(() => {
     const fetchProject = async () => {
@@ -53,7 +55,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <button 
             className="group bg-gradient-to-br from-[#FAAD00] via-amber-300 to-amber-400 hover:from-amber-500 hover:to-amber-400 text-white font-bold py-6 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1"
-            onClick={() => navigate('/directorcont/clientdetails', {state: {showForm: true}})}
+            onClick={() => navigate(`/directorcont/${EMPLOYEE_ID}/clientdetails`, {state: {showForm: true}})}
           >
             <div className="flex items-center justify-center space-x-3">
               <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
@@ -64,7 +66,7 @@ const Dashboard = () => {
 
           <button 
             className="group bg-gradient-to-br from-gray-500 via-gray-500 to-gray-800 hover:from-gray-400 hover:to-gray-400 text-white font-bold py-6 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1"
-            onClick={() => navigate('/directorcont/clientdetails')}
+            onClick={() => navigate(`/directorcont/${EMPLOYEE_ID}/clientdetails`)}
           >
             <div className="flex items-center justify-center space-x-3">
               <Eye className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
@@ -117,7 +119,7 @@ const Dashboard = () => {
         {/* Additional Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-gradient-to-br from-pink-50 to-rose-100 border border-pink-200 rounded-2xl p-6 shadow-lg"
-            onClick={() => navigate('/director/teammanagment')}
+            onClick={() => navigate(`${BASE_URL}/teammanagment`)}
             tabIndex={0}
             role='button'
           >
@@ -131,7 +133,7 @@ const Dashboard = () => {
           </div>
 
           <div className="bg-gradient-to-br from-cyan-50 to-blue-100 border border-cyan-200 rounded-2xl p-6 shadow-lg"
-            onClick={() => navigate('/director/inventory')}
+            onClick={() => navigate(`${BASE_URL}/inventory`)}
             tabIndex={0}
             role='button'
           >

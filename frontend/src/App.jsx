@@ -77,10 +77,9 @@ const App = () => {
                 <Designer />
               </ProtectedRoute>
             } />
-            <Route path='/director/*' element={<Director />} />
-            <Route path='/directorcont/*' element={<DirectorCont />} />
 
-
+            <Route path='/director/:employeeId/*' element={<Director />} />
+            <Route path='/directorcont/:employeeId/*' element={<DirectorCont />} />
 
 
           </Route>

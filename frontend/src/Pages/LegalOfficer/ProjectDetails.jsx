@@ -18,7 +18,7 @@ export default function ProjectDetails({ projectId, onBack, user }) {
 
   const fetchDocuments = async () => {
     try {
-      const documentsResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/legal_documents/${projectId}`);
+      const documentsResponse = await axios.get(http://localhost:8086/api/v1/legal_officer/legal_documents/${projectId});
       setDocuments(documentsResponse.data);
     } catch (error) {
       console.error('Error fetching documents:', error);
@@ -32,7 +32,7 @@ export default function ProjectDetails({ projectId, onBack, user }) {
 
         await fetchDocuments();
 
-        // const processesResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/processes/${projectId}`);
+        // const processesResponse = await axios.get(http://localhost:8086/api/v1/legal_officer/processes/${projectId});
         // setProcesses(processesResponse.data);
 
       } catch (error) {
@@ -249,7 +249,7 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="text-lg font-medium text-gray-900">{process.name}</h3>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(process.status)}`}>
+                        <span className={inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(process.status)}}>
                           {getStatusIcon(process.status)}
                           <span className="ml-1 capitalize">{process.status}</span>
                         </span>

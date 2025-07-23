@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';  // or your routing lib
+import { useLocation,useParams } from 'react-router-dom';  // or your routing lib
 import axios from 'axios';
 import ProjDetails from '../../Components/Employee/ProjDetails';
 
@@ -14,7 +14,11 @@ const ProjectDetails = () => {
   }
 
   const query = useQuery();
-  const projectId = query.get('id');  // extract 'id' from URL
+  const projectId = query.get('id'); // Get project ID from URL query params
+  const { employeeId } = useParams(); // Get employeeId from URL params 
+console.log("projectId from query:", projectId);
+
+  
 
   useEffect(() => {
     if (!projectId) {
@@ -28,6 +32,7 @@ const ProjectDetails = () => {
       .then(response => {
         setProject(response.data);
         setLoading(false);
+        console.log("Project data fetched:", response.data);
       })
       .catch(err => {
         console.error("Error fetching project:", err);

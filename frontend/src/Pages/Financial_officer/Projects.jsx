@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import axios from "axios";
 import {
   Search,
@@ -23,7 +24,7 @@ import {
 
 const ProjectsPage = () => {
   const [projects, setProjects] = useState([]);
-
+ 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -42,16 +43,21 @@ const ProjectsPage = () => {
        
 
         // Optional: Count categories from response data
-        setHousingCount(response.data.filter(p => p.type === "Housing").length);
-        setCommercialCount(response.data.filter(p => p.type === "Commercial").length);
-        setEducationCount(response.data.filter(p => p.type === "Educational").length);
-        setInfrastructureCount(response.data.filter(p => p.type === "Infrastructure").length);
+        setHousingCount(response.data.filter(p => p.type === "residential").length);
+        setCommercialCount(response.data.filter(p => p.type === "commercial").length);
+        setEducationCount(response.data.filter(p => p.type === "industrial").length);
+        setInfrastructureCount(response.data.filter(p => p.type === "infrastructure").length);
+
+        console.log("Projects fetched successfully:", response.data);
       })
       .catch((err) => {
         console.error("Error fetching projects:", err);
         
       });
   }, []);
+
+  
+  const { employeeId } = useParams(); // Get employeeId from URL params
 
   const filteredProjects = projects.filter((project) => {
     const matchesSearch = project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -94,13 +100,13 @@ const ProjectsPage = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "Completed":
+      case "completed":
         return <CheckCircle className="h-4 w-4" />;
-      case "Active":
+      case "ongoing":
         return <Clock className="h-4 w-4" />;
-      case "On Hold":
+      case "hold":
         return <Pause className="h-4 w-4" />;
-      case "Pending":
+      case "pending":
         return <AlertCircle className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
@@ -109,13 +115,13 @@ const ProjectsPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Completed":
+      case "completed":
         return "bg-green-100 text-green-800 border-green-200";
-      case "Active":
+      case "ongoing":
         return "bg-blue-100 text-blue-800 border-blue-200";
-      case "On Hold":
+      case "hold":
         return "bg-red-100 text-red-800 border-red-200";
-      case "Pending":
+      case "pending":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -126,13 +132,13 @@ const ProjectsPage = () => {
   //project type wise
   const getCategoryIcon = (type) => {
     switch (type) {
-      case "Housing":
+      case "residential":
         return <Building className="h-5 w-5" />;
-      case "Commercial":
+      case "commercial":
         return <ShoppingBag className="h-5 w-5" />;
-      case "Educational":
+      case "industrial":
         return <GraduationCap className="h-5 w-5" />;
-      case "Infrastructure":
+      case "infrastructure":
         return <Dumbbell className="h-5 w-5" />;
       default:
         return <Building className="h-5 w-5" />;
@@ -145,8 +151,8 @@ const ProjectsPage = () => {
   const totalSpent = projects.reduce((sum, p) => sum + p.amountSpent, 0);
 
   //for project status cards
-  const activeProjects = projects.filter(p => p.status === "Active").length;
-  const completedProjects = projects.filter(p => p.status === "Completed").length;
+  const activeProjects = projects.filter(p => p.status === "ongoing").length;
+  const completedProjects = projects.filter(p => p.status === "completed").length;
   
 
 
@@ -401,7 +407,7 @@ const ProjectsPage = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center space-x-2">
                           <button className="text-blue-600 hover:text-blue-900 transition-colors"
-                            onClick={() => window.location.href = `/financial_officer/project_details?id=${project.projectId}`}>
+                            onClick={() => window.location.href = `/financial_officer/${employeeId}/project_details?id=${project.projectId}`}>
                               <Eye className="h-4 w-4" />
                           </button>
                         </div>

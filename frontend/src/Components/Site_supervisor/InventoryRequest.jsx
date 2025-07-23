@@ -1,33 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Send, Package, Wrench, Calendar, MapPin, Hash, CheckCircle, AlertCircle, User, Clock, Eye, Check, X, ArrowRight } from 'lucide-react';
+import {
+  Plus, Send, Package, Wrench, Calendar, Edit, MapPin, Hash, CheckCircle,
+  AlertCircle, Check, X,
+} from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
-export default function InventoryRequest({ title, items = [], projects = [], type = 'Material', userRole = 'Site Supervisor', sessionUser = 'John Smith' }) {
-
+export default function InventoryRequest({
+  title,
+  type = 'Material',
+  userRole = 'Site Supervisor',
+  sessionUser = 'John Smith'
+}) {
   const [sites, setSites] = useState([]);
   const [selectedSite, setSelectedSite] = useState('');
   const [submitted, setSubmitted] = useState([]);
   const [toolSubmitted, setToolSubmitted] = useState([]);
-  const [materials, setMaterials] = useState([
-    { name: '', quantity: '', priority: 'Medium' }
-  ]);
-  const [approvalStatus, setApprovalStatus] = useState('pending');
-  const [requestType, setRequestType] = useState(type);
+  const [materials, setMaterials] = useState([{ name: '', quantity: '', priority: 'medium' }]);
+  const { employeeId } = useParams();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingRequestId, setEditingRequestId] = useState(null);
+  const [requestType] = useState(type);
 
-  //fetch projects
-  //fetch materials and tools requests separately
+  // Fetch data
   useEffect(() => {
     fetchSites();
     fetchMaterialRequests();
     fetchToolRequests();
   }, []);
 
+  useEffect(() => {
+    // Just to ensure selectedSite is always valid
+    if (selectedSite && !sites.find(s => s.projectId === selectedSite)) {
+      setSelectedSite('');
+    }
+  }, [sites, selectedSite]);
+
   const fetchSites = async () => {
     try {
       const res = await axios.get('http://localhost:8086/api/v1/financial_officer');
-      if (res.data) {
-        setSites(res.data);
-      }
+      if (res.data) setSites(res.data);
     } catch (error) {
       console.error('Failed to fetch sites:', error);
     }
@@ -37,8 +49,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
     try {
       const res = await axios.get('http://localhost:8086/api/v1/site_supervisor/material_requests');
       if (Array.isArray(res.data)) {
-        setSubmitted(res.data); // ✅ correct variable
-        console.log("Fetched requests:", res.data);
+        setSubmitted(res.data);
       } else {
         console.warn("Unexpected response format:", res.data);
       }
@@ -51,8 +62,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
     try {
       const res = await axios.get('http://localhost:8086/api/v1/site_supervisor/tool_requests');
       if (Array.isArray(res.data)) {
-        setToolSubmitted(res.data); // ✅ correct variable
-        console.log("Fetched requests:", res.data);
+        setToolSubmitted(res.data);
       } else {
         console.warn("Unexpected response format:", res.data);
       }
@@ -60,259 +70,173 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
       console.error("Failed to fetch requests:", err);
     }
   };
-  //-----------------------------------------------------------------------------------------------
 
-
+  // Form handlers
   const handleChange = (index, field, value) => {
-    const updated = [...materials];
-    updated[index][field] = value;
-    setMaterials(updated);
+    setMaterials(prev => {
+      const copy = [...prev];
+      copy[index][field] = value;
+      return copy;
+    });
   };
-
-  const handleAdd = () => {
-    setMaterials([...materials, { name: '', quantity: '', priority: 'Medium' }]);
-  };
-
+  const handleAdd = () => setMaterials([...materials, { name: '', quantity: '', priority: 'medium' }]);
   const handleRemove = (index) => {
-    if (materials.length > 1) {
-      const updated = requests.filter((_, i) => i !== index);
-      setMaterials(updated);
-    }
+    if (materials.length > 1) setMaterials(materials.filter((_, i) => i !== index));
   };
 
+  // --- NOTIFICATION UTILITY ---
+  const showNotification = (message, type = 'success') => {
+    const bgColor =
+      type === 'success'
+        ? 'bg-green-500'
+        : type === 'error'
+        ? 'bg-red-500'
+        : 'bg-blue-500';
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+    notification.innerHTML =
+      `${type === 'success'
+        ? '✓'
+        : type === 'error'
+        ? '✗'
+        : 'ℹ'} ${message}`;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 4000);
+  };
 
-  //create a new request
+  // --- SUBMIT NEW REQUEST ---
   const handleSubmit = async () => {
     if (!selectedSite) {
-      alert('Please select a project site.');
+      showNotification('Please select a project site.', 'error');
       return;
     }
-
     for (const req of materials) {
-      /*if (!req.item || !req.qty || !req.purpose) {
-        alert('Please fill in all required fields for each item.');
+      if (!req.name || !req.quantity) {
+        showNotification('Please fill in all fields for each item.', 'error');
         return;
-      }*/
-
+      }
       if (isNaN(parseInt(req.quantity))) {
-        alert('Quantity must be a number.');
+        showNotification('Quantity must be a number.', 'error');
         return;
       }
     }
-
     const requestPayload = {
-      approvalStatus: 'pending',
+      pmApproval: 0,
+      qsApproval: 0,
       requestType: requestType.toLowerCase(),
       date: new Date().toISOString().split('T')[0],
-      projectId: parseInt(selectedSite),
-      materials: materials.map((r) => ({
+      projectId: selectedSite,
+      siteSupervisorId: employeeId,
+      qsId: "",
+      isReceived: 0,
+      materials: materials.map(r => ({
         materialName: r.name,
         quantity: parseInt(r.quantity),
         priority: r.priority,
       })),
     };
-    console.log("Sending payload:", requestPayload);
-
     try {
       const response = await axios.post(
         'http://localhost:8086/api/v1/site_supervisor/material_request',
         requestPayload
       );
       showNotification(`${requestType} request submitted to Senior QS for approval!`, 'success');
-      setSubmitted((prev) => [...prev, response.data]);
-      setMaterials([{ name: '', quantity: '', priority: 'Medium' }]);
+      setSubmitted(prev => [...prev, response.data]);
+      setMaterials([{ name: '', quantity: '', priority: 'medium' }]);
       setSelectedSite('');
     } catch (error) {
-      console.error('Submission failed:', error);
       showNotification(`Submission failed: ${error.message}`, 'error');
     }
   };
 
-
-  const handleQSAction = (requestId, action, comments = '') => {
-    setSubmitted(prev => prev.map(req => {
-      if (req.id === requestId) {
-        if (action === 'approve') {
-          return {
-            ...req,
-            status: 'QS Approved - Pending Admin',
-            workflow: 'ADMIN_REVIEW',
-            qsApprovalDate: new Date().toLocaleString(),
-            comments: comments || 'Approved by Senior QS'
-          };
-        } else {
-          return {
-            ...req,
-            status: 'QS Rejected',
-            workflow: 'REJECTED',
-            qsApprovalDate: new Date().toLocaleString(),
-            comments: comments || 'Rejected by Senior QS'
-          };
-        }
-      }
-      return req;
-    }));
-
-    const actionText = action === 'approve' ? 'approved' : 'rejected';
-    showNotification(`Request ${actionText} by Senior QS`, action === 'approve' ? 'success' : 'error');
-  };
-
-  const handleAdminAction = (requestId, action, comments = '') => {
-    setSubmitted(prev => prev.map(req => {
-      if (req.id === requestId) {
-        if (action === 'approve') {
-          return {
-            ...req,
-            status: 'Approved - Ready for Collection',
-            workflow: 'COMPLETED',
-            adminApprovalDate: new Date().toLocaleString(),
-            comments: req.comments + '\n' + (comments || 'Approved by Admin - Ready for collection')
-          };
-        } else {
-          return {
-            ...req,
-            status: 'Admin Rejected',
-            workflow: 'REJECTED',
-            adminApprovalDate: new Date().toLocaleString(),
-            comments: req.comments + '\n' + (comments || 'Rejected by Admin')
-          };
-        }
-      }
-      return req;
-    }));
-
-    const actionText = action === 'approve' ? 'approved' : 'rejected';
-    showNotification(`Request ${actionText} by Admin`, action === 'approve' ? 'success' : 'error');
-  };
-
-
-  // show notification messsage
-  const showNotification = (message, type = 'success') => {
-    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
-    notification.innerHTML = `${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'} ${message}`;
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 4000);
-  };
-
-  //priority colors setup
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return 'text-red-600 bg-red-50 border-red-200';
-      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'low': return 'text-green-600 bg-green-50 border-green-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+  // --- Only allow editing when approval states are both 0
+  const startEditing = (request) => {
+    console.log(request.pmApproval)
+    console.log(request.qsApproval)
+    if ((request.pmApproval === 0 && request.qsApproval === 0)) {
+      showNotification("Editing is allowed only before any approval.", 'error');
+      return;
     }
-  };
-
-  // Show only relevant requests based on current page type
-  const materialRequests = type === 'Material'
-    ? submitted.filter(entry => entry.requestType === 'materials')
-    : [];
-
-  const toolRequests = type === 'Tool'
-    ? toolSubmitted.filter(entry => entry.requestType === 'tool')
-    : [];
-
-
-  // Get status color based on approval status
-  const getStatusColor = (status) => {
-    if (status.includes('pending')) return 'text-orange-600 bg-orange-100';
-    if (status.includes('approved') || status.includes('Ready')) return 'text-green-600 bg-green-100';
-    if (status.includes('rejected')) return 'text-red-600 bg-red-100';
-    return 'text-gray-600 bg-gray-100';
-  };
-
-  const getWorkflowSteps = (workflow, status) => {
-    const steps = [
-      { label: 'Site Supervisor', icon: User, completed: true },
-      { label: 'Senior QS Review', icon: Eye, completed: workflow !== 'QS_REVIEW' },
-      { label: 'Admin Approval', icon: CheckCircle, completed: workflow === 'COMPLETED' }
-    ];
-    return steps;
-  };
-
-  const renderWorkflowProgress = (entry) => {
-    const steps = getWorkflowSteps(entry.workflow, entry.status);
-
-    return (
-      <div className="flex items-center justify-between mb-4 p-3 bg-slate-50 rounded-lg">
-        {steps.map((step, index) => (
-          <div key={index} className="flex items-center">
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${step.completed ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
-              }`}>
-              <step.icon className="w-4 h-4" />
-            </div>
-            <span className={`ml-2 text-sm ${step.completed ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-              {step.label}
-            </span>
-            {index < steps.length - 1 && (
-              <ArrowRight className="w-4 h-4 text-gray-400 mx-3" />
-            )}
-          </div>
-        ))}
-      </div>
+    setEditingRequestId(request.requestId);
+    setMaterials(
+      request.materials.map(m => ({
+        name: m.materialName,
+        quantity: m.quantity,
+        priority: m.priority,
+      }))
     );
+    setSelectedSite(request.projectId);
+    setIsEditing(true);
   };
 
-  const renderActionButtons = (entry) => {
-    if (userRole === 'Senior QS' && entry.workflow === 'QS_REVIEW') {
-      return (
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={() => {
-              const comments = prompt('Add comments (optional):');
-              handleQSAction(entry.id, 'approve', comments);
-            }}
-            className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors"
-          >
-            <Check className="w-4 h-4" />
-            Approve
-          </button>
-          <button
-            onClick={() => {
-              const comments = prompt('Reason for rejection:');
-              if (comments) handleQSAction(entry.id, 'reject', comments);
-            }}
-            className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Reject
-          </button>
-        </div>
-      );
-    }
+  // Helper get editing request from current state
+  const getEditingRequest = () =>
+    submitted.find(r => r.requestId === editingRequestId);
 
-    if (userRole === 'Admin' && entry.workflow === 'ADMIN_REVIEW') {
-      return (
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={() => {
-              const comments = prompt('Add comments (optional):');
-              handleAdminAction(entry.id, 'approve', comments);
-            }}
-            className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors"
-          >
-            <Check className="w-4 h-4" />
-            Approve & Release
-          </button>
-          <button
-            onClick={() => {
-              const comments = prompt('Reason for rejection:');
-              if (comments) handleAdminAction(entry.id, 'reject', comments);
-            }}
-            className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Reject
-          </button>
-        </div>
-      );
-    }
+  // --- UPDATE EXISTING REQUEST ---
+  const handleUpdateRequest = async () => {
+    const request = getEditingRequest();
 
-    return null;
+    // Defensive backend state check
+    if (request || (request.pmApproval === 0 && request.qsApproval === 0)) {
+      showNotification("You can't update after approval/rejection.", 'error');
+      setIsEditing(false);
+      setEditingRequestId(null);
+      return;
+    }
+    try {
+      for (const req of materials) {
+        if (!req.name || !req.quantity || !req.priority) {
+          showNotification('Please fill in all fields for each material.', 'error');
+          return;
+        }
+        if (isNaN(parseInt(req.quantity))) {
+          showNotification('Quantity must be a number.', 'error');
+          return;
+        }
+      }
+      const payload = {
+        requestId: editingRequestId,
+        projectId: selectedSite,
+        isReceived: true,
+        pmApproval: request.pmApproval,
+        qsApproval: request.qsApproval,
+        materials: materials.map(m => ({
+          materialName: m.name,
+          quantity: parseInt(m.quantity),
+          priority: m.priority,
+        })),
+      };
+
+      console.log("try to update :",payload)
+
+      await axios.put(
+        'http://localhost:8086/api/v1/site_supervisor/request/update',
+        payload,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+      showNotification('Request updated successfully!', 'success');
+      fetchMaterialRequests();
+
+      setIsEditing(false);
+      setEditingRequestId(null);
+      setMaterials([{ name: '', quantity: '', priority: 'medium' }]);
+      setSelectedSite('');
+    } catch (err) {
+      showNotification('Update failed: ' + (err.response?.data || err.message), 'error');
+    }
   };
+
+  // Filtering for UI
+  const materialRequests =
+    type === 'Material'
+      ? submitted.filter(entry => entry.requestType === 'material')
+      : [];
+  const toolRequests =
+    type === 'Tool'
+      ? toolSubmitted.filter(entry => entry.requestType === 'tool')
+      : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -331,7 +255,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                   {title || `${type} Request System`}
                 </h1>
                 <p className="text-slate-600 text-lg">
-                  Workflow: Site Supervisor → Senior QS → Admin
+                  Workflow: Site Supervisor → Project Manager → QS
                 </p>
               </div>
             </div>
@@ -345,12 +269,12 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
           </div>
         </div>
 
-        {/* Request Form - Only for Site Supervisor */}
+        {/* Request Form for Site Supervisor */}
         {userRole === 'Site Supervisor' && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
             <h2 className="text-xl font-semibold text-slate-800 mb-6 flex items-center gap-2">
               <Send className="w-5 h-5 text-blue-600" />
-              New {type} Request
+              {isEditing ? `Edit ${type} Request` : `New ${type} Request`}
             </h2>
 
             {/* Project Site Selection */}
@@ -362,11 +286,14 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
               <select
                 className="w-full max-w-md px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-lg"
                 value={selectedSite}
-                onChange={(e) => setSelectedSite(e.target.value)}
+                disabled={isEditing}
+                onChange={e => setSelectedSite(e.target.value)}
               >
                 <option value="">Choose project site...</option>
-                {sites.map((site) => (
-                  <option key={site.projectId} value={site.projectId}>{site.name}</option>
+                {sites.map(site => (
+                  <option key={site.projectId} value={site.projectId}>
+                    {site.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -375,7 +302,6 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
             {selectedSite && (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-slate-800 mb-4">Request Items</h3>
-
                 {materials.map((req, idx) => (
                   <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-6">
                     <div className="flex justify-between items-start mb-4">
@@ -385,12 +311,9 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                           onClick={() => handleRemove(idx)}
                           className="text-red-500 hover:text-red-700 transition-colors text-xl"
                           title="Remove item"
-                        >
-                          ×
-                        </button>
+                        >×</button>
                       )}
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -399,12 +322,11 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                         <input
                           type="text"
                           value={req.name}
-                          onChange={(e) => handleChange(idx, 'name', e.target.value)}
+                          onChange={e => handleChange(idx, 'name', e.target.value)}
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                           placeholder={`Enter ${requestType} name`}
                         />
                       </div>
-
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-1">
                           <Hash className="w-3 h-3" />
@@ -413,20 +335,19 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                         <input
                           type="number"
                           value={req.quantity}
-                          onChange={(e) => handleChange(idx, 'quantity', e.target.value)}
+                          onChange={e => handleChange(idx, 'quantity', e.target.value)}
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                           placeholder="0"
                           min="1"
                         />
                       </div>
-
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
                           Priority
                         </label>
                         <select
                           value={req.priority}
-                          onChange={(e) => handleChange(idx, 'priority', e.target.value)}
+                          onChange={e => handleChange(idx, 'priority', e.target.value)}
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         >
                           <option value="Low">Low</option>
@@ -434,27 +355,47 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                           <option value="High">High</option>
                         </select>
                       </div>
-
-
                     </div>
                   </div>
                 ))}
 
+                {/* BUTTONS */}
                 <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={handleAdd}
-                    className="flex items-center gap-2 px-6 py-3 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add {type}
-                  </button>
-                  <button
-                    onClick={handleSubmit}
-                    className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md"
-                  >
-                    <Send className="w-4 h-4" />
-                    Submit to Senior QS
-                  </button>
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={handleUpdateRequest}
+                        className="flex items-center gap-2 px-8 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all shadow-md"
+                      >
+                        <Check className="w-4 h-4" /> Save Changes
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditing(false); setEditingRequestId(null);
+                          setMaterials([{ name: '', quantity: '', priority: 'medium' }]);
+                          setSelectedSite('');
+                        }}
+                        className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300"
+                      >
+                        <X className="w-4 h-4" /> Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleAdd}
+                        className="flex items-center gap-2 px-6 py-3 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" /> Add {type}
+                      </button>
+                      <button
+                        onClick={handleSubmit}
+                        className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md"
+                      >
+                        <Send className="w-4 h-4" /> Submit to PM
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -463,7 +404,6 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
 
         {/* Request Management */}
         <div className="bg-white rounded-3xl shadow-xl border border-slate-200/60 p-8 backdrop-blur-sm">
-          {/* Header Section */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg">
@@ -471,21 +411,25 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
-                  {userRole === 'Site Supervisor' ? 'My Requests' :
-                    userRole === 'Senior QS' ? 'Requests for Review' : 'Requests for Approval'}
+                  {userRole === 'Site Supervisor' ? 'My Requests'
+                  : userRole === 'Senior QS' ? 'Requests for Review'
+                  : 'Requests for Approval'}
                 </h2>
                 <p className="text-slate-500 text-sm mt-1">
-                  {userRole === 'Site Supervisor' ? 'Track your submitted requests' :
-                    userRole === 'Senior QS' ? 'Review pending requests' : 'Approve pending requests'}
+                  {userRole === 'Site Supervisor'
+                    ? 'Track your submitted requests'
+                    : userRole === 'Senior QS'
+                    ? 'Review pending requests'
+                    : 'Approve pending requests'}
                 </p>
               </div>
             </div>
-
-            {/* Stats Summary */}
             <div className="flex items-center gap-4">
               <div className="bg-slate-50 rounded-xl px-4 py-2">
                 <span className="text-sm text-slate-600">Total Requests</span>
-                <p className="text-xl font-bold text-slate-800">{materialRequests.length + toolRequests.length}</p>
+                <p className="text-xl font-bold text-slate-800">
+                  {materialRequests.length + toolRequests.length}
+                </p>
               </div>
             </div>
           </div>
@@ -499,14 +443,16 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
               </div>
               <h3 className="text-xl font-semibold text-slate-700 mb-2">No requests found</h3>
               <p className="text-slate-500 max-w-md mx-auto leading-relaxed">
-                {userRole === 'Site Supervisor' ? 'Your submitted requests will appear here once you create them' :
-                  userRole === 'Senior QS' ? 'Requests pending your review will appear here' :
-                    'Requests pending your approval will appear here'}
+                {userRole === 'Site Supervisor'
+                  ? 'Your submitted requests will appear here once you create them'
+                  : userRole === 'Senior QS'
+                  ? 'Requests pending your review will appear here'
+                  : 'Requests pending your approval will appear here'}
               </p>
             </div>
           ) : (
             <div className="space-y-10">
-              {/* Material Requests Section */}
+              {/* Material Requests */}
               {materialRequests.length > 0 && (
                 <div>
                   <div className="flex items-center gap-3 mb-6">
@@ -516,11 +462,10 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                       {materialRequests.length}
                     </span>
                   </div>
-
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    {materialRequests.map((entry) => (
+                    {materialRequests.map(entry => (
+                      
                       <div key={entry.requestId} className="group bg-gradient-to-br from-white via-slate-50/50 to-white border border-slate-200/60 rounded-2xl p-7 hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1">
-
                         {/* Card Header */}
                         <div className="flex justify-between items-start mb-6">
                           <div className="flex items-center gap-3">
@@ -538,18 +483,14 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2">
-                            <span className={`px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ${getStatusColor(entry.approvalStatus)}`}>
-                              {entry.approvalStatus}
+                            <span className="px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ">
+                              {entry.pmApproval === 1 ? 'Approved'
+                              : entry.pmApproval === 0 && entry.qsApproval !== 0 ? 'Rejected'
+                              : 'Pending'}
                             </span>
                           </div>
                         </div>
-
-                        {/* Workflow Progress */}
-                        <div className="mb-6">
-                          {renderWorkflowProgress(entry)}
-                        </div>
-
-                        {/* Request Details Grid */}
+                        {/* Details */}
                         <div className="bg-slate-50/50 rounded-xl p-5 mb-6">
                           <div className="grid grid-cols-3 gap-4">
                             <div className="text-center">
@@ -568,7 +509,6 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                             </div>
                           </div>
                         </div>
-
                         {/* Requested Items */}
                         <div className="mb-6">
                           <h5 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
@@ -580,7 +520,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                               <div key={i} className="bg-white border border-slate-200/60 rounded-xl p-4 hover:shadow-sm transition-shadow">
                                 <div className="flex justify-between items-start mb-3">
                                   <span className="font-semibold text-slate-800 text-sm leading-tight">{r.materialName}</span>
-                                  <span className={`px-3 py-1 rounded-lg text-xs font-medium border shadow-sm ${getPriorityColor(r.priority)}`}>
+                                  <span className="px-3 py-1 rounded-lg text-xs font-medium border shadow-sm ">
                                     {r.priority}
                                   </span>
                                 </div>
@@ -594,18 +534,23 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                             ))}
                           </div>
                         </div>
-
-                        {/* Action Buttons */}
-                        <div className="pt-4 border-t border-slate-200/60">
-                          {renderActionButtons(entry)}
-                        </div>
+                        {/* Edit: only if both pmApproval and qsApproval are 0 */}
+                       
+                          <button
+                            onClick={() => startEditing(entry)}
+                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                        
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Tool Requests Section */}
+              {/* Tool Requests */}
               {toolRequests.length > 0 && (
                 <div>
                   <div className="flex items-center gap-3 mb-6">
@@ -615,11 +560,9 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                       {toolRequests.length}
                     </span>
                   </div>
-
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    {toolRequests.map((entry) => (
+                    {toolRequests.map(entry => (
                       <div key={entry.requestId} className="group bg-gradient-to-br from-white via-slate-50/50 to-white border border-slate-200/60 rounded-2xl p-7 hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1">
-
                         {/* Card Header */}
                         <div className="flex justify-between items-start mb-6">
                           <div className="flex items-center gap-3">
@@ -637,18 +580,12 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2">
-                            <span className={`px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ${getStatusColor(entry.approvalStatus)}`}>
-                              {entry.approvalStatus}
+                            <span className={`px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ${entry.pmApproval === 1 ? 'bg-green-100 text-green-700' : entry.pmApproval === 0 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                              {entry.pmApproval}
                             </span>
                           </div>
                         </div>
-
-                        {/* Workflow Progress */}
-                        <div className="mb-6">
-                          {renderWorkflowProgress(entry)}
-                        </div>
-
-                        {/* Request Details Grid */}
+                        {/* Details Grid */}
                         <div className="bg-slate-50/50 rounded-xl p-5 mb-6">
                           <div className="grid grid-cols-3 gap-4">
                             <div className="text-center">
@@ -667,7 +604,6 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                             </div>
                           </div>
                         </div>
-
                         {/* Requested Items */}
                         <div className="mb-6">
                           <h5 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
@@ -679,7 +615,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                               <div key={i} className="bg-white border border-slate-200/60 rounded-xl p-4 hover:shadow-sm transition-shadow">
                                 <div className="flex justify-between items-start mb-3">
                                   <span className="font-semibold text-slate-800 text-sm leading-tight">{r.materialName}</span>
-                                  <span className={`px-3 py-1 rounded-lg text-xs font-medium border shadow-sm ${getPriorityColor(r.priority)}`}>
+                                  <span className={`px-3 py-1 rounded-lg text-xs font-medium border shadow-sm `}>
                                     {r.priority}
                                   </span>
                                 </div>
@@ -693,11 +629,7 @@ export default function InventoryRequest({ title, items = [], projects = [], typ
                             ))}
                           </div>
                         </div>
-
-                        {/* Action Buttons */}
-                        <div className="pt-4 border-t border-slate-200/60">
-                          {renderActionButtons(entry)}
-                        </div>
+                        {/* Tool requests don't have edit */}
                       </div>
                     ))}
                   </div>

@@ -23,12 +23,12 @@ export default function Home() {
   // Determine active item based on current path
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path.includes('/designer/home') || path === '/') return 'home';
-    if (path.includes('/designer/initialize')) return 'initialize';
-    if (path.includes('/designer/ongoing')) return 'ongoing';
-    if (path.includes('/designer/completed')) return 'completed';
-    if (path.includes('/designer/chat')) return 'chat';
-    if (path.includes('/designer/notifications')) return 'notifications';
+    if (path.includes('/home') || path === '/') return 'home';
+    if (path.includes('/initialize')) return 'initialize';
+    if (path.includes('/ongoing')) return 'ongoing';
+    if (path.includes('/completed')) return 'completed';
+    if (path.includes('/chat')) return 'chat';
+    if (path.includes('/notifications')) return 'notifications';
     return 'home'; // default
   };
 

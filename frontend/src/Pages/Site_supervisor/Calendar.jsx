@@ -1,48 +1,46 @@
-// SiteSupervisorCalendar.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import SharedCalendar from '../../Components/Employee/SharedCalendar';
+import axios from 'axios';
+import { useParams } from 'react-router-dom';
 
-const siteEvents = [
-  {
-    title: 'Concrete Pour',
-    type: 'task',
-    start: new Date(2025, 5, 10),
-    end: new Date(2025, 5, 10),
-  },
-  {
-    title: 'Inspect Electrical Work',
-    type: 'visit',
-    start: new Date(2025, 5, 10),
-    end: new Date(2025, 5, 10),
-  },
-  {
-    title: 'Check Roof Structure',
-    type: 'task',
-    start: new Date(2025, 5, 12),
-    end: new Date(2025, 5, 12),
-  },
-  {
-    title: 'Safety Visit',
-    type: 'visit',
-    start: new Date(2025, 5, 15),
-    end: new Date(2025, 5, 15),
-  },
-];
-
-const siteColors = {
-  task: '#2563eb', // light blue
-  visit: '#16a34a'
+const colorMap = {
+  pending: '#f59e0b',    // amber
+  completed: '#10b981',  // green
+  inprogress: '#3b82f6', // blue
+  canceled: '#ef4444',   // red
 };
 
-export default function Calendar() {
+function SiteSupervisorCalendar({ siteSupervisorId }) {
+  const [tasks, setTasks] = useState([]);
+  const {employeeId} =useParams();
+
+  useEffect(() => {
+  axios.get(`/api/v1/site_supervisor/todo/sp/${employeeId}`)
+    .then((res) => {
+      const rawTasks = Array.isArray(res.data.data) ? res.data.data : [];
+      const events = rawTasks.map(task => ({
+        title: task.description,
+        start: new Date(task.date),
+        end: new Date(task.date),
+        status: task.status.toLowerCase(),
+      }));
+      setTasks(events);
+    })
+    .catch((err) => {
+      console.error('Failed to fetch tasks:', err);
+    });
+}, [employeeId]);
+
+
   return (
     <SharedCalendar
-      label="Site Supervisor Calendar"
-      events={siteEvents}
-      colorMap={siteColors}
-      filterOptions={['task', 'visit']}
-      eventKey="type"
-      
+      events={tasks}
+      colorMap={colorMap}
+      label="To-Do Tasks"
+      filterOptions={['pending', 'completed', 'inprogress', 'canceled']}
+      eventKey="status"
     />
   );
 }
+
+export default SiteSupervisorCalendar;

@@ -1,6 +1,6 @@
 import React from 'react';
 import '../../CSS/Admin/Admin.CSS'
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useParams } from 'react-router-dom';
 import { ThemeProvider } from '../../Contexts/ThemeContexts';
 
 import Layout from '../../Components/Admin/Layout';
@@ -17,6 +17,8 @@ import Analytics from '../../Components/Admin/Dashboard/Analatics'
 import AddSupplierPage from '../../Components/Admin/Dashboard/AddSupplier'
 
 export default function Admin() {
+
+  const{adminId}=useParams();
   return (
     <ThemeProvider>
       <Routes>

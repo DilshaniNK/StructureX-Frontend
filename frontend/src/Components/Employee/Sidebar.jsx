@@ -26,7 +26,10 @@ const Sidebar = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { employeeId } = useParams();
+
+   const { employeeId } = useParams(); //get employeeId from URL params
+   const {supplierId} = useParams();
+
 
   const menuItems = {
     Designer: [
@@ -74,15 +77,15 @@ const Sidebar = ({
       { id: 'settings', label: 'Settings', icon: Settings, path: `/site_supervisor/${employeeId}/settings`, badge: '5' }
     ],
     Supplier: [
-      { id: 'home', label: 'Home', icon: Home, path: '/supplier/home', badge: null },
-      { id: 'catalogue', label: 'Product Catalogue', icon: Projects, path: '/supplier/catalogue' },
-      { id: 'quotations', label: 'Quotations', icon: FileText, path: '/supplier/quotations', badge: null },
-      { id: 'orders', label: 'Material Orders', icon: Materials, path: '/supplier/orders', badge: '12' },
-      { id: 'delivery', label: 'Delivery Information', icon: Truck, path: '/supplier/delivery', badge: '5' },
-      { id: 'payments', label: 'Payments', icon: Payments, path: '/supplier/payments', badge: '10' },
-      { id: 'shistory', label: 'Supply History', icon: Package, path: '/supplier/shistory', badge: '5' },
-      { id: 'invoices', label: 'Invoices', icon: Receipt, path: '/supplier/invoices', badge: null },
-      { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/supplier/messages', badge: null }
+      { id: 'home', label: 'Home', icon: Home, path: `/supplier/${supplierId}/home`, badge: null },
+      { id: 'catalogue', label: 'Product Catalogue', icon: Projects, path: `/supplier/${supplierId}/catalogue` },
+      { id: 'quotations', label: 'Quotations', icon: FileText, path: `/supplier/${supplierId}/quotations`, badge: null },
+      { id: 'orders', label: 'Material Orders', icon: Materials, path: `/supplier/${supplierId}/orders`, badge: '12' },
+      { id: 'delivery', label: 'Delivery Information', icon: Truck, path: `/supplier/${supplierId}/delivery`, badge: '5' },
+      { id: 'payments', label: 'Payments', icon: Payments, path: `/supplier/${supplierId}/payments`, badge: '10' },
+      { id: 'shistory', label: 'Supply History', icon: Package, path: `/supplier/${supplierId}/shistory`, badge: '5' },
+      { id: 'invoices', label: 'Invoices', icon: Receipt, path: `/supplier/${supplierId}/invoices`, badge: null },
+      { id: 'messages', label: 'Messages', icon: MessageSquare, path: `/supplier/${supplierId}/messages`, badge: null }
     ],
     Director: [
       { id: 'home', label: 'Home', icon: Home, path: '/director/home', badge: null },

@@ -120,13 +120,7 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
 
       onClose(); // Optional: close modal
 
-    } catch (err) {
-      console.error(err);
-      alert("Login failed. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
-
-    }
+   
 
     onClose();
     return; // stop processing after success

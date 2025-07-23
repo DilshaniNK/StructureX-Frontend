@@ -5,16 +5,47 @@ import axios from 'axios';
 
 const ProjectDetails = () => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const[projectManager,setProjectManager] = useState(null);
+    const[seniorQsOfficer,setSeniorQsOfficer] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [project,setProject] = useState(null);
     const[loading,setLoading] = useState(true);
     const { id } = useParams();
     
+    const fetchEmployeeById = async (employeeId) => {
+        if(!employeeId || employeeId === 'none'){
+            return null;
+        }
+        try{
+            const response = await axios.get(`http://localhost:8086/api/v1/admin/${employeeId}`);
+            return response.data;
+        }catch(err){
+            console.log('failed to fetch employee', err);
+            return null;
+        }
+    };
+
     useEffect(() =>{
         const fetchProject = async () =>{
+            
             try{
                 const response = await axios.get(`http://localhost:8086/api/v1/director/get_project_by_id/${id}`);
                 setProject(response.data);
+
+                if(response.data.pm_id){
+                    const pmData = await fetchEmployeeById(response.data.pm_id);
+                    setProjectManager(pmData);
+                }else{
+                    setProjectManager(null)
+                }
+
+                if(response.data.qs_id){
+                    const qsData = await fetchEmployeeById(response.data.qs_id);
+                    setSeniorQsOfficer(qsData);
+                }
+                else{
+                    setSeniorQsOfficer(null);
+                }
             }catch(err){
                 alert("faild to load project")
             }finally{
@@ -81,7 +112,7 @@ const ProjectDetails = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
                         <div>
                             <span className="font-medium text-gray-900">Client:</span>
-                            <p className="text-gray-600 mt-1">{project.projectmanager || 'Asia Leisure / Belluna Co. Ltd.'}</p>
+                            <p className="text-gray-600 mt-1">{project.first_name || 'Asia Leisure / Belluna Co. Ltd.'}</p>
                         </div>
                         <div>
                             <span className="font-medium text-gray-900">Completion Date:</span>
@@ -200,15 +231,15 @@ const ProjectDetails = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="border-l-4 border-gray-200 pl-4">
                                     <h4 className="font-medium text-gray-900">Project Manager</h4>
-                                    <p className="text-gray-600 mt-1">{project.projectmanager}</p>
+                                    <p className="text-gray-600 mt-1">{projectManager?.name || 'Not Assigned'}</p>
                                 </div>
-                                <div className="border-l-4 border-gray-200 pl-4">
+                                {/* <div className="border-l-4 border-gray-200 pl-4">
                                     <h4 className="font-medium text-gray-900">Site Supervisor</h4>
-                                    <p className="text-gray-600 mt-1">{project.sitesupervisor}</p>
-                                </div>
+                                    <p className="text-gray-600 mt-1">{seniorQsOfficer?.name || 'Not assigend'}</p>
+                                </div> */}
                                 <div className="border-l-4 border-gray-200 pl-4">
                                     <h4 className="font-medium text-gray-900">QS Officer</h4>
-                                    <p className="text-gray-600 mt-1">{project.qsofficer}</p>
+                                    <p className="text-gray-600 mt-1">{seniorQsOfficer?.name || 'Not Assigned'}</p>
                                 </div>
                                 <div className="border-l-4 border-gray-200 pl-4">
                                     <h4 className="font-medium text-gray-900">Designer</h4>

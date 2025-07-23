@@ -82,6 +82,7 @@ export default function ProjectDetails({ projectId, onBack, user }) {
       case 'pending': return <Clock className="h-4 w-4" />;
       case 'unsuccessful': return <AlertCircle className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
+      
     }
   };
 

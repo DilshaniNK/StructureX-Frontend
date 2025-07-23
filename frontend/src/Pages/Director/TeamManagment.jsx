@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, ChevronLeft, ChevronRight, Calendar, DollarSign, Users, Phone, Mail, UserCheck, MapPin, Building, Check, User, Clock } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 const PendingProjectsManager = () => {
     const [pendingProjects, setPendingProjects] = useState([]);
@@ -8,7 +9,12 @@ const PendingProjectsManager = () => {
     const [employees, setEmployees] = useState([]);
     const [activeRoleTab, setActiveRoleTab] = useState('');
     const [loading, setLoading] = useState(true);
+    const location = useLocation();
+    const projectRefs = useRef({});
 
+    const highlightedProjectId = location.state?.highlightedProjectId;
+    
+    
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -30,11 +36,36 @@ const PendingProjectsManager = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (location.state?.highlightedProjectId && location.state?.fromNewProject) {
+            console.log('New project navigation detected:', location.state.highlightedProjectId);
+            setExpandedProject(location.state.highlightedProjectId);
+            
+            // Scroll to the highlighted project after data is loaded
+            const scrollToProject = () => {
+                const element = document.getElementById(`project-${location.state.highlightedProjectId}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.classList.add('highlight-project');
+                }
+            };
+
+            if (!loading) {
+                setTimeout(scrollToProject, 500);
+            }
+        }
+    }, [location.state, loading]);
+
     const groupedEmployees = employees.reduce((acc, emp) => {
         if (!acc[emp.type]) acc[emp.type] = [];
         acc[emp.type].push(emp);
         return acc;
     }, {});
+    useEffect(() => {
+    if (!location.state?.fromNewProject) {
+        setExpandedProject(null);
+    }
+}, [location.state]);
 
     const getPriorityColor = (priority) => {
         switch (priority) {
@@ -60,7 +91,7 @@ const PendingProjectsManager = () => {
 
     const startProject = async (project) => {
         const assigned = assignedTeams[project.project_id] || {};
-        const requiredRoles = ['Senior_QS_Officer', 'Project_Manager'];
+        const requiredRoles = ['Senior_QS_Officer', 'Project_Manager','Site_Supervisor'];
         
         for (const type of requiredRoles) {
             if (!assigned[type]) {
@@ -78,6 +109,7 @@ const PendingProjectsManager = () => {
                 body: JSON.stringify({
                     qs_id: assigned['Senior_QS_Officer'],
                     pm_id: assigned['Project_Manager'],
+                    ss_id: assigned['Site_Supervisor'],
                     status: 'ongoing'
                 })
             });
@@ -86,6 +118,7 @@ const PendingProjectsManager = () => {
                 alert('Project successfully started');
                 // Remove the project from pending projects
                 setPendingProjects(prev => prev.filter(p => p.project_id !== project.project_id));
+                window.location.reload();
             } else {
                 alert('Failed to start project');
             }
@@ -118,12 +151,18 @@ const PendingProjectsManager = () => {
                 {/* Projects Grid */}
                 <div className="space-y-8">
                     {pendingProjects.map((project) => {
+                        const isHighlighted = location.state?.fromNewProject && project.project_id === highlightedProjectId;
                         const assigned = assignedTeams[project.project_id] || {};
                         const assignedCount = Object.values(assigned).filter(id => id).length;
                         const isExpanded = expandedProject === project.project_id;
 
                         return (
-                            <div key={project.project_id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div  key={project.project_id}
+                                id={`project-${project.project_id}`}
+                                ref={el => (projectRefs.current[project.project_id] = el)}
+                                className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden ${
+                                    isHighlighted ? 'ring-2 ring-black bg-amber-50' : ''
+                            }`}>
                                 {/* Project Header */}
                                 <div className="p-6">
                                     <div className="flex flex-col lg:flex-row gap-6">
@@ -141,7 +180,7 @@ const PendingProjectsManager = () => {
                                             <div className="flex items-start justify-between mb-4">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-3 mb-3">
-                                                        <h2 className="text-xl font-semibold text-gray-900">{project.title}</h2>
+                                                        <h2 className="text-xl font-semibold text-gray-900">{project.name}</h2>
                                                         <span className={`px-2 py-1 rounded text-xs font-medium border ${getPriorityColor(project.priority)}`}>
                                                             {project.priority} Priority
                                                         </span>
@@ -156,7 +195,7 @@ const PendingProjectsManager = () => {
                                                     <Building className="text-gray-400" size={16} />
                                                     <div>
                                                         <p className="text-xs text-gray-500">Client</p>
-                                                        <p className="text-sm font-medium text-gray-900">{project.client}</p>
+                                                        <p className="text-sm font-medium text-gray-900">{project.first_name}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
@@ -170,14 +209,14 @@ const PendingProjectsManager = () => {
                                                     <DollarSign className="text-gray-400" size={16} />
                                                     <div>
                                                         <p className="text-xs text-gray-500">Budget</p>
-                                                        <p className="text-sm font-medium text-gray-900">{project.totalbudget}</p>
+                                                        <p className="text-sm font-medium text-gray-900">{project.budget}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Calendar className="text-gray-400" size={16} />
                                                     <div>
                                                         <p className="text-xs text-gray-500">Deadline</p>
-                                                        <p className="text-sm font-medium text-gray-900">{project.expectedCompletion}</p>
+                                                        <p className="text-sm font-medium text-gray-900">{project.due_date}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -188,7 +227,7 @@ const PendingProjectsManager = () => {
                                                     <div className="flex items-center gap-2">
                                                         <Users className="text-gray-400" size={16} />
                                                         <span className="text-sm text-gray-600">
-                                                            {assignedCount} of 2 assigned
+                                                            {assignedCount} of 3 assigned
                                                         </span>
                                                     </div>
                                                     {assignedCount > 0 && (
@@ -225,7 +264,7 @@ const PendingProjectsManager = () => {
                                                         onClick={() => startProject(project)}
                                                         disabled={assignedCount < 2}
                                                         className={`px-6 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                                            assignedCount >= 2
+                                                            assignedCount >= 3
                                                                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                                                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                                         }`}
@@ -250,6 +289,17 @@ const PendingProjectsManager = () => {
                                             if (!activeRoleTab && roles.length > 0) {
                                                 setActiveRoleTab(roles[0]);
                                             }
+                                            const requiredRoles = ['Senior_QS_Officer','Project_Manager','Site_Supervisor'];
+                                            const missingRoles = requiredRoles.filter(
+                                                role => !groupedEmployees[role] || groupedEmployees[role].length ===0
+                                            );
+                                            if(missingRoles.length > 0){
+                                                return (
+                                                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 font-medium">
+                                                        Members not in yet: {missingRoles.join(', ')}
+                                                    </div>
+                                                );
+                                            }
 
                                             return (
                                                 <div>
@@ -259,7 +309,7 @@ const PendingProjectsManager = () => {
                                                             <nav className="flex space-x-8" aria-label="Tabs">
                                                                 {roles.map((type) => {
                                                                     const isRoleAssigned = assigned[type];
-                                                                    const isRoleRequired = ['Senior_QS_Officer', 'Project_Manager'].includes(type);
+                                                                    const isRoleRequired = ['Senior_QS_Officer', 'Project_Manager','Site_Supervisor'].includes(type);
                                                                     
                                                                     return (
                                                                         <button
@@ -289,7 +339,7 @@ const PendingProjectsManager = () => {
                                                     {activeTab && groupedEmployees[activeTab] && (
                                                         <div className="mb-6">
                                                             {/* Role requirement info */}
-                                                            {['Senior_QS_Officer', 'Project_Manager'].includes(activeTab) && (
+                                                            {['Senior_QS_Officer', 'Project_Manager','Site_Supervisor'].includes(activeTab) && (
                                                                 <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                                                                     <p className="text-sm text-gray-900">
                                                                         <strong>{activeTab}:</strong> Required for this project
@@ -303,7 +353,7 @@ const PendingProjectsManager = () => {
                                                                 {groupedEmployees[activeTab].map((member) => {
                                                                     const isAssigned = assigned[activeTab] === member.employee_id;
                                                                     const isAvailable = member.availability === 'Available';
-                                                                    const isRoleRequired = ['Senior_QS_Officer', 'Project_Manager'].includes(activeTab);
+                                                                    const isRoleRequired = ['Senior_QS_Officer', 'Project_Manager','Site_Supervisor'].includes(activeTab);
                                                                     
                                                                     
                                                                     return (
@@ -311,7 +361,7 @@ const PendingProjectsManager = () => {
                                                                             key={member.employee_id}
                                                                             className={`relative p-4 rounded-lg border transition-all cursor-pointer ${
                                                                                 isAssigned
-                                                                                    ? 'border-blue-400 bg-blue-50'
+                                                                                    ? 'border-black bg-blue-50'
                                                                                     : isAvailable
                                                                                     ? (isRoleRequired 
                                                                                         ? 'border-amber-300 bg-amber-50 hover:border-amber-500 shadow-md'
@@ -436,7 +486,7 @@ const PendingProjectsManager = () => {
                             <p className="text-2xl font-bold text-green-600">
                                 {Object.keys(assignedTeams).filter(projectId => {
                                     const assigned = assignedTeams[projectId];
-                                    return assigned?.Senior_QS_Officer && assigned?.Project_Manager;
+                                    return assigned?.Senior_QS_Officer && assigned?.Project_Manager && assigned?.Site_Supervisor;
                                 }).length}
                             </p>
                             <p className="text-sm text-green-800">Ready to Start</p>

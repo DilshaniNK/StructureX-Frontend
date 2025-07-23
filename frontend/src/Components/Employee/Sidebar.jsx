@@ -134,6 +134,17 @@ const Sidebar = ({
 
   return (
     <>
+      {/* Custom CSS to hide the scrollbar across browsers */}
+      <style jsx>{`
+        .hide-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;     /* Firefox */
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
+      `}</style>
+
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
@@ -222,9 +233,7 @@ const Sidebar = ({
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white/95 backdrop-blur-sm border-r border-gray-200 z-40 transition-all duration-300 ease-in-out shadow-lg ml-20${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          } ${sidebarWidth}`}
+        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white/95 backdrop-blur-sm border-r border-gray-200 z-40 transition-all duration-300 ease-in-out shadow-lg ${sidebarWidth} flex flex-col overflow-hidden flex flex-col`}
         onMouseEnter={() => setIsDesktopHovered(true)}
         onMouseLeave={() => {
           setIsDesktopHovered(false);
@@ -252,8 +261,10 @@ const Sidebar = ({
         </div>
 
         {/* Navigation Items - Scrollable Area */}
-        <nav className="flex-1 p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
-          <div className="space-y-1 pb-40 lg:pb-32">
+        {/* Added hide-scrollbar class for universal scrollbar hiding */}
+        <div className="flex-1 overflow-y-auto px-3 hide-scrollbar">
+          <nav className="space-y-1 pb-40 lg:pb-32">           
+            <div className="space-y-1 pb-40 lg:pb-32">
             {currentMenu.map((item, index) => {
               const IconComponent = item.icon;
               const isActive = activeItem === item.id;
@@ -343,8 +354,9 @@ const Sidebar = ({
                 </div>
               );
             })}
-          </div>
-        </nav>
+            </div>
+          </nav>
+        </div>
 
         {/* Fixed Footer Section */}
         <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 shadow-lg">

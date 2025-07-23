@@ -76,8 +76,17 @@ const AddEmployeeForm = () => {
     if (!formData.phone_number.trim()) newErrors.phone_number = 'Phone number is required';
     if (!formData.address.trim()) newErrors.address = 'Address is required';
     if (!formData.type) newErrors.type = 'Employee type is required';
-    if (!formData.joined_date) newErrors.joined_date = 'Join date is required';
-
+    if (!formData.joined_date) {
+      newErrors.joined_date = 'Join date is required';
+    } else {
+      const selectedDate = new Date(formData.joined_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+      
+      if (selectedDate > today) {
+        newErrors.joined_date = 'Join date cannot be in the future';
+      }
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

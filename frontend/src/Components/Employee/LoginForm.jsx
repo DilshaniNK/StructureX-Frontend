@@ -85,6 +85,9 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
         case "Financial_Officer":
           navigate(`/financial_officer/${employeeId}`);
           break;
+        case "Designer":
+          navigate(`/designer/${employeeId}`);
+          break;
         case "admin":
           navigate("/admin/dashboard");
           break;

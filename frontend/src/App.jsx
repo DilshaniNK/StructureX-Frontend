@@ -67,7 +67,11 @@ const App = () => {
             } />
 
             <Route path="/example/*" element={<Example />} />
-            <Route path="/designer/*" element={<Designer />} />
+            <Route path="/designer/:employeeId/*" element={
+              <ProtectedRoute allowedRoles={['Designer']}>
+                <Designer />
+              </ProtectedRoute>
+            } />
             <Route path='/director/*' element={<Director />} />
             <Route path='/directorcont/*' element={<DirectorCont />} />
 

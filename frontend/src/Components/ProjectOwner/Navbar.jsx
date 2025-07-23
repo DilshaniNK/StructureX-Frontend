@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate ,useParams} from 'react-router-dom';
 import { 
   Bell, CreditCard, FileText, Home, MessageSquare, Settings, User, Hammer, AlertCircle, ChevronDown, Menu, X, LogOut
 } from 'lucide-react';
@@ -9,7 +9,7 @@ import name from '../../assets/name.png';
 const Navbar = ({ 
   activeTab = 'dashboard',
   setActiveTab,
-  userRole = 'Product Owner', 
+  userRole = 'Project_Owner', 
   userName = 'John Doe',
   isSidebarOpen,
   toggleSidebar 
@@ -20,6 +20,7 @@ const Navbar = ({
   
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
+  const { clientId } = useParams();
 
   const [notifications] = useState([
     {
@@ -53,11 +54,11 @@ const Navbar = ({
   ]);
 
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home, path: '/project_owner/dashboard' },
-    { id: "project", label: "Project", icon: FileText, path: '/project_owner/project' },
-    { id: "payments", label: "Payments", icon: CreditCard, path: '/project_owner/payments' },
-    { id: "materials", label: "Materials", icon: Settings, path: '/project_owner/materials' },
-    { id: "communications", label: "Messages", icon: MessageSquare, path: '/project_owner/messages' },
+    { id: "dashboard", label: "Dashboard", icon: Home, path: `/project_owner/${clientId}/dashboard` },
+    { id: "project", label: "Project", icon: FileText, path: `/project_owner/${clientId}/project` },
+    { id: "payments", label: "Payments", icon: CreditCard, path: `/project_owner/${clientId}/payments` },
+    { id: "materials", label: "Materials", icon: Settings, path: `/project_owner/${clientId}/materials` },
+    { id: "communications", label: "Messages", icon: MessageSquare, path: `/project_owner/${clientId}/messages` },
   ];
 
   useEffect(() => {

@@ -1,109 +1,149 @@
-import React, { useState } from 'react';
-import { X, Eye, EyeOff, User, Lock, ChevronDown, ChevronUp } from 'lucide-react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode'; // ✅ Correct
+import React, { useState } from "react";
+import {
+  X,
+  Eye,
+  EyeOff,
+  User,
+  Lock,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode"; // ⚠️ named import, not default
 
-
-const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
+const LoginForm = ({ onClose, onNavigateToContact }) => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showAccountRequest, setShowAccountRequest] = useState(false);
 
+  const navigate = useNavigate();
+
+  // Handle inputs
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
 
+  // Toggle password visibility
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  // Validate form fields
   const validateForm = () => {
     const newErrors = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = "Email is invalid";
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const navigate = useNavigate();
-
+  // Main login handler - unified for employee & client - adjust your API endpoint accordingly
   const handleLogin = async () => {
-    if (!validateForm()) return;
+  if (!validateForm()) return;
 
-    setIsLoading(true);
+  setIsLoading(true);
 
+  try {
+    // Try employee login first
+    let res = await axios.post("http://localhost:8086/api/v1/employee/login", {
+      email: formData.email,
+      password: formData.password,
+    });
+
+    const token = res.data.token;
+    if (!token) throw new Error("Token not provided from employee login");
+
+    localStorage.setItem("token", token);
+
+    const decoded = jwtDecode(token);
+    console.log("Decoded JWT (employee):", decoded);
+
+    alert("Login Successful");
+
+    // Use decoded info to route by employee role
+    const role = decoded.role;
+    const employeeId = decoded.employeeId;
+    switch (role) {
+      case "Site_Supervisor":
+        navigate(`/site_supervisor/${employeeId}`);
+        break;
+      case "Financial_Officer":
+        navigate(`/financial_officer/${employeeId}`);
+        break;
+      case "Designer":
+        navigate(`/designer/${employeeId}`);
+        break;
+      case "admin":
+        navigate("/admin/dashboard");
+        break;
+      default:
+        navigate("/unauthorized");
+    }
+  } catch (err) {
+    console.log("Employee login failed, trying client login...", err);
+
+    // Employee login failed, so try client login now
     try {
-      const res = await axios.post("http://localhost:8086/api/v1/employee/login", {
+      let res = await axios.post("http://localhost:8086/api/v1/client/login", {
         email: formData.email,
         password: formData.password,
       });
 
       const token = res.data.token;
+      if (!token) throw new Error("Token not provided from client login");
+
       localStorage.setItem("token", token);
 
       const decoded = jwtDecode(token);
-      const role = decoded.role
-      const employeeId = decoded.employeeId;
+      console.log("Decoded JWT (client):", decoded);
 
+      alert("Client Login Successful");
 
-      console.log("Decoded JWT:", decoded);
-
-      alert("Login Successful");
-
-      // direct based on role
-      switch (role) {
-        case "Site_Supervisor":
-          navigate(`/site_supervisor/${employeeId}`);
-          break;
-        case "Financial_Officer":
-          navigate(`/financial_officer/${employeeId}`);
-          break;
-        case "Designer":
-          navigate(`/designer/${employeeId}`);
-          break;
-        case "admin":
-          navigate("/admin/dashboard");
-          break;
-        default:
-          navigate("/unauthorized");
-      }
-
-      onClose(); // Optional: close modal
-
-    } catch (err) {
-      console.error(err);
-      alert("Login failed. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
+      // Assuming client role is 'ProjectOwner' or simply treat all as client
+      // Adjust as per your JWT claims
+      const clientId = decoded.clientId || decoded.employeeId;
+      navigate(`/project_owner/${clientId}`);
+     
+    } catch (clientErr) {
+      // Both logins failed
+      console.error("Client login also failed:", clientErr);
+      alert(
+        clientErr.response?.data?.message ||
+          "Login failed. Please check your credentials."
+      );
     }
-  };
+  } finally {
+    setIsLoading(false);
+    onClose();
+  }
+};
 
 
   const toggleAccountRequest = () => {
@@ -133,8 +173,8 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto transform transition-all duration-300 scale-100">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h1 className='text-black md:text-4xl text-3xl font-bold font-rubik'>
-            Structura<span className='text-yellow-500 italic'>X</span>
+          <h1 className="text-black md:text-4xl text-3xl font-bold font-rubik">
+            Structura<span className="text-yellow-500 italic">X</span>
           </h1>
           <button
             onClick={onClose}
@@ -148,7 +188,10 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
         <div className="p-6 space-y-6">
           {/* Email */}
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-semibold text-gray-700 block">
+            <label
+              htmlFor="email"
+              className="text-sm font-semibold text-gray-700 block"
+            >
               Username / Email
             </label>
             <div className="relative">
@@ -159,44 +202,58 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${errors.email
-                  ? 'border-red-500 focus:ring-red-200'
-                  : 'border-gray-300 focus:ring-yellow-200 focus:border-yellow-500'
-                  }`}
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                  errors.email
+                    ? "border-red-500 focus:ring-red-200"
+                    : "border-gray-300 focus:ring-yellow-200 focus:border-yellow-500"
+                }`}
                 placeholder="Enter email"
               />
             </div>
-            {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+            {errors.email && (
+              <p className="text-red-500 text-sm">{errors.email}</p>
+            )}
           </div>
 
           {/* Password */}
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-semibold text-gray-700 block">
+            <label
+              htmlFor="password"
+              className="text-sm font-semibold text-gray-700 block"
+            >
               Password
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${errors.password
-                  ? 'border-red-500 focus:ring-red-200'
-                  : 'border-gray-300 focus:ring-yellow-200 focus:border-yellow-500'
-                  }`}
+                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                  errors.password
+                    ? "border-red-500 focus:ring-red-200"
+                    : "border-gray-300 focus:ring-yellow-200 focus:border-yellow-500"
+                }`}
                 placeholder="Enter your password"
               />
               <button
                 type="button"
                 onClick={togglePasswordVisibility}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                aria-label="Toggle password visibility"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
-            {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+            {errors.password && (
+              <p className="text-red-500 text-sm">{errors.password}</p>
+            )}
           </div>
 
           {/* Remember & Forgot */}
@@ -218,10 +275,11 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
             type="button"
             onClick={handleLogin}
             disabled={isLoading}
-            className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 transform ${isLoading
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-yellow-500 hover:bg-yellow-600 hover:scale-105 active:scale-95'
-              }`}
+            className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 transform ${
+              isLoading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-yellow-500 hover:bg-yellow-600 hover:scale-105 active:scale-95"
+            }`}
           >
             {isLoading ? (
               <div className="flex items-center justify-center">
@@ -229,7 +287,7 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
                 Signing in...
               </div>
             ) : (
-              'Sign In'
+              "Sign In"
             )}
           </button>
 
@@ -246,18 +304,27 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
                   className="px-2 bg-white text-yellow-500 hover:text-yellow-600 font-semibold transition-colors duration-200 flex items-center space-x-1"
                 >
                   <span>Need an account?</span>
-                  {showAccountRequest ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  {showAccountRequest ? (
+                    <ChevronUp className="w-3 h-3" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" />
+                  )}
                 </button>
               </div>
             </div>
 
             {/* Expandable Account Request Info */}
-            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${showAccountRequest ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-              }`}>
+            <div
+              className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                showAccountRequest
+                  ? "max-h-96 opacity-100"
+                  : "max-h-0 opacity-0"
+              }`}
+            >
               <div className="bg-yellow-50 rounded-lg p-4">
                 <div className="mt-3 pt-3 border-t border-yellow-300">
                   <p className="text-sm text-gray-600">
-                    For account creation, contact via{' '}
+                    For account creation, contact via{" "}
                     <button
                       type="button"
                       onClick={handleContactFormClick}

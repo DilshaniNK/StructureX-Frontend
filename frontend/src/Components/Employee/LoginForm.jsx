@@ -66,15 +66,17 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
       });
 
       const token = res.data.token;
+     
       localStorage.setItem("token", token);
 
       const decoded = jwtDecode(token);
+      console.log("full decode token", decoded);
       const role = decoded.role
       const employeeId = decoded.employeeId;
 
 
       console.log("Decoded JWT:", decoded);
-
+      console.log(employeeId);
       alert("Login Successful");
 
       // direct based on role
@@ -90,6 +92,9 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
           break;
         case "Designer":
           navigate(`/designer/${employeeId}`);
+          break;
+        case "Director":
+          navigate(`director/${employeeId}`);
           break;
         default:
           navigate("/unauthorized");

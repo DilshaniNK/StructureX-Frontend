@@ -7,11 +7,14 @@ const NewProjectForm = ({ onClose, onAdd, client }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!projectName || !location) return;
+    if (!projectName.trim()) {
+      alert('enter project name')
+      return;
+    }
     onAdd({
       name: projectName,
-      location,
-      note,
+      client_id: client.client_id,
+      status: "pending"
     });
   };
 
@@ -30,31 +33,19 @@ const NewProjectForm = ({ onClose, onAdd, client }) => {
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
           />
-          <input
-            type="text"
-            placeholder="Location"
-            className="w-full border border-gray-300 p-2 rounded"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          />
-          <textarea
-            placeholder="Note about the project"
-            className="w-full border border-gray-300 p-2 rounded"
-            rows="3"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
+          
+          
           <div className="flex justify-end space-x-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+              className="px-4 py-2 rounded bg-red-500 hover:bg-red-800"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+              className="px-4 py-2 rounded bg-amber-600 text-white hover:bg-amber-800"
             >
               Add Project
             </button>

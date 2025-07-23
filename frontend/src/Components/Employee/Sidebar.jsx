@@ -39,13 +39,13 @@ const Sidebar = ({
     ],
 
     Project_Manager: [
-      { id: 'home', label: 'Home', icon: Home, path: '/projectmanager/home', badge: null },
-      { id: 'dailyupdates', label: 'Daily Updates', icon: Rocket, path: '/projectmanager/dailyupdates', badge: null },
-      { id: 'projects', label: 'Projects', icon: Loader, path: '/projectmanager/projects', badge: null },
-      { id: 'materials', label: 'Materials', icon: BadgeCheck, path: '/projectmanager/materials', badge: null },
-      { id: 'sitevisitlogs', label: 'Site Visit Logs', icon: BookmarkCheck, path: '/projectmanager/sitevisitlogs', badge: null },
-      { id: 'todolist', label: 'Todo List', icon: ClipboardPenLine, path: '/projectmanager/todolist', badge: null },
-      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/projectmanager/chat', badge: null },
+      { id: 'home', label: 'Home', icon: Home, path: `/projectmanager/${employeeId}/home`, badge: null },
+      { id: 'dailyupdates', label: 'Daily Updates', icon: Rocket, path: `/projectmanager/${employeeId}/dailyupdates`, badge: null },
+      { id: 'projects', label: 'Projects', icon: Loader, path: `/projectmanager/${employeeId}/projects`, badge: null },
+      { id: 'materials', label: 'Materials', icon: BadgeCheck, path: `/projectmanager/${employeeId}/materials`, badge: null },
+      { id: 'sitevisitlogs', label: 'Site Visit Logs', icon: BookmarkCheck, path: `/projectmanager/${employeeId}/sitevisitlogs`, badge: null },
+      { id: 'todolist', label: 'Todo List', icon: ClipboardPenLine, path: `/projectmanager/${employeeId}/todolist`, badge: null },
+      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: `/projectmanager/${employeeId}/chat`, badge: null },
     ],
 
     FinancialOfficer: [
@@ -57,8 +57,10 @@ const Sidebar = ({
       { id: 'settings', label: 'Settings', icon: Settings, path: `/financial_officer/${employeeId}/settings`, badge: '5' }
     ],
     LegalOfficer: [
-      { id: 'home', label: 'Home', icon: Home, path: '/legalofficer/dashboard', badge: null },
-      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: '/legalofficer/chat', badge: null },
+
+      { id: 'home', label: 'Home', icon: Home, path: `/legalofficer/${employeeId}/home`, badge: null },
+      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: `/legalofficer/${employeeId}/chat`, badge: null },
+
     ],
     Site_Supervisor: [
       { id: 'home', label: 'Home', icon: Home, path: `/site_supervisor/${employeeId}`, badge: null },

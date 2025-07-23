@@ -16,16 +16,16 @@ const Home = () => {
   const navigate = useNavigate();
 
   const handleViewClick = () => {
-    navigate('/projectmanager/projectprogress');
+    navigate('/projectmanager/${employeeId}/projects');
     };
     const handlerequest = () =>{
-      navigate('/projectmanager/materials');
+      navigate('/projectmanager/${employeeId}/materials');
     };
     const handletodolist = () =>{
-      navigate('/projectmanager/todolist');
+      navigate('/projectmanager/${employeeId}/todolist');
     };
     const handleSiteUpdate = () =>{
-      navigate('/projectmanager/dailyupdates');
+      navigate('/projectmanager/${employeeId}/dailyupdates');
     };
     
   return (

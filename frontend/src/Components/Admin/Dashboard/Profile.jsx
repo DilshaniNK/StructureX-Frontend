@@ -131,23 +131,6 @@ const AdminProfile = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-lg hover:shadow-[#FAAD00]/10">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-lg`} style={{ backgroundColor: `${stat.color}20`, border: `2px solid ${stat.color}` }}>
-                  <stat.icon className="w-6 h-6" style={{ color: stat.color }} />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-white">{stat.value}</p>
-                </div>
-              </div>
-              <p className="text-gray-400 text-sm">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Personal Information */}

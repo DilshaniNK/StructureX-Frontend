@@ -1,11 +1,12 @@
-import React from 'react'
+import React from 'react';
+import ChatComponent from '../../Components/Employee/Chat';
 
-const Messages = () => {
+const Chat = () => {
   return (
-    <div>
-      Messages
-    </div>
-  )
-}
+    <>
+      <ChatComponent />
+    </>
+  );
+};
 
-export default Messages
+export default Chat;

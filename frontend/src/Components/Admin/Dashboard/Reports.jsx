@@ -114,46 +114,6 @@ const ReportsSection = () => {
         }
       ]
     },
-    hr: {
-      title: 'HR & Workforce',
-      icon: Users,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
-      reports: [
-        {
-          id: 'employee-performance',
-          title: 'Employee Performance',
-          description: 'Individual and team performance metrics and productivity analysis',
-          icon: Users,
-          lastUpdated: '2 hours ago',
-          status: 'current'
-        },
-        {
-          id: 'department-costs',
-          title: 'Department Cost Analysis',
-          description: 'Cost breakdown by department and cost center analysis',
-          icon: PieChart,
-          lastUpdated: '1 day ago',
-          status: 'current'
-        },
-        {
-          id: 'attendance-overtime',
-          title: 'Attendance & Overtime',
-          description: 'Employee attendance patterns and overtime cost analysis',
-          icon: Clock,
-          lastUpdated: '5 hours ago',
-          status: 'current'
-        },
-        {
-          id: 'safety-incidents',
-          title: 'Safety Incident Reports',
-          description: 'Safety metrics, incident tracking, and compliance monitoring',
-          icon: AlertTriangle,
-          lastUpdated: '3 hours ago',
-          status: 'critical'
-        }
-      ]
-    },
     operational: {
       title: 'Operational Reports',
       icon: Settings,
@@ -395,30 +355,6 @@ const ReportsSection = () => {
               )}
             </div>
           ))}
-        </div>
-
-        {/* Recent Activity */}
-        <div className="mt-8 bg-gray-800 border border-gray-700 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Activity size={20} />
-            Recent Report Activity
-          </h3>
-          <div className="space-y-3">
-            {[
-              { action: 'Revenue & Profit Analysis generated', time: '2 hours ago', user: 'System Admin' },
-              { action: 'Project Timeline report downloaded', time: '3 hours ago', user: 'John Doe' },
-              { action: 'Safety Incident Report updated', time: '5 hours ago', user: 'Safety Officer' },
-              { action: 'Material Cost Analysis shared', time: '1 day ago', user: 'Project Manager' }
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-b-0">
-                <div>
-                  <p className="text-white text-sm">{activity.action}</p>
-                  <p className="text-gray-400 text-xs">by {activity.user}</p>
-                </div>
-                <span className="text-gray-400 text-xs">{activity.time}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>

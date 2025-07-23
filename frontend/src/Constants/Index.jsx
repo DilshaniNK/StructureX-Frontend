@@ -3,25 +3,30 @@ import { Bell, BellDot, Book, ChartColumn, HelpingHand, Home, NewspaperIcon, Not
 import ProfileImage from "../assets/ProfileImage.jpg";
 import ProductImage from "../assets/ProductImage.jpg"
 import { Helpers } from "react-scroll";
+import { useParams } from "react-router-dom";
 
-export const navbarLinks = [
+
+
+export const navbarLinks = (adminId)=>[
+
+    
     {
         title: "Dashboard",
         links: [
             {
                 label: "Dashboard",
                 icon: Home,
-                path: "/admin",
+                path: `/admin/${adminId}`,
             },
             {
                 label: "Analytics",
                 icon: ChartColumn,
-                path: "/admin/analytics",
+                path: `/admin/${adminId}/analytics`,
             },
             {
                 label: "Reports",
                 icon: NotepadText,
-                path: "/admin/reports",
+                path: `/admin/${adminId}/reports`,
             },
         ],
     },
@@ -31,12 +36,12 @@ export const navbarLinks = [
             {
                 label: "Employees",
                 icon: Users,
-                path: "/admin/employees",
+                path: `/admin/${adminId}/employees`,
             },
             {
                 label: "Add Employee",
                 icon: UserPlus,
-                path: "/admin/add-employee",
+                path: `/admin/${adminId}/add-employee`,
             },
             // {
             //     label: "Verified customers",
@@ -51,7 +56,7 @@ export const navbarLinks = [
             {
                 label: "Add Supplier",
                 icon: UserPlus,
-                path: "/admin/add-supplier",
+                path: `/admin/${adminId}/add-supplier`,
             },
         ],
     },
@@ -61,7 +66,7 @@ export const navbarLinks = [
             {
                 label: "Project Overview",
                 icon: Package,
-                path: "/admin/projects",
+                path: `/admin/${adminId}/projects`,
             },
             // {
             //     label: "New product",
@@ -81,7 +86,7 @@ export const navbarLinks = [
             {
                 label: "Profile",
                 icon: UserCircleIcon,
-                path: "/admin/profile", 
+                path: `/admin/${adminId}/profile`, 
             },
         ],
     },
@@ -91,7 +96,7 @@ export const navbarLinks = [
             {
                 label: "Publish Projects",
                 icon: NewspaperIcon,
-                path: "/admin/publish",  
+                path: `/admin/${adminId}/publish`,  
             },
         ],
     },
@@ -101,7 +106,7 @@ export const navbarLinks = [
             {
                 label: "Contact Support",
                 icon: HelpingHand,
-                path: "/admin/contact-support",  
+                path: `/admin/${adminId}/contact-support`,  
             },
         ],
     },
@@ -111,7 +116,7 @@ export const navbarLinks = [
             {
                 label: "Notification",
                 icon: BellDot,
-                path: "/admin/notification",  
+                path: `/admin/${adminId}/notification`,  
             },
         ],
     },

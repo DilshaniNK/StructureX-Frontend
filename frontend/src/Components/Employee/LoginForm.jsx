@@ -71,25 +71,25 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
   setIsLoading(true);
 
   try {
-    // Try employee login first
-    let res = await axios.post("http://localhost:8086/api/v1/employee/login", {
+    // Employee login
+    const resEmp = await axios.post("http://localhost:8086/api/v1/employee/login", {
       email: formData.email,
       password: formData.password,
     });
 
-    const token = res.data.token;
-    if (!token) throw new Error("Token not provided from employee login");
+    const tokenEmp = resEmp.data.token;
+    if (!tokenEmp) throw new Error("Token not provided from employee login");
 
-    localStorage.setItem("token", token);
+    localStorage.setItem("token", tokenEmp);
 
-    const decoded = jwtDecode(token);
-    console.log("Decoded JWT (employee):", decoded);
+    const decodedEmp = jwtDecode(tokenEmp);
+    console.log("Decoded JWT (employee):", decodedEmp);
 
-    alert("Login Successful");
+    alert("Employee Login Successful");
 
-    // Use decoded info to route by employee role
-    const role = decoded.role;
-    const employeeId = decoded.employeeId;
+    const role = decodedEmp.role;
+    const employeeId = decodedEmp.employeeId;
+
     switch (role) {
       case "Site_Supervisor":
         navigate(`/site_supervisor/${employeeId}`);
@@ -106,44 +106,97 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
       default:
         navigate("/unauthorized");
     }
-  } catch (err) {
-    console.log("Employee login failed, trying client login...", err);
 
-    // Employee login failed, so try client login now
-    try {
-      let res = await axios.post("http://localhost:8086/api/v1/client/login", {
-        email: formData.email,
-        password: formData.password,
-      });
-
-      const token = res.data.token;
-      if (!token) throw new Error("Token not provided from client login");
-
-      localStorage.setItem("token", token);
-
-      const decoded = jwtDecode(token);
-      console.log("Decoded JWT (client):", decoded);
-
-      alert("Client Login Successful");
-
-      // Assuming client role is 'ProjectOwner' or simply treat all as client
-      // Adjust as per your JWT claims
-      const clientId = decoded.clientId || decoded.employeeId;
-      navigate(`/project_owner/${clientId}`);
-     
-    } catch (clientErr) {
-      // Both logins failed
-      console.error("Client login also failed:", clientErr);
-      alert(
-        clientErr.response?.data?.message ||
-          "Login failed. Please check your credentials."
-      );
-    }
-  } finally {
-    setIsLoading(false);
     onClose();
+    return; // stop processing after success
+  } catch (empErr) {
+    console.log("Employee login failed, trying client login...", empErr);
   }
+
+  try {
+    // Client login
+    const resCli = await axios.post("http://localhost:8086/api/v1/client/login", {
+      email: formData.email,
+      password: formData.password,
+    });
+
+    const tokenCli = resCli.data.token;
+    if (!tokenCli) throw new Error("Token not provided from client login");
+
+    localStorage.setItem("token", tokenCli);
+
+    const decodedCli = jwtDecode(tokenCli);
+    console.log("Decoded JWT (client):", decodedCli);
+
+    alert("Client Login Successful");
+
+    const clientId = decodedCli.clientId || decodedCli.employeeId;
+    navigate(`/project_owner/${clientId}`);
+
+    onClose();
+    return;
+  } catch (clientErr) {
+    console.log("Client login failed, trying supplier login...", clientErr);
+  }
+
+  try {
+    // Supplier login
+    const resSup = await axios.post("http://localhost:8086/api/v1/supplier/login", {
+      email: formData.email,
+      password: formData.password,
+    });
+
+    const tokenSup = resSup.data.token;
+    if (!tokenSup) throw new Error("Token not provided from supplier login");
+
+    localStorage.setItem("token", tokenSup);
+
+    const decodedSup = jwtDecode(tokenSup);
+    console.log("Decoded JWT (supplier):", decodedSup);
+
+    alert("Supplier Login Successful");
+
+    const supplierId = decodedSup.supplier_id || decodedSup.employeeId;
+    navigate(`/supplier/${supplierId}`);
+
+    onClose();
+    return;
+  } catch (supplierErr) {
+    console.error("Supplier login failed:", supplierErr);
+  }
+
+  try {
+    // Supplier login
+    const resSup = await axios.post("http://localhost:8086/api/v1/admin/login", {
+      email: formData.email,
+      password: formData.password,
+    });
+
+    const tokenSup = resSup.data.token;
+    if (!tokenSup) throw new Error("Token not provided from admin login");
+
+    localStorage.setItem("token", tokenSup);
+
+    const decodedSup = jwtDecode(tokenSup);
+    console.log("Decoded JWT (admin):", decodedSup);
+
+    alert("Admin Login Successful");
+
+    const adminId = decodedSup.adminId || decodedSup.employeeId;
+    navigate(`/admin/${adminId}`);
+
+    onClose();
+    return;
+  } catch (adminErr) {
+    console.error("Admin login failed:", adminErr);
+  }
+
+  // If no login succeeded
+  alert("Login failed. Please check your credentials.");
+
+  setIsLoading(false);
 };
+
 
 
   const toggleAccountRequest = () => {
@@ -158,6 +211,8 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
       }, 100);
     }
   };
+
+  
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {

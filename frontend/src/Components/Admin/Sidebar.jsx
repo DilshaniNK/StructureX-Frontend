@@ -1,6 +1,6 @@
 import { forwardRef, useState } from "react";
 import PropTypes from "prop-types";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useParams } from "react-router-dom";
 import { navbarLinks } from "../../Constants/Index";
 import { cn } from '../../Utils/cn';
 import { LogOut, X } from 'lucide-react';
@@ -9,6 +9,8 @@ export const Sidebar = forwardRef(({ collapsed }, ref) => {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const navigate = useNavigate();
 
+
+    const{adminId} = useParams()
     const handleLogout = () => {
         setShowLogoutModal(false);
         navigate('/');
@@ -44,7 +46,7 @@ export const Sidebar = forwardRef(({ collapsed }, ref) => {
                          
                 {/* Enhanced navigation section */}
                 <div className="flex w-full flex-col gap-y-5 overflow-y-auto overflow-x-hidden p-4 custom-scrollbar">
-                    {navbarLinks.map((navbarLink, groupIndex) => (
+                    {navbarLinks(adminId).map((navbarLink, groupIndex) => (
                         <nav key={navbarLink.title} className="sidebar-group">
                             <h3 className={cn(
                                 "mb-3 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider", 

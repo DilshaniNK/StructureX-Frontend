@@ -35,7 +35,11 @@ const App = () => {
             <Route path="/example/*" element={<Example/>}/>           
             <Route path="/qs/*" element={<QS />} />
             <Route path="/sqs/*" element={<SQS />} />
-            <Route path="/supplier/*" element={<Supplier />} />
+            <Route path="/supplier/:supplierId/*" element={
+              <ProtectedRoute allowedRoles={['Supplier']}>
+                <Supplier />
+              </ProtectedRoute>
+            } />
             <Route path="/project_owner/:clientId/*" element={
               <ProtectedRoute allowedRoles={['Project_Owner']}>
                 <ProjectOwner />
@@ -43,7 +47,11 @@ const App = () => {
             } />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/" element={<Home />} />
-            <Route path="/admin/*" element={<Admin />} />
+            <Route path="/admin/:adminId/*" element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <Admin />
+              </ProtectedRoute>
+            } />
             <Route path="/financial_officer/:employeeId/*" element={
               <ProtectedRoute allowedRoles={['Financial_Officer']}>
                 <FinancialOfficer />

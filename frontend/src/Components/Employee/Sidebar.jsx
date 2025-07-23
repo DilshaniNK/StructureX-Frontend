@@ -33,13 +33,6 @@ const Sidebar = ({
    const { employeeId } = useParams(); //get employeeId from URL params
 
   const menuItems = {
-    Example: [
-      { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/', badge: null },
-      { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/admin/profile', badge: null },
-      { id: 'users', label: 'User Management', icon: Users, path: '/users', badge: '12' },
-      { id: 'security', label: 'Security', icon: Shield, path: '/security', badge: null },
-      { id: 'settings', label: 'Settings', icon: Settings, path: '/settings', badge: null }
-    ],
     Designer: [
       { id: 'home', label: 'Home', icon: Home, path: `/designer/${employeeId}/home`, badge: null },
       { id: 'initialize', label: 'Project Initialization', icon: Rocket, path: `/designer/${employeeId}/initialize` },

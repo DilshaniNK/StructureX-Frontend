@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../Components/Employee/Navbar';
 import Sidebar from '../../Components/Employee/Sidebar';
-import Main from '../Designer/Home';
-import ProjectInitializer from '../Designer/ProjectInitialize';
-import OngoingProjects from '../Designer/OngoingProjects';
-import Chat from '../Designer/Chat';
-import CompletedProjects from '../Designer/CompletedProjects';
+import Main from './Home'
+import ProjectInitializer from './ProjectInitialize';
+import OngoingProjects from './OngoingProjects';
+import Chat from './Chat';
+import CompletedProjects from './CompletedProjects';
 import Notification from '../../Components/Employee/Notification'
 
 export default function Home() {

@@ -171,7 +171,7 @@ const Orders = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Value</p>
               <p className="text-2xl font-bold text-green-600">
-                ${filteredOrders.reduce((sum, order) => sum + order.totalValue, 0).toLocaleString()}
+                Rs.{filteredOrders.reduce((sum, order) => sum + order.totalValue, 0).toLocaleString()}
               </p>
             </div>
             <svg className="h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,7 +244,7 @@ const Orders = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.orderDate}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${order.totalValue.toLocaleString()}
+                      Rs.{order.totalValue.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={cn(
@@ -384,7 +384,7 @@ const Orders = () => {
                     </p>
                     <p className="text-sm">
                       <span className="font-medium text-gray-700">Total Value:</span> 
-                      <span className="text-gray-600 ml-1">${selectedOrder.totalValue.toLocaleString()}</span>
+                      <span className="text-gray-600 ml-1">Rs.{selectedOrder.totalValue.toLocaleString()}</span>
                     </p>
                     <p className="text-sm">
                       <span className="font-medium text-gray-700">Status:</span> 

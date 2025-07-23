@@ -108,6 +108,21 @@ const Navbar = ({
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  const handleLogout = () => {
+  // Clear any stored user data (tokens, user info, etc.)
+  localStorage.removeItem('token');
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('userName');
+  // Add any other cleanup you need
+  
+  // Navigate to landing page
+  navigate('/');
+  
+  // Close the profile menu
+  setShowProfileMenu(false);
+};
+
+
   return (
     <>
       {/* Main Navigation */}
@@ -270,9 +285,13 @@ const Navbar = ({
                     Help & Support
                   </a>
                   <hr className="my-2 border-gray-100" />
-                  <a href="#logout" className="block px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-150 font-medium">
-                    Sign Out
-                  </a>
+                  <button 
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-150 font-medium"
+                    >
+                      Sign Out
+                    </button>
+
                 </div>
               </div>
             )}

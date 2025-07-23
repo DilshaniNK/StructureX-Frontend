@@ -25,8 +25,9 @@ const Project = () => {
 
   const categories = [
     { key: 'ongoing', label: 'Ongoing' },
-    { key: 'finished', label: 'Finished' },
-    { key: 'hold', label: 'Hold' }
+    { key: 'pending', label: 'Pending' },
+    { key: 'hold', label: 'Hold' },
+    { key: 'completed', label: 'Completed'}
   ].map(category => ({
     ...category,
     count: projects.filter(project => project.status === category.key).length

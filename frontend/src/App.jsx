@@ -32,7 +32,7 @@ const App = () => {
           <Route>
             <Route path="/projectmanager/*" element={<ProjectManager />} />
 
-            <Route path="/legal_officer/*" element={<LegalOfficer />} />
+            <Route path="/legalofficer/*" element={<LegalOfficer />} />
 
             <Route path="/qs/*" element={<QS />} />
             <Route path="/sqs/*" element={<SQS />} />

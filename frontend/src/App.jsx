@@ -37,6 +37,7 @@ const App = () => {
 
 
 
+
             <Route path="/legal_officer/*" element={<LegalOfficer />} />
 
             <Route path="/qs/*" element={<QS />} />
@@ -69,6 +70,8 @@ const App = () => {
             <Route path="/designer/*" element={<Designer />} />
             <Route path='/director/*' element={<Director />} />
             <Route path='/directorcont/*' element={<DirectorCont />} />
+
+
 
 
           </Route>

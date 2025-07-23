@@ -12,22 +12,19 @@ export default function PaymentPlanCreator() {
   const [endDate, setEndDate] = useState('');
   const [numberOfInstallments, setNumberOfInstallments] = useState(1);
   const [isSaved, setIsSaved] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Helper to parse query params
-  function useQuery() {
-    return new URLSearchParams(useLocation().search);
-  }
-
-  const query = useQuery();
+  const query = new URLSearchParams(useLocation().search);
   const projectId = query.get('id');
 
   useEffect(() => {
     if (!projectId) {
       setError('No project ID provided');
       setLoading(false);
+      setIsEditing(true); // allow new input
+      setIsSaved(false);
       return;
     }
 
@@ -44,7 +41,17 @@ export default function PaymentPlanCreator() {
           setEndDate(plan.endDate ? plan.endDate.split('T')[0] : '');
           setNumberOfInstallments(plan.numberOfInstallments || 1);
           setIsSaved(true);
-          setIsEditing(false);
+          setIsEditing(false); // disable inputs to view saved plan
+          setError(null);
+        } else {
+          // No plan found, enable editing for new
+          setInstallments([{ dueDate: '', paidDate: '', amount: '', status: 'upcoming' }]);
+          setTotalAmount('');
+          setStartDate('');
+          setEndDate('');
+          setNumberOfInstallments(1);
+          setIsSaved(false);
+          setIsEditing(true);
           setError(null);
         }
         setLoading(false);
@@ -53,6 +60,8 @@ export default function PaymentPlanCreator() {
         console.error(err);
         setError('Failed to load payment plan.');
         setLoading(false);
+        setIsSaved(false);
+        setIsEditing(true);
       });
   }, [projectId]);
 
@@ -84,7 +93,9 @@ export default function PaymentPlanCreator() {
     let y = 25;
 
     installments.forEach((item, i) => {
-      const line = `${i + 1}. Due: ${item.dueDate || 'N/A'}, Paid: ${item.paidDate || 'N/A'}, Amount: ${item.amount || '0'}, Status: ${item.status}`;
+      const amountNumber = Number(item.amount);
+      const amountDisplay = isNaN(amountNumber) ? 'N/A' : amountNumber.toFixed(2);
+      const line = `${i + 1}. Due: ${item.dueDate || 'N/A'}, Paid: ${item.paidDate || 'N/A'}, Amount: ${amountDisplay}, Status: ${item.status}`;
       doc.text(line, 10, y);
       y += 10;
     });
@@ -92,11 +103,46 @@ export default function PaymentPlanCreator() {
     doc.save('payment-plan.pdf');
   };
 
+  const validatePlan = () => {
+    if (!totalAmount || Number(totalAmount) <= 0) {
+      alert('Total amount must be a positive number.');
+      return false;
+    }
+    if (!numberOfInstallments || Number(numberOfInstallments) < 1) {
+      alert('Number of installments must be at least 1.');
+      return false;
+    }
+    if (!startDate) {
+      alert('Start date is required.');
+      return false;
+    }
+    if (!endDate) {
+      alert('End date is required.');
+      return false;
+    }
+    for (let i = 0; i < installments.length; i++) {
+      const inst = installments[i];
+      if (!inst.dueDate) {
+        alert(`Due date is required for installment #${i + 1}`);
+        return false;
+      }
+      const amountNum = Number(inst.amount);
+      if (inst.amount === '' || isNaN(amountNum) || amountNum <= 0) {
+        alert(`Amount must be a positive number for installment #${i + 1}`);
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSavePlan = () => {
+    if (!validatePlan()) return;
+
     axios
-      .post('http://localhost:8086/api/v1/financial_officer/payment_plan', {
+      .post('http://localhost:8086/api/v1/financial_officer', {
         projectId,
         totalAmount: Number(totalAmount),
+        createdDate:new Date().toISOString(),
         numberOfInstallments: Number(numberOfInstallments),
         startDate: startDate ? new Date(startDate).toISOString() : null,
         endDate: endDate ? new Date(endDate).toISOString() : null,
@@ -113,6 +159,8 @@ export default function PaymentPlanCreator() {
   };
 
   const handleUpdatePlan = () => {
+    if (!validatePlan()) return;
+
     axios
       .put('http://localhost:8086/api/v1/financial_officer/payment_plan/full', {
         projectId,
@@ -126,7 +174,6 @@ export default function PaymentPlanCreator() {
         setIsSaved(true);
         setIsEditing(false);
         alert('Plan updated successfully!');
-        // Instead of reload, you might want to refetch or update state if necessary.
       })
       .catch((err) => {
         console.error('Update error', err);
@@ -135,12 +182,18 @@ export default function PaymentPlanCreator() {
   };
 
   const handleDeletePlan = () => {
+    if (!window.confirm('Are you sure you want to delete this payment plan?')) return;
+
     axios
       .delete(`http://localhost:8086/api/v1/financial_officer/payment_plan/${projectId}`)
       .then(() => {
         setInstallments([{ dueDate: '', paidDate: '', amount: '', status: 'upcoming' }]);
+        setTotalAmount('');
+        setNumberOfInstallments(1);
+        setStartDate('');
+        setEndDate('');
         setIsSaved(false);
-        setIsEditing(false);
+        setIsEditing(true);
         alert('Plan deleted!');
       })
       .catch(() => {
@@ -160,6 +213,7 @@ export default function PaymentPlanCreator() {
           <label className="block mb-1">Total Amount</label>
           <input
             type="number"
+            min="0"
             value={totalAmount}
             onChange={(e) => setTotalAmount(e.target.value)}
             disabled={!isEditing}
@@ -170,11 +224,11 @@ export default function PaymentPlanCreator() {
           <label className="block mb-1">Number of Installments</label>
           <input
             type="number"
+            min="1"
             value={numberOfInstallments}
             onChange={(e) => setNumberOfInstallments(e.target.value)}
             disabled={!isEditing}
             className="border p-1 rounded w-full"
-            min={1}
           />
         </div>
         <div>
@@ -199,36 +253,36 @@ export default function PaymentPlanCreator() {
         </div>
       </div>
 
-      {installments.map((inst, index) => (
-        <div key={index} className="grid grid-cols-5 gap-2 mb-2 items-center">
+      {installments.map((inst, idx) => (
+        <div key={idx} className="grid grid-cols-5 gap-2 mb-2 items-center">
           <input
             type="date"
             value={inst.dueDate}
-            onChange={(e) => handleInstallmentChange(index, 'dueDate', e.target.value)}
-            className="border p-1 rounded"
+            onChange={(e) => handleInstallmentChange(idx, 'dueDate', e.target.value)}
             disabled={!isEditing}
+            className="border p-1 rounded"
           />
           <input
             type="date"
             value={inst.paidDate}
-            onChange={(e) => handleInstallmentChange(index, 'paidDate', e.target.value)}
-            className="border p-1 rounded"
+            onChange={(e) => handleInstallmentChange(idx, 'paidDate', e.target.value)}
             disabled={!isEditing}
+            className="border p-1 rounded"
           />
           <input
             type="number"
+            min="0"
             value={inst.amount}
-            onChange={(e) => handleInstallmentChange(index, 'amount', e.target.value)}
+            onChange={(e) => handleInstallmentChange(idx, 'amount', e.target.value)}
             placeholder="Amount"
-            className="border p-1 rounded"
             disabled={!isEditing}
-            min={0}
+            className="border p-1 rounded"
           />
           <select
             value={inst.status}
-            onChange={(e) => handleInstallmentChange(index, 'status', e.target.value)}
-            className="border p-1 rounded"
+            onChange={(e) => handleInstallmentChange(idx, 'status', e.target.value)}
             disabled={!isEditing}
+            className="border p-1 rounded"
           >
             <option value="upcoming">upcoming</option>
             <option value="paid">paid</option>
@@ -236,7 +290,12 @@ export default function PaymentPlanCreator() {
             <option value="cancelled">cancelled</option>
           </select>
           {isEditing && (
-            <button onClick={() => handleRemoveInstallment(index)} className="text-red-600" title="Remove installment">
+            <button
+              type="button"
+              className="text-red-600"
+              title="Remove installment"
+              onClick={() => handleRemoveInstallment(idx)}
+            >
               <RemoveCircleIcon />
             </button>
           )}
@@ -244,35 +303,39 @@ export default function PaymentPlanCreator() {
       ))}
 
       {isEditing && (
-        <button onClick={handleAddInstallment} className="bg-green-500 text-white px-4 py-2 rounded mb-4">
+        <button
+          type="button"
+          onClick={handleAddInstallment}
+          className="bg-green-500 text-white px-4 py-2 rounded mb-4"
+        >
           + Add Installment
         </button>
       )}
 
       <div className="flex flex-wrap gap-2 mt-4">
         {!isSaved && !isEditing && (
-          <button onClick={handleSavePlan} className="bg-blue-600 text-white px-4 py-2 rounded">
+          <button onClick={handleSavePlan} className="bg-blue-600 text-white px-4 py-2 rounded" type="button">
             Save
           </button>
         )}
 
         {isSaved && !isEditing && (
-          <button onClick={() => setIsEditing(true)} className="bg-yellow-500 text-white px-4 py-2 rounded">
+          <button onClick={() => setIsEditing(true)} className="bg-yellow-500 text-white px-4 py-2 rounded" type="button">
             Edit
           </button>
         )}
 
         {isEditing && (
-          <button onClick={handleUpdatePlan} className="bg-green-600 text-white px-4 py-2 rounded">
-            Update
+          <button onClick={isSaved ? handleUpdatePlan : handleSavePlan} className="bg-green-600 text-white px-4 py-2 rounded" type="button">
+            {isSaved ? 'Update' : 'Save'}
           </button>
         )}
 
-        <button onClick={handleDeletePlan} className="bg-red-500 text-white px-4 py-2 rounded">
+        <button onClick={handleDeletePlan} className="bg-red-500 text-white px-4 py-2 rounded" type="button">
           Delete
         </button>
 
-        <button onClick={handleDownload} className="bg-gray-700 text-white px-4 py-2 rounded">
+        <button onClick={handleDownload} className="bg-gray-700 text-white px-4 py-2 rounded" type="button">
           Download Plan PDF
         </button>
       </div>

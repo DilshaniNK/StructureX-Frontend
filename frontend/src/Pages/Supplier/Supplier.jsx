@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import Navbar from '../../Components/Employee/Navbar'
 import Sidebar from '../../Components/Employee/Sidebar' 
 
@@ -19,6 +19,8 @@ export default function Supplier() {
   const userName = 'Shan'; // Get this from your user context/state
   const location = useLocation();
   const navigate = useNavigate();
+
+  const {supplierId} = useParams();
 
   const handleSidebarNavigate = (id, path) => {
     navigate(path); // This will navigate when a Sidebar item is clicked

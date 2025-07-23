@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Building, Link,Lock } from 'lucide-react';
 import NewProjectForm from './NewProjectForm';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 const ClientDetailsDisplay = () => {
   const [clientsWithPlan, setClientsWithPlan] = useState([]);
@@ -10,6 +11,8 @@ const ClientDetailsDisplay = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('withPlan'); // New state for active tab
+  const navigate = useNavigate()
+  const EMPLOYEE_ID = useParams();
 
   useEffect(() => {
     fetchClients();
@@ -39,9 +42,23 @@ const ClientDetailsDisplay = () => {
         }),
       });
       if(response.ok){
+        const result = await response.json(); // contains full project details
+        console.log("Created project:", result); // ✅ result.project_id etc.
+  
         setShowProjectForm(false);
         setSelectedClient(null);
-        alert("success")
+        const confirmAssignment = window.confirm(
+          'Project created successfully ! Would you like to assign team members to this project now?'
+        );
+
+        if(confirmAssignment){
+          navigate(`/director/${EMPLOYEE_ID}/teammanagment`,{
+            state:{
+              highlightedProjectId: result.project_id,
+              fromNewProject: true
+            }
+          });
+        }
 
       }else{
         alert("error")

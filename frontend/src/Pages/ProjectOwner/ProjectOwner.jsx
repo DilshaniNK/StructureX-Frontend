@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation,useParams } from 'react-router-dom';
 import Navbar from '../../Components/ProjectOwner/Navbar';
 
 import Dashboard from './Dashboard';
@@ -14,24 +14,26 @@ export default function ProjectOwner() {
   
   // State management
   const [user, setUser] = useState({
-    role: 'ProjectOwner',
+    role: 'Project_Owner',
     name: 'Thagshan'
   });
+ 
+
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  
+  const { clientId } = useParams();
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
   
   const getActiveTab = () => {
     const path = location.pathname;
-    if (path.includes('/project_owner/dashboard')) return 'dashboard';
-    if (path.includes('/project_owner/project')) return 'project';
-    if (path.includes('/project_owner/materials')) return 'materials';
-    if (path.includes('/project_owner/messages')) return 'communications';
-    if (path.includes('/project_owner/payments')) return 'payments';
+    if (path.includes('/dashboard')) return 'dashboard';
+    if (path.includes('/project')) return 'project';
+    if (path.includes('/materials')) return 'materials';
+    if (path.includes('/messages')) return 'communications';
+    if (path.includes('/payments')) return 'payments';
     return 'dashboard'; // default
   };
   

@@ -160,7 +160,7 @@ export default function Labors() {
       .map(([labor_type, count]) => ({
         project_id: selectedSite,
         date: date,
-        hiring_type: "Direct worker",
+        hiring_type: "direct_workers",
         labor_type,
         count: parseInt(count),
         company: ""
@@ -171,7 +171,7 @@ export default function Labors() {
       .map(([labor_type, count]) => ({
         project_id: selectedSite,
         date: date,
-        hiring_type: "3rd party worker",
+        hiring_type: "third_party",
         labor_type,
         count: parseInt(count),
         company,
@@ -203,7 +203,7 @@ export default function Labors() {
     setThirdPartyAttendance({});
 
     // Set attendance based on record type
-    if (record.hiring_type === "Direct worker") {
+    if (record.hiring_type === "direct_workers") {
       setAttendance({ [record.labor_type]: record.count });
       setActiveTab('direct');
     } else {
@@ -227,7 +227,7 @@ export default function Labors() {
         id: editingId,
         project_id: selectedSite,
         date: date,
-        hiring_type: "Direct worker",
+        hiring_type: "direct_workers",
         labor_type,
         count: parseInt(count),
         company: ""
@@ -239,7 +239,7 @@ export default function Labors() {
         id: editingId,
         project_id: selectedSite,
         date: date,
-        hiring_type: "3rd party worker",
+        hiring_type: "third_party",
         labor_type,
         count: parseInt(count),
         company,
@@ -293,11 +293,11 @@ export default function Labors() {
   });
 
   const totalDirectWorkers = records
-    .filter(record => record.hiring_type === "Direct worker")
+    .filter(record => record.hiring_type === "direct_workers")
     .reduce((sum, record) => sum + (record.count || 0), 0);
 
   const totalThirdPartyWorkers = records
-    .filter(record => record.hiring_type === "3rd party worker")
+    .filter(record => record.hiring_type === "third_party")
     .reduce((sum, record) => sum + (record.count || 0), 0);
 
   const totalWorkers = totalDirectWorkers + totalThirdPartyWorkers;

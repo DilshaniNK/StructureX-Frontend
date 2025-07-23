@@ -18,13 +18,13 @@ const DashboardPage = () => {
                         <div className="metric-icon products">
                             <Package size={26} />
                         </div>
-                        <p className="card-title">Total Products</p>
+                        <p className="card-title">Active Projects</p>
                     </div>
                     <div className="card-body">
-                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">25,154</p>
+                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">42</p>
                         <span className="trend-badge positive">
                             <TrendingUp size={18} />
-                            25%
+                            8%
                         </span>
                     </div>
                 </div>
@@ -34,26 +34,10 @@ const DashboardPage = () => {
                         <div className="metric-icon orders">
                             <DollarSign size={26} />
                         </div>
-                        <p className="card-title">Total Paid Orders</p>
+                        <p className="card-title">Total Revenue</p>
                     </div>
                     <div className="card-body">
-                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">$16,000</p>
-                        <span className="trend-badge positive">
-                            <TrendingUp size={18} />
-                            12%
-                        </span>
-                    </div>
-                </div>
-                
-                <div className="metric-card hover-bounce">
-                    <div className="card-header">
-                        <div className="metric-icon customers">
-                            <Users size={26} />
-                        </div>
-                        <p className="card-title">Total Customers</p>
-                    </div>
-                    <div className="card-body">
-                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">15,400k</p>
+                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">$2.4M</p>
                         <span className="trend-badge positive">
                             <TrendingUp size={18} />
                             15%
@@ -63,16 +47,32 @@ const DashboardPage = () => {
                 
                 <div className="metric-card hover-bounce">
                     <div className="card-header">
+                        <div className="metric-icon customers">
+                            <Users size={26} />
+                        </div>
+                        <p className="card-title">Active Workers</p>
+                    </div>
+                    <div className="card-body">
+                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">324</p>
+                        <span className="trend-badge positive">
+                            <TrendingUp size={18} />
+                            6%
+                        </span>
+                    </div>
+                </div>
+                
+                <div className="metric-card hover-bounce">
+                    <div className="card-header">
                         <div className="metric-icon sales">
                             <CreditCard size={26} />
                         </div>
-                        <p className="card-title">Sales</p>
+                        <p className="card-title">Completed Projects</p>
                     </div>
                     <div className="card-body">
-                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">12,340</p>
+                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">127</p>
                         <span className="trend-badge positive">
                             <TrendingUp size={18} />
-                            19%
+                            12%
                         </span>
                     </div>
                 </div>
@@ -82,7 +82,7 @@ const DashboardPage = () => {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-7">
                 <div className="card col-span-1 md:col-span-2 lg:col-span-4 shadow-gold hover-bounce">
                     <div className="card-header">
-                        <p className="card-title text-lg gradient-text">Overview</p>
+                        <p className="card-title text-lg gradient-text">Project Revenue Overview</p>
                     </div>
                     <div className="card-body p-0">
                         <ResponsiveContainer width="100%" height={300}>
@@ -98,7 +98,7 @@ const DashboardPage = () => {
                                 </defs>
                                 <Tooltip
                                     cursor={false}
-                                    formatter={(value) => [`$${value}`, 'Revenue']}
+                                    formatter={(value) => [`$${value}K`, 'Revenue']}
                                     labelFormatter={(label) => `Month: ${label}`}
                                 />
                                 <XAxis
@@ -112,7 +112,7 @@ const DashboardPage = () => {
                                     dataKey="total"
                                     strokeWidth={0}
                                     stroke={theme === "light" ? "#64748b" : "#cbd5e1"}
-                                    tickFormatter={(value) => `$${value}`}
+                                    tickFormatter={(value) => `$${value}K`}
                                     tickMargin={8}
                                     fontSize={12}
                                 />
@@ -131,7 +131,7 @@ const DashboardPage = () => {
                 
                 <div className="card col-span-1 md:col-span-2 lg:col-span-3 shadow-gold hover-bounce">
                     <div className="card-header">
-                        <p className="card-title text-lg gradient-text">Recent Sales</p>
+                        <p className="card-title text-lg gradient-text">Recent Project Updates</p>
                     </div>
                     <div className="card-body h-[300px] overflow-auto p-0 custom-scrollbar">
                         <div className="space-y-3 p-4">
@@ -156,7 +156,7 @@ const DashboardPage = () => {
                                             <p className="text-sm text-slate-600 dark:text-slate-300">{sale.email}</p>
                                         </div>
                                     </div>
-                                    <p className="price text-slate-900 dark:text-white">${sale.total}</p>
+                                    <p className="price text-slate-900 dark:text-white">${sale.total}K</p>
                                 </div>
                             ))}
                         </div>
@@ -164,13 +164,13 @@ const DashboardPage = () => {
                 </div>
             </div>
             
-            {/* Enhanced Products Table */}
+            {/* Enhanced Projects Table */}
             <div className="card shadow-gold-lg hover-bounce">
                 <div className="card-header">
-                    <p className="card-title text-lg gradient-text">Top Products</p>
+                    <p className="card-title text-lg gradient-text">Current Projects</p>
                     <div className="ml-auto">
                         <button className="btn-primary">
-                            View All Products
+                            View All Projects
                         </button>
                     </div>
                 </div>
@@ -180,10 +180,10 @@ const DashboardPage = () => {
                             <thead className="table-header">
                                 <tr className="table-row">
                                     <th className="table-head">#</th>
-                                    <th className="table-head">Product</th>
-                                    <th className="table-head">Price</th>
+                                    <th className="table-head">Project</th>
+                                    <th className="table-head">Budget</th>
                                     <th className="table-head">Status</th>
-                                    <th className="table-head">Rating</th>
+                                    <th className="table-head">Progress</th>
                                     <th className="table-head">Actions</th>
                                 </tr>
                             </thead>
@@ -209,17 +209,17 @@ const DashboardPage = () => {
                                             </div>
                                         </td>
                                         <td className="table-cell">
-                                            <span className="gradient-text text-lg font-bold">${product.price}</span>
+                                            <span className="gradient-text text-lg font-bold">${product.price}M</span>
                                         </td>
                                         <td className="table-cell">
                                             <span className={`status-badge ${product.status === 'In Stock' ? 'in-stock' : 'out-of-stock'}`}>
-                                                {product.status}
+                                                {product.status === 'In Stock' ? 'On Track' : 'Delayed'}
                                             </span>
                                         </td>
                                         <td className="table-cell">
                                             <div className="star-rating">
                                                 <Star size={18} className="star-filled" />
-                                                <span className="ml-1 font-semibold text-slate-900 dark:text-white">{product.rating}</span>
+                                                <span className="ml-1 font-semibold text-slate-900 dark:text-white">{product.rating * 20}%</span>
                                             </div>
                                         </td>
                                         <td className="table-cell">

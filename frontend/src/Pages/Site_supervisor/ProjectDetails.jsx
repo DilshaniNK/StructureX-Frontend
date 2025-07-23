@@ -1,58 +1,57 @@
 import React from 'react';
 import ProjDetails from '../../Components/Employee/ProjDetails';
+import { useState, useEffect } from 'react';
+import { useLocation,useParams } from 'react-router-dom';  // or your routing lib
+import axios from 'axios';
 
 const ProjectDetails = () => {
-  const sampleProject = {
-    title: 'New Construction Site A',
-    location: 'Colombo, Sri Lanka',
-    startDate: '2025-01-15',
-    endDate: '2025-12-30',
-    status: 'Ongoing',
-    description: 'Construction of a 10-story commercial building.',
-    image: '', // fallback to default image
-    ownerName: 'Mr. Kamal Perera',
-    estimatedValue: 'Rs 120,000,000',
-    remainingTime: '6 months',
+  const [project, setProject] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    owner: {
-      fullName: 'Kamal Perera',
-      nic: '762345789V',
-      address: 'No 12, Main Street, Colombo',
-      phone: '0771234567',
-      email: 'kamal@example.com'
-    },
+  // Helper function to get query params
+  function useQuery() {
+    return new URLSearchParams(useLocation().search);
+  }
 
-    financials: {
-      baseAmount: 'Rs 100,000,000',
-      estimated: 'Rs 120,000,000',
-      spent: 'Rs 70,000,000',
-      remaining: 'Rs 50,000,000'
-    },
-    labors: [
-    {
-      date: '2025-06-10',
-      roles: {
-        mason: 40,
-        plumbers: 29,
-        helpers: 50
-      }
-    },
-    {
-      date: '2025-06-11',
-      roles: {
-        mason: 38,
-        plumbers: 30,
-        helpers: 47
-      }
+  const query = useQuery();
+  const projectId = query.get('id'); // Get project ID from URL query params
+  const { employeeId } = useParams(); // Get employeeId from URL params 
+console.log("projectId from query:", projectId);
+
+  
+
+  useEffect(() => {
+    if (!projectId) {
+      setError('No project ID provided in URL');
+      setLoading(false);
+      return;
     }
-  ]
-  };
+
+    axios
+      .get(`http://localhost:8086/api/v1/site_supervisor/projects/${projectId}`)
+      .then(response => {
+        setProject(response.data);
+        setLoading(false);
+        console.log("Project data fetched:", response.data);
+      })
+      .catch(err => {
+        console.error("Error fetching project:", err);
+        setError('Failed to fetch project');
+        setLoading(false);
+      });
+  }, [projectId]);
+
+  if (loading) return <div>Loading project details...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!project) return <div>No project found.</div>;
 
   return (
     <div>
-      <ProjDetails project={sampleProject} userRole="siteSupervisor" />
+      <ProjDetails project={project} userRole="siteSupervisor" />
     </div>
   );
 };
+
 
 export default ProjectDetails;

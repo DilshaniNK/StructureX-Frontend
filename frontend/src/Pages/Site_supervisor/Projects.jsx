@@ -242,12 +242,10 @@ const Projects = () => {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-500">Updated {project.lastUpdate}</p>
                   <div className="flex space-x-2">
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                    <button onClick={() => window.location.href = `/site_supervisor/${employeeId}/project_details?id=${project.projectId}`} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                       <Eye className="h-4 w-4" />
                     </button>
-                    <button className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                      <Edit className="h-4 w-4" />
-                    </button>
+                    
                   </div>
                 </div>
               </div>

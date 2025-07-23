@@ -91,6 +91,12 @@ const LoginForm = ({ onClose, onNavigateToContact, onLogin }) => {
         case "Designer":
           navigate(`/designer/${employeeId}`);
           break;
+          case "Project_Manager":
+          navigate(`/projectmanager/${employeeId}`);
+          break;
+        case "Legal_Officer":
+          navigate(`/legalofficer/${employeeId}`);
+          break;
         default:
           navigate("/unauthorized");
       }

@@ -16,7 +16,6 @@ export default function ProjectDetails({ projectId, onBack, user }) {
   const [processes, setProcesses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-
   const fetchDocuments = async () => {
     try {
       const documentsResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/legal_documents/${projectId}`);
@@ -26,59 +25,12 @@ export default function ProjectDetails({ projectId, onBack, user }) {
     }
   };
 
-
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
         setLoading(true);
 
-
         await fetchDocuments();
-
-        // const projectResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/projects/${projectId}`);
-        // setProject(projectResponse.data);
-
-        // For now, create a mock project based on the projectId
-        setProject({
-          id: projectId,
-          name: `Project ${projectId}`,
-          deadline: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 90 days from now
-        });
-
-        // Fetch documents for this project
-        const documentsResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/document`);
-        const projectDocuments = documentsResponse.data.filter(doc => doc.project_id === projectId);
-        setDocuments(projectDocuments);
-
-        // const processesResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/processes/${projectId}`);
-        // setProcesses(processesResponse.data);
-
-        // For now, use empty array for processes
-        setProcesses([]);
-
-      } catch (error) {
-        console.error('Error fetching project data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (projectId) {
-      fetchProjectData();
-    }
-  }, [projectId, user]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading project details...</p>
-        </div>
-      </div>
-    );
-  }
-
 
         // const processesResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/processes/${projectId}`);
         // setProcesses(processesResponse.data);
@@ -161,10 +113,7 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                   <ArrowLeft className="h-5 w-5" />
                 </button>
                 <div>
-
                   <h1 className="text-2xl font-bold text-gray-900">Project {projectId}</h1>
-
-                  <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
                 </div>
               </div>
 
@@ -237,7 +186,6 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                 </button>
               </div>
             ) : (
-
               <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -272,35 +220,6 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                   </tbody>
                 </table>
               </div>
-
-              documents.map(document => (
-                <div key={document.id} className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h2 className="text-sm text-gray-500 mt-1">Project ID: {document.project_id}</h2>
-                      <h3 className="text-lg font-medium text-gray-900">{document.description}</h3>
-                      <div className="flex items-center space-x-6 mt-4 text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          <span>{new Date(document.upload_date).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="ml-4 flex space-x-2">
-                      <a
-                        href={document.document_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <Download className="h-5 w-5" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))
-
             )}
           </div>
         )}

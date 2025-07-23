@@ -12,7 +12,7 @@ import Notification from '../../Components/Employee/Notification'
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const userRole = 'Designer';
-  const userName = 'John Doe';
+  const userName = 'Shashini';
   const navigate = useNavigate();
   const location = useLocation();
 

@@ -116,6 +116,7 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
           break;
         default:
           navigate("/unauthorized");
+          //comment
       }
 
       onClose(); // Optional: close modal

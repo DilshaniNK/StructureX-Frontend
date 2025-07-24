@@ -17,19 +17,20 @@ import {
   MoreVertical
 } from 'lucide-react';
 
+
 function BOQ() {
   const [activeTab, setActiveTab] = useState('create'); // 'create' or 'edit'
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  
   // Sample data for existing BOQs
   const existingBOQs = [
     {
       id: 'BOQ001',
       projectName: 'Luxury Villa Complex',
       projectId: 'PROJ001',
+      clientName: 'ABC Holdings',
       status: 'Draft',
       totalAmount: 2500000,
       lastModified: '2024-01-15',
@@ -40,6 +41,7 @@ function BOQ() {
       id: 'BOQ002',
       projectName: 'Commercial Tower',
       projectId: 'PROJ002',
+      clientName: 'XYZ Developers',
       status: 'Approved',
       totalAmount: 8750000,
       lastModified: '2024-01-10',
@@ -50,6 +52,7 @@ function BOQ() {
       id: 'BOQ003',
       projectName: 'Residential Apartments',
       projectId: 'PROJ003',
+      clientName: 'HomeLife',
       status: 'Under Review',
       totalAmount: 4200000,
       lastModified: '2024-01-08',
@@ -58,10 +61,33 @@ function BOQ() {
     }
   ];
 
+  // Sample project list for dropdown
+  const projectList = [
+    { id: 'PROJ001', name: 'Luxury Villa Complex', client: 'ABC Holdings' },
+    { id: 'PROJ002', name: 'Commercial Tower', client: 'XYZ Developers' },
+    { id: 'PROJ003', name: 'Residential Apartments', client: 'HomeLife' },
+  ];
+
+  // State for create form fields
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [boqDate, setBoqDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+
   // Sample BOQ items for form
   const [boqItems, setBOQItems] = useState([
     { id: 1, description: '', unit: '', quantity: '', rate: '', amount: 0 }
   ]);
+
+  // Update project selection
+  const handleProjectChange = (e) => {
+    const projId = e.target.value;
+    setSelectedProjectId(projId);
+    const proj = projectList.find(p => p.id === projId);
+    setClientName(proj ? proj.client : '');
+  };
 
   const addBOQItem = () => {
     const newItem = {
@@ -82,9 +108,21 @@ function BOQ() {
   const updateBOQItem = (id, field, value) => {
     setBOQItems(boqItems.map(item => {
       if (item.id === id) {
-        const updatedItem = { ...item, [field]: value };
+        let newValue = value;
+        // Prevent negative values for quantity and rate
+        if ((field === 'quantity' || field === 'rate') && parseFloat(value) < 0) {
+          newValue = 0;
+        }
+        const updatedItem = { ...item, [field]: newValue };
         if (field === 'quantity' || field === 'rate') {
-          updatedItem.amount = (parseFloat(updatedItem.quantity) || 0) * (parseFloat(updatedItem.rate) || 0);
+          // Ensure both quantity and rate are not negative
+          const quantity = parseFloat(updatedItem.quantity) < 0 ? 0 : parseFloat(updatedItem.quantity) || 0;
+          const rate = parseFloat(updatedItem.rate) < 0 ? 0 : parseFloat(updatedItem.rate) || 0;
+          updatedItem.amount = quantity * rate;
+        }
+        // Prevent negative amount
+        if (updatedItem.amount < 0) {
+          updatedItem.amount = 0;
         }
         return updatedItem;
       }
@@ -105,31 +143,22 @@ function BOQ() {
     }
   };
 
-  const filteredBOQs = existingBOQs.filter(boq =>
+  const [boqs, setBOQs] = useState(existingBOQs);
+  const filteredBOQs = boqs.filter(boq =>
     boq.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     boq.projectId.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Handler to update status in the table
+  const handleStatusChange = (id, newStatus) => {
+    setBOQs(prev => prev.map(boq => boq.id === id ? { ...boq, status: newStatus } : boq));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Bill of Quantities (BOQ)</h1>
-              <p className="text-gray-600 mt-1">Create and manage project BOQs</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Create New BOQ</span>
-              </button>
-            </div>
-          </div>
 
           {/* Tab Navigation */}
           <div className="mt-6 border-b border-gray-200">
@@ -164,57 +193,29 @@ function BOQ() {
       {/* Main Content */}
       <div className="px-6 py-6">
         {activeTab === 'create' && (
-          <div className="space-y-6">
-            {/* Create New BOQ Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="flex justify-center items-center min-h-[60vh]">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-xl mx-auto">
               <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center justify-center">
                   <Plus className="w-5 h-5 mr-2 text-[#FAAD00]" />
                   Create New BOQ for Project
                 </h2>
-                <p className="text-gray-600 mt-1">Start a new Bill of Quantities for a construction project</p>
+                <p className="text-gray-600 mt-1 text-center">Start a new Bill of Quantities for a construction project</p>
               </div>
-              
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Project Selection Card */}
-                  <div className="bg-gradient-to-br from-[#FAAD00]/10 to-[#FAAD00]/5 border-2 border-[#FAAD00]/20 rounded-xl p-6 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center justify-center w-12 h-12 bg-[#FAAD00] rounded-lg mb-4">
-                      <Building className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Project</h3>
-                    <p className="text-gray-600 text-sm mb-4">Choose an existing project to create BOQ</p>
-                    <button 
-                      onClick={() => setShowCreateForm(true)}
-                      className="w-full bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200"
-                    >
-                      Select Project
-                    </button>
+              <div className="p-6 flex justify-center">
+                {/* Project Selection Card */}
+                <div className="bg-gradient-to-br from-[#FAAD00]/10 to-[#FAAD00]/5 border-2 border-[#FAAD00]/20 rounded-xl p-6 hover:shadow-md transition-all duration-200 w-full max-w-sm">
+                  <div className="flex items-center justify-center w-12 h-12 bg-[#FAAD00] rounded-lg mb-4">
+                    <Building className="w-6 h-6 text-white" />
                   </div>
-
-                  {/* Quick Actions */}
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-25 border-2 border-blue-100 rounded-xl p-6 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center justify-center w-12 h-12 bg-blue-500 rounded-lg mb-4">
-                      <FileText className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Templates</h3>
-                    <p className="text-gray-600 text-sm mb-4">Use pre-built BOQ templates</p>
-                    <button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
-                      Browse Templates
-                    </button>
-                  </div>
-
-                  {/* Import BOQ */}
-                  <div className="bg-gradient-to-br from-green-50 to-green-25 border-2 border-green-100 rounded-xl p-6 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center justify-center w-12 h-12 bg-green-500 rounded-lg mb-4">
-                      <Download className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Import BOQ</h3>
-                    <p className="text-gray-600 text-sm mb-4">Import BOQ from Excel/CSV file</p>
-                    <button className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
-                      Import File
-                    </button>
-                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">Select Project</h3>
+                  <p className="text-gray-600 text-sm mb-4 text-center">Choose an existing project to create BOQ</p>
+                  <button 
+                    onClick={() => setShowCreateForm(true)}
+                    className="w-full bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200"
+                  >
+                    Select Project
+                  </button>
                 </div>
               </div>
             </div>
@@ -294,15 +295,20 @@ function BOQ() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(boq.status)}`}>
-                              {boq.status}
-                            </span>
+                            <select
+                              value={boq.status}
+                              onChange={e => handleStatusChange(boq.id, e.target.value)}
+                              className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(boq.status)} bg-white`}
+                            >
+                              <option value="Draft">Draft</option>
+                              <option value="Approved">Approved</option>
+                              <option value="Under Review">Under Review</option>
+                            </select>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <DollarSign className="w-4 h-4 text-green-500 mr-1" />
                               <span className="text-sm font-medium text-gray-900">
-                                {boq.totalAmount.toLocaleString()}
+                                LKR {boq.totalAmount.toLocaleString()}
                               </span>
                             </div>
                           </td>
@@ -325,6 +331,10 @@ function BOQ() {
                                 <Edit3 className="w-4 h-4" />
                               </button>
                               <button 
+                                onClick={() => {
+                                  setSelectedProject(boq);
+                                  setShowEditForm(true);
+                                }}
                                 className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors duration-200"
                                 title="View BOQ"
                               >
@@ -384,50 +394,51 @@ function BOQ() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-                  <input
-                    type="text"
+                  <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                    placeholder="Enter project name"
-                  />
+                    value={selectedProjectId}
+                    onChange={handleProjectChange}
+                  >
+                    <option value="">Select a project</option>
+                    {projectList.map((proj) => (
+                      <option key={proj.id} value={proj.id}>{proj.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Project ID</label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                    placeholder="Enter project ID"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent bg-gray-100"
+                    value={selectedProjectId ? selectedProjectId : ''}
+                    placeholder="Project ID"
+                    readOnly
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Client Name</label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                    placeholder="Enter client name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent bg-gray-100"
+                    value={clientName}
+                    placeholder="Client Name"
+                    readOnly
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">BOQ Date</label>
                   <input
                     type="date"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent bg-gray-100"
+                    value={boqDate}
+                    readOnly
                   />
                 </div>
               </div>
 
               {/* BOQ Items Table */}
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">BOQ Items</h3>
-                  <button
-                    onClick={addBOQItem}
-                    className="bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors duration-200"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Item</span>
-                  </button>
-                </div>
-
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">BOQ Items</h3>
                 <div className="overflow-x-auto border border-gray-200 rounded-lg">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -482,6 +493,7 @@ function BOQ() {
                           <td className="px-4 py-3">
                             <input
                               type="number"
+                              min="0"
                               value={item.quantity}
                               onChange={(e) => updateBOQItem(item.id, 'quantity', e.target.value)}
                               className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#FAAD00] focus:border-transparent"
@@ -491,6 +503,7 @@ function BOQ() {
                           <td className="px-4 py-3">
                             <input
                               type="number"
+                              min="0"
                               value={item.rate}
                               onChange={(e) => updateBOQItem(item.id, 'rate', e.target.value)}
                               className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#FAAD00] focus:border-transparent"
@@ -499,7 +512,7 @@ function BOQ() {
                           </td>
                           <td className="px-4 py-3">
                             <span className="font-medium text-gray-900">
-                              ${item.amount.toFixed(2)}
+                              LKR {item.amount.toFixed(2)}
                             </span>
                           </td>
                           <td className="px-4 py-3">
@@ -514,18 +527,22 @@ function BOQ() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-gray-50">
-                      <tr>
-                        <td colSpan="4" className="px-4 py-3 text-right font-semibold text-gray-900">
-                          Total Amount:
-                        </td>
-                        <td className="px-4 py-3 font-bold text-lg text-[#FAAD00]">
-                          ${getTotalAmount().toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3"></td>
-                      </tr>
-                    </tfoot>
                   </table>
+                </div>
+                {/* Add Item button below table, above total */}
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={addBOQItem}
+                    className="bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors duration-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Item</span>
+                  </button>
+                </div>
+                {/* Total Amount */}
+                <div className="flex justify-end mt-2">
+                  <span className="font-semibold text-gray-900 mr-2">Total Amount:</span>
+                  <span className="font-bold text-lg text-[#FAAD00]">LKR {getTotalAmount().toFixed(2)}</span>
                 </div>
               </div>
 
@@ -570,42 +587,53 @@ function BOQ() {
             </div>
 
             <div className="p-6">
-              {/* Project Info (Read-only) */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Project Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">Project Name:</span>
-                    <p className="text-sm text-gray-900">{selectedProject.projectName}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">Project ID:</span>
-                    <p className="text-sm text-gray-900">{selectedProject.projectId}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">Status:</span>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(selectedProject.status)}`}>
-                      {selectedProject.status}
-                    </span>
-                  </div>
+              {/* Project Info Form (Read-only) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                    value={selectedProject.projectName}
+                    placeholder="Project Name"
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project ID</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                    value={selectedProject.projectId}
+                    placeholder="Project ID"
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Client Name</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                    value={selectedProject.clientName}
+                    placeholder="Client Name"
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">BOQ Date</label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                    value={boqDate}
+                    readOnly
+                  />
                 </div>
               </div>
 
               {/* BOQ Items Table (Similar to create form) */}
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">BOQ Items</h3>
-                  <button
-                    onClick={addBOQItem}
-                    className="bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors duration-200"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Item</span>
-                  </button>
-                </div>
-
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">BOQ Items</h3>
                 <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                  {/* Same table structure as create form */}
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
@@ -676,7 +704,7 @@ function BOQ() {
                           </td>
                           <td className="px-4 py-3">
                             <span className="font-medium text-gray-900">
-                              ${item.amount.toFixed(2)}
+                              LKR {item.amount.toFixed(2)}
                             </span>
                           </td>
                           <td className="px-4 py-3">
@@ -691,18 +719,22 @@ function BOQ() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-gray-50">
-                      <tr>
-                        <td colSpan="4" className="px-4 py-3 text-right font-semibold text-gray-900">
-                          Total Amount:
-                        </td>
-                        <td className="px-4 py-3 font-bold text-lg text-[#FAAD00]">
-                          ${getTotalAmount().toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3"></td>
-                      </tr>
-                    </tfoot>
                   </table>
+                </div>
+                {/* Add Item button below table, above total */}
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={addBOQItem}
+                    className="bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors duration-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Item</span>
+                  </button>
+                </div>
+                {/* Total Amount */}
+                <div className="flex justify-end mt-2">
+                  <span className="font-semibold text-gray-900 mr-2">Total Amount:</span>
+                  <span className="font-bold text-lg text-[#FAAD00]">LKR {getTotalAmount().toFixed(2)}</span>
                 </div>
               </div>
 

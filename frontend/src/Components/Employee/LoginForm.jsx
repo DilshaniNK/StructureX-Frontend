@@ -103,9 +103,23 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
       case "admin":
         navigate("/admin/dashboard");
         break;
-      default:
-        navigate("/unauthorized");
-    }
+      case "Project_Manager":
+          navigate(`/projectmanager/${employeeId}`);
+          break;
+        case "Legal_Officer":
+          navigate(`/legalofficer/${employeeId}`);
+          break;
+        case "Director":
+          navigate(`director/${employeeId}`);
+          break;
+        default:
+          navigate("/unauthorized");
+          //comment
+      }
+
+      onClose(); // Optional: close modal
+
+   
 
     onClose();
     return; // stop processing after success

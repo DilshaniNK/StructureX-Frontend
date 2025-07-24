@@ -248,7 +248,7 @@ function Dashboard() {
             Assign QS Officers to Projects
           </h3>
           
-          {/* Pending Projects Table */}
+          {/* Pending Projects Table (Priority column removed) */}
           <div className="mb-6">
             <h4 className="text-md font-medium mb-3 text-gray-700">Projects Awaiting QS Assignment</h4>
             <div className="overflow-x-auto">
@@ -258,7 +258,6 @@ function Dashboard() {
                     <th className="py-2 text-left">Project Name</th>
                     <th className="py-2 text-left">Type</th>
                     <th className="py-2 text-left">Client</th>
-                    <th className="py-2 text-left">Priority</th>
                     <th className="py-2 text-left">Action</th>
                   </tr>
                 </thead>
@@ -268,15 +267,6 @@ function Dashboard() {
                       <td className="py-3 font-medium">{project.name}</td>
                       <td className="py-3">{project.type}</td>
                       <td className="py-3">{project.client}</td>
-                      <td className="py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          project.priority === 'High' ? 'bg-red-100 text-red-600' : 
-                          project.priority === 'Medium' ? 'bg-yellow-100 text-yellow-600' : 
-                          'bg-green-100 text-green-600'
-                        }`}>
-                          {project.priority}
-                        </span>
-                      </td>
                       <td className="py-3">
                         <button 
                           onClick={() => handleAssignQS(project)}
@@ -293,19 +283,16 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Available QS Officers */}
+        {/* Available QS Officers (only name and assigned project number) */}
         <div className="w-full xl:w-1/3 bg-white p-6 rounded-lg shadow-md">
           <h4 className="text-md font-medium mb-3 text-gray-700">Available QS Officers</h4>
           <div className="space-y-3">
             {qsOfficers.map((officer) => (
               <div key={officer.id} className="p-3 border rounded-lg hover:bg-gray-50">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium text-gray-800">{officer.name}</p>
-                    <p className="text-sm text-gray-600">{officer.expertise}</p>
-                  </div>
-                  <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
-                    {officer.availableProjects} slots
+                <div className="flex justify-between items-center">
+                  <p className="font-medium text-gray-800">{officer.name}</p>
+                  <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                    Assigned: {5 - officer.availableProjects}
                   </span>
                 </div>
               </div>
@@ -404,15 +391,6 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-4 mt-8">
-        {/* Charts Section using existing components */}
-        <div className="w-full xl:w-2/3">
-          <MonthlyCostBarChart />
-        </div>
-          <div className="w-full xl:w-1/3">
-          <ProjectStatusChart projects={sampleProjects} />
-        </div>
-      </div>
       
       
       <div className="flex flex-col xl:flex-row gap-4 mt-8">
@@ -501,16 +479,6 @@ function Dashboard() {
                 <div><strong>Project:</strong> {selectedProject?.name}</div>
                 <div><strong>Type:</strong> {selectedProject?.type}</div>
                 <div><strong>Client:</strong> {selectedProject?.client}</div>
-                <div>
-                  <strong>Priority:</strong> 
-                  <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                    selectedProject?.priority === 'High' ? 'bg-red-100 text-red-600' : 
-                    selectedProject?.priority === 'Medium' ? 'bg-yellow-100 text-yellow-600' : 
-                    'bg-green-100 text-green-600'
-                  }`}>
-                    {selectedProject?.priority}
-                  </span>
-                </div>
               </div>
             </div>
 

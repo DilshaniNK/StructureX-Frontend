@@ -231,6 +231,31 @@ function BOQ() {
     setBOQs(prev => prev.map(boq => boq.id === id ? { ...boq, status: newStatus } : boq));
   };
 
+  // Handler to download BOQ PDF
+  const handleDownloadBOQ = async (boqId) => {
+    try {
+      const res = await fetch(`http://localhost:8086/api/v1/boq/${boqId}/download`, {
+        method: 'GET',
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error('Failed to download BOQ PDF: ' + errorText);
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `BOQ_${boqId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Error downloading BOQ PDF: ' + err.message);
+      console.error('[BOQ Download] Exception:', err);
+    }
+  };
+
   // Helper to format date as yyyy-MM-dd
   const formatDate = (dateStr) => {
     if (!dateStr) return null;
@@ -514,6 +539,7 @@ function BOQ() {
                                 <Eye className="w-4 h-4" />
                               </button>
                               <button 
+                                onClick={() => handleDownloadBOQ(boq.id)}
                                 className="text-green-600 hover:text-green-800 p-1 rounded transition-colors duration-200"
                                 title="Download BOQ"
                               >

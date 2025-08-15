@@ -1,145 +1,272 @@
 import React, { useState, useEffect } from 'react'
 
 function Requests() {
-  const [activeTab, setActiveTab] = useState('materials')
-  const [requests, setRequests] = useState({
-    materials: [],
-    labor: [],
-    tools: []
-  })
+  const [myRequests, setMyRequests] = useState([])
+  const [otherRequests, setOtherRequests] = useState([])
+  const [filteredMyRequests, setFilteredMyRequests] = useState([])
+  const [filteredOtherRequests, setFilteredOtherRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [activeTab, setActiveTab] = useState('my-requests')
+  const [filters, setFilters] = useState({
+    project: '',
+    type: '',
+    status: '',
+    qsOfficer: '' // Filter for specific QS officer in other requests
+  })
 
-  // Mock data - replace with actual API calls
+  // Senior QS ID - this would typically come from authentication/context
+  const seniorQsId = 'EMP_003' // Senior QS employee ID
+
+  // Fetch data from API
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setRequests({
-        materials: [
-          {
-            id: 1,
-            siteSupervisor: 'John Smith',
-            projectName: 'Building A Construction',
-            itemName: 'Portland Cement',
-            quantity: 50,
-            unit: 'bags',
-            urgency: 'High',
-            requestDate: '2025-06-20',
-            estimatedCost: 2500,
-            description: 'Required for foundation work',
-            status: 'pending'
-          },
-          {
-            id: 2,
-            siteSupervisor: 'Jane Doe',
-            projectName: 'Road Expansion',
-            itemName: 'Steel Rebar',
-            quantity: 100,
-            unit: 'pieces',
-            urgency: 'Medium',
-            requestDate: '2025-06-19',
-            estimatedCost: 5000,
-            description: 'For reinforcement structure',
-            status: 'pending'
-          },
-          {
-            id: 3,
-            siteSupervisor: 'Mike Wilson',
-            projectName: 'Bridge Construction',
-            itemName: 'Concrete Blocks',
-            quantity: 200,
-            unit: 'pieces',
-            urgency: 'Low',
-            requestDate: '2025-06-18',
-            estimatedCost: 3500,
-            description: 'Standard concrete blocks for construction',
-            status: 'pending'
+    const fetchRequests = async () => {
+      try {
+        setLoading(true)
+        // Fetch all requests - you might need different endpoints for this
+        const response = await fetch('http://localhost:8086/api/v1/sqs/requests') // Assuming this endpoint exists
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        // Transform and separate requests
+        const myReqs = []
+        const otherReqs = []
+        
+        data.forEach(request => {
+          const transformedRequest = {
+            ...request,
+            status: request.qsApproval === "1" ? 'accepted' : request.qsApproval === "-1" ? 'rejected' : 'pending'
           }
-        ],
-        labor: [
-          {
-            id: 1,
-            siteSupervisor: 'Mike Johnson',
-            projectName: 'Building A Construction',
-            laborType: 'Skilled Mason',
-            quantity: 5,
-            duration: '2 weeks',
-            urgency: 'High',
-            requestDate: '2025-06-21',
-            estimatedCost: 15000,
-            description: 'Experienced masons for brick work',
-            status: 'pending'
-          },
-          {
-            id: 2,
-            siteSupervisor: 'Sarah Wilson',
-            projectName: 'Bridge Construction',
-            laborType: 'Heavy Equipment Operator',
-            quantity: 2,
-            duration: '1 month',
-            urgency: 'Medium',
-            requestDate: '2025-06-18',
-            estimatedCost: 20000,
-            description: 'Crane and excavator operators',
-            status: 'pending'
+          
+          if (request.qsId === seniorQsId) {
+            myReqs.push(transformedRequest)
+          } else {
+            otherReqs.push(transformedRequest)
           }
-        ],
-        tools: [
-          {
-            id: 1,
-            siteSupervisor: 'Tom Brown',
-            projectName: 'Road Expansion',
-            toolName: 'Concrete Mixer',
-            quantity: 2,
-            rentalPeriod: '1 month',
-            urgency: 'High',
-            requestDate: '2025-06-22',
-            estimatedCost: 3000,
-            description: 'Heavy duty concrete mixers',
-            status: 'pending'
-          },
-          {
-            id: 2,
-            siteSupervisor: 'Lisa Davis',
-            projectName: 'Building A Construction',
-            toolName: 'Power Drill Set',
-            quantity: 10,
-            rentalPeriod: '2 weeks',
-            urgency: 'Low',
-            requestDate: '2025-06-20',
-            estimatedCost: 800,
-            description: 'Professional grade drill sets',
-            status: 'pending'
-          }
-        ]
-      })
-      setLoading(false)
-    }, 1000)
+        })
+        
+        setMyRequests(myReqs)
+        setOtherRequests(otherReqs)
+        setFilteredMyRequests(myReqs)
+        setFilteredOtherRequests(otherReqs)
+      } catch (error) {
+        console.error('Error fetching requests:', error)
+        setMyRequests([])
+        setOtherRequests([])
+        setFilteredMyRequests([])
+        setFilteredOtherRequests([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchRequests()
   }, [])
 
-  const handleView = (type, request) => {
-    setSelectedRequest({ ...request, type })
+  // Filter requests based on selected filters
+  useEffect(() => {
+    const applyFilters = (requests, isOtherRequests = false) => {
+      let filtered = requests
+
+      if (filters.project) {
+        filtered = filtered.filter(request => 
+          (request.projectName || request.projectId).toLowerCase().includes(filters.project.toLowerCase())
+        )
+      }
+
+      if (filters.type) {
+        filtered = filtered.filter(request => request.requestType === filters.type)
+      }
+
+      if (filters.status) {
+        filtered = filtered.filter(request => request.status === filters.status)
+      }
+
+      // Apply QS officer filter only for other requests
+      if (isOtherRequests && filters.qsOfficer) {
+        filtered = filtered.filter(request => 
+          (request.qsOfficerName || request.qsId) === filters.qsOfficer
+        )
+      }
+
+      return filtered
+    }
+
+    setFilteredMyRequests(applyFilters(myRequests, false))
+    setFilteredOtherRequests(applyFilters(otherRequests, true))
+  }, [myRequests, otherRequests, filters])
+
+  // Get unique values for filter dropdowns
+  const getUniqueProjects = () => {
+    const allRequests = [...myRequests, ...otherRequests]
+    const projects = [...new Set(allRequests.map(req => req.projectId))]
+    return projects.sort()
+  }
+
+  const getUniqueTypes = () => {
+    const allRequests = [...myRequests, ...otherRequests]
+    const types = [...new Set(allRequests.map(req => req.requestType))]
+    return types.sort()
+  }
+
+  const getUniqueQSOfficers = () => {
+    // Only get QS officers from other requests (excluding current senior QS)
+    const qsOfficers = [...new Set(otherRequests.map(req => req.qsOfficerName || req.qsId))]
+    return qsOfficers.sort()
+  }
+
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }))
+  }
+
+  const clearFilters = () => {
+    setFilters({
+      project: '',
+      type: '',
+      status: '',
+      qsOfficer: ''
+    })
+  }
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab)
+    // Clear QS Officer filter when switching to "My Requests" tab
+    if (newTab === 'my-requests' && filters.qsOfficer) {
+      setFilters(prev => ({
+        ...prev,
+        qsOfficer: ''
+      }))
+    }
+  }
+
+  const refreshData = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('http://localhost:8086/api/v1/sqs/requests')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      const myReqs = []
+      const otherReqs = []
+      
+      data.forEach(request => {
+        const transformedRequest = {
+          ...request,
+          status: request.qsApproval === "1" ? 'accepted' : request.qsApproval === "-1" ? 'rejected' : 'pending'
+        }
+        
+        if (request.qsId === seniorQsId) {
+          myReqs.push(transformedRequest)
+        } else {
+          otherReqs.push(transformedRequest)
+        }
+      })
+      
+      setMyRequests(myReqs)
+      setOtherRequests(otherReqs)
+      setFilteredMyRequests(myReqs)
+      setFilteredOtherRequests(otherReqs)
+    } catch (error) {
+      console.error('Error refreshing requests:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleView = (request) => {
+    setSelectedRequest(request)
     setShowModal(true)
   }
 
-  const handleAccept = (type, id) => {
-    setRequests(prev => ({
-      ...prev,
-      [type]: prev[type].map(req => 
-        req.id === id ? { ...req, status: 'accepted' } : req
+  // Only allow accept/reject for Senior QS's own requests
+  const handleAccept = async (requestId) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to accept request #${requestId}? This action cannot be undone.`
+    )
+    
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/qs/requests/${requestId}/approval?qsApproval=1`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      // Update local state on successful API call
+      setMyRequests(prev => 
+        prev.map(req => 
+          req.requestId === requestId ? { ...req, status: 'accepted', qsApproval: "1" } : req
+        )
       )
-    }))
-    alert(`${type} request ${id} has been accepted!`)
+      
+      alert(`Request ${requestId} has been accepted!`)
+    } catch (error) {
+      console.error('Error accepting request:', error)
+      alert(`Failed to accept request ${requestId}. Please try again.`)
+    }
   }
 
-  const handleProceedToPurchase = (type, id) => {
-    // Navigate to purchase/procurement process
-    alert(`Proceeding to purchase for ${type} request ${id}`)
-    // You can implement navigation to purchase page here
+  const handleReject = async (requestId) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to reject request #${requestId}? This action cannot be undone.`
+    )
+    
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/qs/requests/${requestId}/approval?qsApproval=-1`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      // Update local state on successful API call
+      setMyRequests(prev => 
+        prev.map(req => 
+          req.requestId === requestId ? { ...req, status: 'rejected', qsApproval: "-1" } : req
+        )
+      )
+      
+      alert(`Request ${requestId} has been rejected!`)
+    } catch (error) {
+      console.error('Error rejecting request:', error)
+      alert(`Failed to reject request ${requestId}. Please try again.`)
+    }
   }
+
+  const handleProceedToPurchase = (requestId) => {
+    alert(`Proceeding to purchase for request ${requestId}`)
+  }
+
   const getUrgencyColor = (urgency) => {
-    switch (urgency.toLowerCase()) {
+    switch (urgency?.toLowerCase()) {
       case 'high': return '#ff4757'
       case 'medium': return '#ffa502'
       case 'low': return '#2ed573'
@@ -147,179 +274,244 @@ function Requests() {
     }
   }
 
-  const renderMaterialsTable = () => (
+  const getRequestTypeColor = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'material': return '#3742fa'
+      case 'labor': return '#ff6348'
+      case 'tool': return '#2ed573'
+      default: return '#747d8c'
+    }
+  }
+
+  const renderRequestsTable = (requests, canModify = false) => (
     <div>
-      <table className="w-full bg-white border border-gray-200 rounded-lg shadow-sm table-fixed">        <thead className="bg-gray-50">
-          <tr>
-            <th className="w-1/12 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Supervisor</th>
-            <th className="w-1/8 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-            <th className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
-            <th className="w-1/12 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-            <th className="w-1/12 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Urgency</th>
-            <th className="w-1/8 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Date</th>
-            <th className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {requests.materials.map(request => (            <tr key={request.id} className={`hover:bg-gray-50 ${request.status === 'accepted' ? 'bg-green-50' : ''}`}>
-              <td className="px-4 py-3 text-sm font-medium text-gray-900">{request.siteSupervisor}</td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.projectName}</td>
-              <td className="px-4 py-3">
-                <div>
-                  <div className="text-sm font-medium text-gray-900">{request.itemName}</div>
-                  <div className="text-sm text-gray-500">{request.description}</div>
-                </div>
-              </td>              <td className="px-4 py-3 text-sm text-gray-900">{request.quantity} {request.unit}</td>
-              <td className="px-4 py-3">
-                <span 
-                  className="inline-flex px-2 py-1 text-xs font-semibold rounded-full text-white"
-                  style={{ backgroundColor: getUrgencyColor(request.urgency) }}
-                >
-                  {request.urgency}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.requestDate}</td>
-              <td className="px-4 py-3">
-                <div className="flex space-x-2">
-                  <button 
-                    className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    onClick={() => handleView('materials', request)}
-                  >
-                    View
-                  </button>
-                  {request.status === 'pending' && (
-                    <button 
-                      className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      onClick={() => handleAccept('materials', request.id)}
-                    >
-                      Accept
-                    </button>
-                  )}
-                  <button 
-                    className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    onClick={() => handleProceedToPurchase('materials', request.id)}
-                  >
-                    Purchase
-                  </button>
-                </div>
-              </td>
+      {/* Filter Section */}
+      <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Filter by Project
+            </label>
+            <select
+              value={filters.project}
+              onChange={(e) => handleFilterChange('project', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Projects</option>
+              {getUniqueProjects().map(project => (
+                <option key={project} value={project}>{project}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Filter by Type
+            </label>
+            <select
+              value={filters.type}
+              onChange={(e) => handleFilterChange('type', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Types</option>
+              {getUniqueTypes().map(type => (
+                <option key={type} value={type}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Filter by Status
+            </label>
+            <select
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="accepted">Accepted</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+
+          {/* QS Officer filter - only show for Other QS Requests tab */}
+          {activeTab === 'other-requests' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Filter by QS Officer
+              </label>
+              <select
+                value={filters.qsOfficer}
+                onChange={(e) => handleFilterChange('qsOfficer', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All QS Officers</option>
+                {getUniqueQSOfficers().map(qsId => (
+                  <option key={qsId} value={qsId}>{qsId}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Empty div for spacing when QS Officer filter is not shown */}
+          {activeTab === 'my-requests' && <div></div>}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Actions
+            </label>
+            <button
+              onClick={clearFilters}
+              className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              Clear Filters
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              &nbsp;
+            </label>
+            <button
+              onClick={refreshData}
+              disabled={loading}
+              className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Summary */}
+        <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+          <div>
+            Showing {requests.length} requests
+            {(filters.project || filters.type || filters.status || filters.qsOfficer) && (
+              <span className="ml-2">
+                (filtered by: {[
+                  filters.project && `Project: ${filters.project}`,
+                  filters.type && `Type: ${filters.type}`,
+                  filters.status && `Status: ${filters.status}`,
+                  filters.qsOfficer && `QS Officer: ${filters.qsOfficer}`
+                ].filter(Boolean).join(', ')})
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* No requests message */}
+      {requests.length === 0 && (
+        <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+          <div className="text-gray-500 text-lg">
+            {activeTab === 'my-requests' 
+              ? 'No requests found. You haven\'t made any requests yet.' 
+              : 'No other QS requests found.'}
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      {requests.length > 0 && (
+        <table className="w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request ID</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Supervisor</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QS Officer</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items Count</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
-          ))}        </tbody>
-      </table>
-    </div>
-  )
-  const renderLaborTable = () => (
-    <div>
-      <table className="w-full bg-white border border-gray-200 rounded-lg shadow-sm table-fixed">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="w-1/8 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Supervisor</th>
-            <th className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-            <th className="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Labor Type</th>
-            <th className="w-1/12 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>            <th className="w-1/12 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-            <th className="w-1/12 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Urgency</th>
-            <th className="w-1/8 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Date</th>
-            <th className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {requests.labor.map(request => (
-            <tr key={request.id} className={`hover:bg-gray-50 ${request.status === 'accepted' ? 'bg-green-50' : ''}`}>
-              <td className="px-4 py-3 text-sm font-medium text-gray-900">{request.siteSupervisor}</td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.projectName}</td>
-              <td className="px-4 py-3">
-                <div>
-                  <div className="text-sm font-medium text-gray-900">{request.laborType}</div>
-                  <div className="text-sm text-gray-500">{request.description}</div>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.quantity} workers</td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.duration}</td>              <td className="px-4 py-3">
-                <span 
-                  className="inline-flex px-2 py-1 text-xs font-semibold rounded-full text-white"
-                  style={{ backgroundColor: getUrgencyColor(request.urgency) }}
-                >
-                  {request.urgency}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.requestDate}</td>
-              <td className="px-4 py-3">
-                <div className="flex space-x-2">
-                  <button 
-                    className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    onClick={() => handleView('labor', request)}
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {requests.map(request => (
+              <tr key={request.requestId} className={`hover:bg-gray-50 ${
+                request.status === 'accepted' ? 'bg-green-50' : 
+                request.status === 'rejected' ? 'bg-red-50' : ''
+              }`}>
+                <td className="px-4 py-3 text-sm font-medium text-gray-900">#{request.requestId}</td>
+                <td className="px-4 py-3">
+                  <span 
+                    className="inline-flex px-2 py-1 text-xs font-semibold rounded-full text-white"
+                    style={{ backgroundColor: getRequestTypeColor(request.requestType) }}
                   >
-                    View
-                  </button>
-                  {request.status === 'pending' && (
+                    {request.requestType}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900">{request.projectName || request.projectId}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{request.siteSupervisorName || request.siteSupervisorId}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{request.qsOfficerName || request.qsId}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{request.date}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{request.materials?.length || 0} items</td>
+                <td className="px-4 py-3">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    request.status === 'pending' 
+                      ? 'bg-yellow-100 text-yellow-800' 
+                      : request.status === 'accepted'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex space-x-2">
                     <button 
-                      className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      onClick={() => handleAccept('labor', request.id)}
+                      className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      onClick={() => handleView(request)}
                     >
-                      Accept
+                      View
                     </button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}</tbody>
-      </table>
-    </div>
-  )
-  const renderToolsTable = () => (
-    <div>
-      <table className="w-full bg-white border border-gray-200 rounded-lg shadow-sm table-fixed">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="w-1/8 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Supervisor</th>
-            <th className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-            <th className="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tool/Equipment</th>
-            <th className="w-1/8 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-            <th className="w-1/12 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Urgency</th>
-            <th className="w-1/8 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Date</th>
-            <th className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>        <tbody className="bg-white divide-y divide-gray-200">
-          {requests.tools.map(request => (
-            <tr key={request.id} className={`hover:bg-gray-50 ${request.status === 'accepted' ? 'bg-green-50' : ''}`}>
-              <td className="px-4 py-3 text-sm font-medium text-gray-900">{request.siteSupervisor}</td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.projectName}</td>
-              <td className="px-4 py-3">
-                <div>
-                  <div className="text-sm font-medium text-gray-900">{request.toolName}</div>
-                  <div className="text-sm text-gray-500">{request.description}</div>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.quantity} units</td>
-              <td className="px-4 py-3">
-                <span 
-                  className="inline-flex px-2 py-1 text-xs font-semibold rounded-full text-white"
-                  style={{ backgroundColor: getUrgencyColor(request.urgency) }}
-                >
-                  {request.urgency}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.requestDate}</td>              <td className="px-4 py-3">
-                <div className="flex space-x-2">
-                  <button 
-                    className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    onClick={() => handleView('tools', request)}
-                  >
-                    View
-                  </button>
-                  {request.status === 'pending' && (
-                    <button 
-                      className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      onClick={() => handleAccept('tools', request.id)}
-                    >
-                      Accept
-                    </button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}</tbody>
-      </table>
+                    {/* Only show Accept/Reject buttons for own requests and if status is pending */}
+                    {canModify && request.status === 'pending' && (
+                      <>
+                        <button 
+                          className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          onClick={() => handleAccept(request.requestId)}
+                        >
+                          Accept
+                        </button>
+                        <button 
+                          className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          onClick={() => handleReject(request.requestId)}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {/* Show view-only indicator for other requests */}
+                    {!canModify && (
+                      <span className="inline-flex items-center px-3 py-1 text-sm text-gray-500 bg-gray-100 rounded-md">
+                        View Only
+                      </span>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 
@@ -327,58 +519,46 @@ function Requests() {
     if (loading) {
       return (
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600">Loading requests...</span>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
       )
     }
 
-    switch (activeTab) {
-      case 'materials':
-        return renderMaterialsTable()
-      case 'labor':
-        return renderLaborTable()
-      case 'tools':
-        return renderToolsTable()
-      default:        return renderMaterialsTable()
-    }
+    const currentRequests = activeTab === 'my-requests' 
+      ? filteredMyRequests 
+      : filteredOtherRequests
+
+    return (
+      <div className="bg-white">
+        {renderRequestsTable(currentRequests, activeTab === 'my-requests')}
+      </div>
+    )
   }
   return (
     <div className="min-h-screen bg-gray-50 py-6">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-     
         <div className="bg-white rounded-lg shadow">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex">
               <button 
                 className={`py-4 px-6 border-b-2 font-medium text-sm ${
-                  activeTab === 'materials' 
-                    ? 'border-blue-500 text-blue-600' 
+                  activeTab === 'my-requests' 
+                    ? 'border-indigo-500 text-indigo-600' 
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
-                onClick={() => setActiveTab('materials')}
+                onClick={() => handleTabChange('my-requests')}
               >
-                Materials ({requests.materials.filter(r => r.status === 'pending').length})
+                My Requests ({filteredMyRequests.filter(r => r.status === 'pending').length} pending)
               </button>
               <button 
                 className={`py-4 px-6 border-b-2 font-medium text-sm ${
-                  activeTab === 'labor' 
-                    ? 'border-blue-500 text-blue-600' 
+                  activeTab === 'other-requests' 
+                    ? 'border-indigo-500 text-indigo-600' 
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
-                onClick={() => setActiveTab('labor')}
+                onClick={() => handleTabChange('other-requests')}
               >
-                Labor ({requests.labor.filter(r => r.status === 'pending').length})
-              </button>
-              <button 
-                className={`py-4 px-6 border-b-2 font-medium text-sm ${
-                  activeTab === 'tools' 
-                    ? 'border-blue-500 text-blue-600' 
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-                onClick={() => setActiveTab('tools')}
-              >
-                Tools & Equipment ({requests.tools.filter(r => r.status === 'pending').length})
+                Other QS Officers ({filteredOtherRequests.filter(r => r.status === 'pending').length} pending)
               </button>
             </nav>
           </div>
@@ -406,23 +586,54 @@ function Requests() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <span className="font-semibold text-gray-700">Site Supervisor:</span>
-                  <p className="text-gray-900">{selectedRequest.siteSupervisor}</p>
+                  <span className="font-semibold text-gray-700">Request ID:</span>
+                  <p className="text-gray-900">#{selectedRequest.requestId}</p>
                 </div>
                 <div>
-                  <span className="font-semibold text-gray-700">Project:</span>
-                  <p className="text-gray-900">{selectedRequest.projectName}</p>
+                  <span className="font-semibold text-gray-700">Project Name:</span>
+                  <p className="text-gray-900">{selectedRequest.projectName || selectedRequest.projectId}</p>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">Site Supervisor:</span>
+                  <p className="text-gray-900">{selectedRequest.siteSupervisorName || selectedRequest.siteSupervisorId}</p>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">QS Officer:</span>
+                  <p className="text-gray-900">{selectedRequest.qsOfficerName || selectedRequest.qsId}</p>
                 </div>
                 <div>
                   <span className="font-semibold text-gray-700">Request Date:</span>
-                  <p className="text-gray-900">{selectedRequest.requestDate}</p>
-                </div>                <div>
-                  <span className="font-semibold text-gray-700">Urgency:</span>
+                  <p className="text-gray-900">{selectedRequest.date}</p>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">Request Type:</span>
                   <span 
                     className="inline-flex px-2 py-1 text-xs font-semibold rounded-full text-white ml-2"
-                    style={{ backgroundColor: getUrgencyColor(selectedRequest.urgency) }}
+                    style={{ backgroundColor: getRequestTypeColor(selectedRequest.requestType) }}
                   >
-                    {selectedRequest.urgency}
+                    {selectedRequest.requestType}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">PM Approval:</span>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ml-2 ${
+                    selectedRequest.pmApproval === "1" 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {selectedRequest.pmApproval === "1" ? 'Approved' : 'Pending'}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">QS Approval:</span>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ml-2 ${
+                    selectedRequest.qsApproval === "1" 
+                      ? 'bg-green-100 text-green-800' 
+                      : selectedRequest.qsApproval === "-1"
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {selectedRequest.qsApproval === "1" ? 'Approved' : selectedRequest.qsApproval === "-1" ? 'Rejected' : 'Pending'}
                   </span>
                 </div>
                 <div>
@@ -430,82 +641,86 @@ function Requests() {
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ml-2 ${
                     selectedRequest.status === 'pending' 
                       ? 'bg-yellow-100 text-yellow-800' 
-                      : 'bg-green-100 text-green-800'
+                      : selectedRequest.status === 'accepted'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
                   }`}>
-                    {selectedRequest.status}
+                    {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">Received:</span>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ml-2 ${
+                    selectedRequest.isReceived 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedRequest.isReceived ? 'Yes' : 'No'}
                   </span>
                 </div>
               </div>
 
-              {selectedRequest.type === 'materials' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="font-semibold text-gray-700">Material:</span>
-                    <p className="text-gray-900">{selectedRequest.itemName}</p>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-700">Quantity:</span>
-                    <p className="text-gray-900">{selectedRequest.quantity} {selectedRequest.unit}</p>
-                  </div>
-                </div>
-              )}
-              
-              {selectedRequest.type === 'labor' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="font-semibold text-gray-700">Labor Type:</span>
-                    <p className="text-gray-900">{selectedRequest.laborType}</p>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-700">Workers Needed:</span>
-                    <p className="text-gray-900">{selectedRequest.quantity}</p>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-700">Duration:</span>
-                    <p className="text-gray-900">{selectedRequest.duration}</p>
-                  </div>
-                </div>
-              )}
-                {selectedRequest.type === 'tools' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="font-semibold text-gray-700">Tool/Equipment:</span>
-                    <p className="text-gray-900">{selectedRequest.toolName}</p>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-700">Quantity:</span>
-                    <p className="text-gray-900">{selectedRequest.quantity} units</p>
+              {selectedRequest.materials && selectedRequest.materials.length > 0 && (
+                <div>
+                  <span className="font-semibold text-gray-700">Requested Items:</span>
+                  <div className="mt-2 space-y-2">
+                    {selectedRequest.materials.map((material, index) => (
+                      <div key={material.id || index} className="bg-gray-50 p-3 rounded-md">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <div>
+                            <span className="text-sm font-medium text-gray-600">Material Name:</span>
+                            <p className="text-sm text-gray-900">{material.materialName}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-600">Quantity:</span>
+                            <p className="text-sm text-gray-900">{material.quantity}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-600">Priority:</span>
+                            <span 
+                              className="inline-flex px-2 py-1 text-xs font-semibold rounded-full text-white"
+                              style={{ backgroundColor: getUrgencyColor(material.priority) }}
+                            >
+                              {material.priority}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
-              
-              <div>
-                <span className="font-semibold text-gray-700">Description:</span>
-                <p className="text-gray-900 mt-1">{selectedRequest.description}</p>
-              </div>
             </div>
             
             <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
-              {selectedRequest.status === 'pending' && (
-                <button 
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                  onClick={() => {
-                    handleAccept(selectedRequest.type, selectedRequest.id)
-                    setShowModal(false)
-                  }}
-                >
-                  Accept Request
-                </button>
+              {/* Only show accept/reject buttons for own requests and if status is pending */}
+              {activeTab === 'my-requests' && selectedRequest.status === 'pending' && (
+                <>
+                  <button 
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    onClick={() => {
+                      handleReject(selectedRequest.requestId)
+                      setShowModal(false)
+                    }}
+                  >
+                    Reject
+                  </button>
+                  <button 
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    onClick={() => {
+                      handleAccept(selectedRequest.requestId)
+                      setShowModal(false)
+                    }}
+                  >
+                    Accept Request
+                  </button>
+                </>
               )}
               <button 
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                onClick={() => {
-                  handleProceedToPurchase(selectedRequest.type, selectedRequest.id)
-                  setShowModal(false)
-                }}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={() => setShowModal(false)}
               >
-                {selectedRequest.type === 'materials' ? 'Proceed to Purchase' : 
-                 selectedRequest.type === 'labor' ? 'Proceed to Hire' : 'Proceed to Rent'}
+                Close
               </button>
             </div>
           </div>

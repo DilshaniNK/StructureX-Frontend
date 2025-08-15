@@ -12,12 +12,15 @@ function Requests() {
     status: ''
   })
 
+  // QS ID - this would typically come from authentication/context
+  const qsId = 'EMP_001' // QS officer employee ID
+
   // Fetch data from API
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         setLoading(true)
-        const response = await fetch('http://localhost:8086/api/v1/qs/requests/EMP_001')
+        const response = await fetch(`http://localhost:8086/api/v1/qs/requests/${qsId}`)
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -50,9 +53,10 @@ function Requests() {
     let filtered = requests
 
     if (filters.project) {
-      filtered = filtered.filter(request => 
-        request.projectId.toLowerCase().includes(filters.project.toLowerCase())
-      )
+      filtered = filtered.filter(request => {
+        const projectName = request.projectName || request.projectId
+        return projectName.toLowerCase().includes(filters.project.toLowerCase())
+      })
     }
 
     if (filters.type) {
@@ -68,7 +72,7 @@ function Requests() {
 
   // Get unique values for filter dropdowns
   const getUniqueProjects = () => {
-    const projects = [...new Set(requests.map(req => req.projectId))]
+    const projects = [...new Set(requests.map(req => req.projectName || req.projectId))]
     return projects.sort()
   }
 
@@ -95,7 +99,7 @@ function Requests() {
   const refreshData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:8086/api/v1/qs/requests/EMP_001')
+      const response = await fetch(`http://localhost:8086/api/v1/qs/requests/${qsId}`)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -222,7 +226,7 @@ function Requests() {
     <div>
       {/* Filter Section */}
       <div className="mb-6 bg-gray-50 p-4 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Filter by Project
@@ -273,6 +277,9 @@ function Requests() {
             </select>
           </div>
 
+          {/* Empty div for spacing to maintain 6-column layout */}
+          <div></div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Actions
@@ -314,7 +321,7 @@ function Requests() {
         {/* Filter Summary */}
         <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
           <div>
-            Showing {filteredRequests.length} of {requests.length} requests
+            Showing {filteredRequests.length} requests
             {(filters.project || filters.type || filters.status) && (
               <span className="ml-2">
                 (filtered by: {[
@@ -328,20 +335,30 @@ function Requests() {
         </div>
       </div>
 
+      {/* No requests message */}
+      {filteredRequests.length === 0 && (
+        <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+          <div className="text-gray-500 text-lg">
+            No requests found matching the current filters.
+          </div>
+        </div>
+      )}
+
       {/* Table */}
-      <table className="w-full bg-white border border-gray-200 rounded-lg shadow-sm">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request ID</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project ID</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Supervisor ID</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items Count</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
+      {filteredRequests.length > 0 && (
+        <table className="w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request ID</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site Supervisor</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items Count</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {filteredRequests.map(request => (
             <tr key={request.requestId} className={`hover:bg-gray-50 ${
@@ -357,8 +374,8 @@ function Requests() {
                   {request.requestType}
                 </span>
               </td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.projectId}</td>
-              <td className="px-4 py-3 text-sm text-gray-900">{request.siteSupervisorId}</td>
+              <td className="px-4 py-3 text-sm text-gray-900">{request.projectName || request.projectId}</td>
+              <td className="px-4 py-3 text-sm text-gray-900">{request.siteSupervisorName || request.siteSupervisorId}</td>
               <td className="px-4 py-3 text-sm text-gray-900">{request.date}</td>
               <td className="px-4 py-3 text-sm text-gray-900">{request.materials?.length || 0} items</td>
               <td className="px-4 py-3">
@@ -369,7 +386,7 @@ function Requests() {
                     ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
                 }`}>
-                  {request.status}
+                  {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                 </span>
               </td>
               <td className="px-4 py-3">
@@ -410,7 +427,8 @@ function Requests() {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      )}
     </div>
   )
 
@@ -454,10 +472,6 @@ function Requests() {
   return (
     <div className="min-h-screen bg-gray-50 py-6">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Requests</h1>
-          <p className="mt-2 text-sm text-gray-600">Manage material, labor, and tool requests from site supervisors</p>
-        </div>
         
         <div className="bg-white rounded-lg shadow">
           <div className="p-6">
@@ -495,12 +509,12 @@ function Requests() {
                   </p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Project ID</span>
-                  <p className="mt-1 text-sm font-medium text-gray-900">{selectedRequest.projectId}</p>
+                  <span className="text-sm font-medium text-gray-500">Project Name</span>
+                  <p className="mt-1 text-sm font-medium text-gray-900">{selectedRequest.projectName || selectedRequest.projectId}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Site Supervisor</span>
-                  <p className="mt-1 text-sm font-medium text-gray-900">{selectedRequest.siteSupervisorId}</p>
+                  <p className="mt-1 text-sm font-medium text-gray-900">{selectedRequest.siteSupervisorName || selectedRequest.siteSupervisorId}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Request Date</span>
@@ -540,7 +554,7 @@ function Requests() {
                         ? 'bg-yellow-100 text-yellow-800' 
                         : 'bg-green-100 text-green-800'
                     }`}>
-                      {selectedRequest.status}
+                      {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
                     </span>
                   </p>
                 </div>

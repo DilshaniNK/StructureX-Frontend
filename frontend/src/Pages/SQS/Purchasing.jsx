@@ -186,10 +186,7 @@ const Purchasing = () => {
       {/* Header */}
       <div className="mb-8">
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Purchasing Management</h1>
-            <p className="text-gray-600 mt-2">Manage quotation requests and purchase orders</p>
-          </div>
+          
           <button
             onClick={() => setShowQuotationForm(true)}
             className="flex items-center px-4 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"

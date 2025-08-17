@@ -1417,40 +1417,7 @@ function Projects() {
       
 
       
-      case 'todos':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">To-Do Tasks</h3>
-            <div className="space-y-4">
-              {[
-                { task: 'Review material delivery schedule', priority: 'High', due: 'June 20, 2024', completed: false },
-                { task: 'Submit weekly progress report', priority: 'Medium', due: 'June 18, 2024', completed: true },
-                { task: 'Coordinate with electrical contractor', priority: 'Low', due: 'June 25, 2024', completed: false }
-              ].map((todo, index) => (
-                <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                  <input 
-                    type="checkbox" 
-                    defaultChecked={todo.completed}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <div className="flex-1">
-                    <span className={`${todo.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                      {todo.task}
-                    </span>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    todo.priority === 'High' ? 'bg-red-100 text-red-800' :
-                    todo.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {todo.priority}
-                  </span>
-                  <span className="text-sm text-gray-600">Due: {todo.due}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
+
       
       default:
         return <div>Select a section to view details</div>
@@ -1523,8 +1490,7 @@ function Projects() {
                 { id: 'financial', label: 'Financial' },
                 { id: 'materials', label: 'Materials' },
                 { id: 'visits', label: 'Site Visits' },
-                { id: 'updates', label: 'Daily Updates' },
-                { id: 'todos', label: 'To-Do Tasks' }
+                { id: 'updates', label: 'Daily Updates' }
               ].map((tab) => (
                 <button
                   key={tab.id}

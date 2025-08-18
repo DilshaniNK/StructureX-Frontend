@@ -31,6 +31,10 @@ const Purchasing = () => {
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showResponseModal, setShowResponseModal] = useState(false);
+  const [quotationResponses, setQuotationResponses] = useState([]);
+  const [responseLoading, setResponseLoading] = useState(false);
+  const [responseCounts, setResponseCounts] = useState({});
 
   // Mock QS ID - In real app, this would come from authentication context  
   const qsId = 2; // Different ID for SQS
@@ -65,7 +69,8 @@ const Purchasing = () => {
           
           return {
             qId: item.qid || item.qId || item.id,
-            projectName: item.projectId || item.projectName || 'Unknown Project',
+            projectId: item.projectId || 'Unknown ID',
+            projectName: item.projectName || 'Unknown Project',
             requiredDate: item.deadline || item.requiredDate || item.date,
             status: item.status || 'PENDING',
             description: item.description || 'No description',
@@ -200,11 +205,56 @@ const Purchasing = () => {
     }
   };
 
+  const fetchQuotationResponses = async (quotationId) => {
+    setResponseLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/quotation/${quotationId}/responses`);
+      if (response.ok) {
+        const data = await response.json();
+        setQuotationResponses(data.responses || []);
+        return data.responses || [];
+      } else {
+        throw new Error('Failed to fetch responses');
+      }
+    } catch (error) {
+      console.error('Error fetching responses:', error);
+      setQuotationResponses([]);
+      return [];
+    } finally {
+      setResponseLoading(false);
+    }
+  };
+
+  const fetchResponseCounts = async () => {
+    try {
+      const counts = {};
+      for (const quotation of quotations) {
+        if (quotation.status === 'sent') {
+          const responses = await fetch(`http://localhost:8086/api/v1/quotation/${quotation.qId}/responses`);
+          if (responses.ok) {
+            const data = await responses.json();
+            counts[quotation.qId] = data.responses ? data.responses.length : 0;
+          }
+        }
+      }
+      setResponseCounts(counts);
+    } catch (error) {
+      console.error('Error fetching response counts:', error);
+    }
+  };
+
   // Load quotations and projects on component mount
   useEffect(() => {
     fetchQuotations();
     fetchProjects();
   }, []);
+
+  // Fetch response counts when quotations change
+  useEffect(() => {
+    if (quotations.length > 0) {
+      fetchResponseCounts();
+    }
+  }, [quotations]);
 
   const handleQuotationSubmit = async (e, submitType = 'send') => {
     e.preventDefault();
@@ -458,7 +508,8 @@ const Purchasing = () => {
         ...quotation,
         // Handle quotation object from the response
         qId: detailedQuotation.quotation?.qid || quotation.qId,
-        projectName: detailedQuotation.quotation?.projectId || quotation.projectName,
+        projectId: detailedQuotation.quotation?.projectId || quotation.projectId,
+        projectName: detailedQuotation.quotation?.projectName || quotation.projectName,
         requiredDate: detailedQuotation.quotation?.deadline || quotation.requiredDate,
         status: detailedQuotation.quotation?.status || quotation.status,
         createdDate: detailedQuotation.quotation?.date || quotation.createdDate,
@@ -478,6 +529,19 @@ const Purchasing = () => {
     }
     
     setShowQuotationDetail(true);
+  };
+
+  const handleViewResponses = async (quotation) => {
+    await fetchQuotationResponses(quotation.qId);
+    setSelectedQuotation(quotation);
+    setShowResponseModal(true);
+  };
+
+  const handlePurchaseResponse = (response) => {
+    // Handle purchase logic here
+    console.log('Purchasing from response:', response);
+    alert(`Purchase order will be created for ${response.supplierName} with total amount Rs. ${response.totalAmount.toLocaleString()}`);
+    // In a real application, this would make an API call to create a purchase order
   };
 
   return (
@@ -1053,7 +1117,7 @@ const Purchasing = () => {
       {/* Quotation Detail Modal */}
       {showQuotationDetail && selectedQuotation && (
         <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold text-gray-900">
@@ -1070,25 +1134,39 @@ const Purchasing = () => {
 
             <div className="p-6 space-y-6">
               {/* Quotation Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-gray-900 mb-3">Quotation Information</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Quotation ID:</span>
+                  <div className="space-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Quotation ID:</span>
                       <span className="font-medium">Q{selectedQuotation.qId.toString().padStart(3, '0')}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Project:</span>
-                      <span className="font-medium">{selectedQuotation.projectName}</span>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Project:</span>
+                      <span className="font-medium">{selectedQuotation.projectId} - {selectedQuotation.projectName}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Required Date:</span>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Required Date:</span>
                       <span className="font-medium">{selectedQuotation.requiredDate}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Status:</span>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Status:</span>
                       <span>{getStatusBadge(selectedQuotation.status)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">QS Officer Details</h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">QS ID:</span>
+                      <span className="font-medium">{qsEmpId}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Created Date:</span>
+                      <span className="font-medium">{selectedQuotation.createdDate || new Date().toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
@@ -1100,21 +1178,6 @@ const Purchasing = () => {
                   </p>
                 </div>
               </div>
-
-              {/* QS Officer Information */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-900 mb-3">QS Officer</h4>
-                <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">QS ID:</span>
-                      <span className="font-medium">{qsEmpId}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Created Date:</span>
-                      <span className="font-medium">{selectedQuotation.createdDate || new Date().toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                </div>
 
               {/* Items Section */}
               <div>
@@ -1165,6 +1228,27 @@ const Purchasing = () => {
                     </tbody>
                   </table>
                 </div>
+                
+                {/* Total Amount */}
+                <div className="mt-4 flex justify-end">
+                  <div className="bg-[#FAAD00] bg-opacity-10 p-4 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-gray-700 font-medium">Total Estimated Amount:</span>
+                      <span className="text-xl font-bold text-black">
+                        Rs. {selectedQuotation.items && selectedQuotation.items.length > 0 
+                          ? selectedQuotation.items
+                              .reduce((total, item) => {
+                                const quantity = parseFloat(item.quantity) || 0;
+                                const amount = parseFloat(item.amount) || 0;
+                                return total + (quantity * amount);
+                              }, 0)
+                              .toLocaleString()
+                          : '0'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Suppliers Section */}
@@ -1204,6 +1288,19 @@ const Purchasing = () => {
                     Edit
                   </button>
                 )}
+                {selectedQuotation.status === 'sent' && (
+                  <button
+                    onClick={() => handleViewResponses(selectedQuotation)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+                  >
+                    <span>View Response</span>
+                    {responseCounts[selectedQuotation.qId] > 0 && (
+                      <span className="bg-blue-800 text-white text-xs px-2 py-1 rounded-full">
+                        {responseCounts[selectedQuotation.qId]}
+                      </span>
+                    )}
+                  </button>
+                )}
                 {selectedQuotation.status === 'RECEIVED' && (
                   <button
                     className="px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
@@ -1241,6 +1338,104 @@ const Purchasing = () => {
               >
                 Confirm Send
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Response Modal */}
+      {showResponseModal && selectedQuotation && (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Responses for Quotation Q{selectedQuotation.qId.toString().padStart(3, '0')}
+                </h3>
+                <button
+                  onClick={() => setShowResponseModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {responseLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FAAD00]"></div>
+                  <span className="ml-2 text-gray-600">Loading responses...</span>
+                </div>
+              ) : quotationResponses.length > 0 ? (
+                <div className="space-y-4">
+                  {quotationResponses.map((response, index) => (
+                    <div key={response.responseId} className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900">{response.supplierName}</h4>
+                          <p className="text-sm text-gray-600">{response.supplierEmail} | {response.supplierPhone}</p>
+                          <p className="text-sm text-gray-600">{response.supplierAddress}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-[#FAAD00]">
+                            Rs. {response.totalAmount.toLocaleString()}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Delivery: {response.deliveryDate}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <span className="text-sm font-medium text-gray-600">Response Date:</span>
+                          <span className="ml-2 text-sm text-gray-900">{response.respondDate}</span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-600">Status:</span>
+                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                            response.status === 'accepted' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {response.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      {response.additionalNote && (
+                        <div className="mb-4">
+                          <span className="text-sm font-medium text-gray-600">Additional Notes:</span>
+                          <p className="text-sm text-gray-900 mt-1">{response.additionalNote}</p>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => handlePurchaseResponse(response)}
+                          className="px-4 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
+                        >
+                          Select for Purchase
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No responses received yet for this quotation.</p>
+                </div>
+              )}
+
+              <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowResponseModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

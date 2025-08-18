@@ -1,25 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, Filter, Download, Eye, FileDown, CheckCircle, Clock, 
-  X, Calendar, Package, User, Building, MapPin, DollarSign
+  X, Calendar, Package, User, Building, MapPin, DollarSign, Edit
 } from 'lucide-react';
+
+const API_BASE_URL = 'http://localhost:8086/api/v1/quotation';
 
 const Purchasing = () => {
   const [showQuotationForm, setShowQuotationForm] = useState(false);
   const [quotationFormData, setQuotationFormData] = useState({
     project: '',
-    material: '',
-    quantity: '',
     requiredDate: '',
+    description: '',
+    materials: [],
     suppliers: []
   });
+  const [currentMaterial, setCurrentMaterial] = useState({
+    name: '',
+    description: '',
+    quantity: '',
+    amount: ''
+  });
+  const [supplierSearch, setSupplierSearch] = useState('');
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+  const [quotations, setQuotations] = useState([]);
+  const [purchasedItems, setPurchasedItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showQuotationDetail, setShowQuotationDetail] = useState(false);
+  const [selectedQuotation, setSelectedQuotation] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  // Sample data for ongoing projects
-  const ongoingProjects = [
-    { id: 1, name: 'Luxury Villa Construction', location: 'Colombo' },
-    { id: 2, name: 'Office Complex Building', location: 'Kandy' },
-    { id: 3, name: 'Shopping Mall Development', location: 'Galle' },
-  ];
+  // Mock QS ID - In real app, this would come from authentication context
+  const qsId = 1;
+  const qsEmpId = 'EMP_001'; // QS Employee ID for fetching projects
+
+  // State for projects from API
+  const [ongoingProjects, setOngoingProjects] = useState([]);
 
   // Sample data for suppliers
   const suppliers = [
@@ -29,103 +47,284 @@ const Purchasing = () => {
     { id: 4, name: 'BuildPro Suppliers', rating: 4.0 },
   ];
 
-  // Sample quotations data
-  const [quotations] = useState([
-    {
-      id: 'Q001',
-      project: 'Luxury Villa Construction',
-      material: 'Cement Bags',
-      quantity: '500 units',
-      supplier: 'ABC Building Materials',
-      requestDate: '2024-06-15',
-      requiredDate: '2024-06-25',
-      status: 'received',
-      amount: 150000,
-      quotationFile: 'quotation_Q001.pdf'
-    },
-    {
-      id: 'Q002',
-      project: 'Office Complex Building',
-      material: 'Steel Bars',
-      quantity: '200 tons',
-      supplier: 'Quality Construction Supplies',
-      requestDate: '2024-06-18',
-      requiredDate: '2024-06-30',
-      status: 'pending',
-      amount: null,
-      quotationFile: null
-    },
-    {
-      id: 'Q003',
-      project: 'Shopping Mall Development',
-      material: 'Concrete Blocks',
-      quantity: '1000 units',
-      supplier: 'Premium Materials Ltd',
-      requestDate: '2024-06-20',
-      requiredDate: '2024-07-05',
-      status: 'received',
-      amount: 280000,
-      quotationFile: 'quotation_Q003.pdf'
+  // API Functions
+  const fetchQuotations = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/qs/${qsEmpId}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Raw API response:', data);
+        
+        // Extract quotations array from the response
+        const quotationsArray = data.quotations || data || [];
+        
+        // Transform the API response to match UI expectations
+        const transformedData = Array.isArray(quotationsArray) ? quotationsArray.map(item => {
+          console.log('Processing quotation item:', item);
+          
+          return {
+            qId: item.qid || item.qId || item.id,
+            projectName: item.projectId || item.projectName || 'Unknown Project',
+            requiredDate: item.deadline || item.requiredDate || item.date,
+            status: item.status || 'PENDING',
+            description: item.description || 'No description',
+            items: item.items || item.quotationItems || [],
+            suppliers: item.supplierIds ? 
+              item.supplierIds.map(id => {
+                const supplier = suppliers.find(s => s.id === id);
+                return supplier ? supplier.name : `Supplier ${id}`;
+              }) : 
+              (item.suppliers || item.supplierNames || []),
+            createdDate: item.date || item.createdDate,
+            // Add original item for debugging
+            _original: item
+          };
+        }) : [];
+        
+        setQuotations(transformedData);
+        console.log('Transformed quotations:', transformedData);
+      } else {
+        throw new Error('Failed to fetch quotations');
+      }
+    } catch (error) {
+      setError('Error fetching quotations: ' + error.message);
+      console.error('Error fetching quotations:', error);
+      setQuotations([]);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
-  // Sample purchased items data
-  const [purchasedItems] = useState([
-    {
-      id: 'P001',
-      project: 'Luxury Villa Construction',
-      material: 'Ceramic Tiles',
-      quantity: '2000 sq ft',
-      supplier: 'Premium Materials Ltd',
-      orderDate: '2024-06-10',
-      deliveryDate: '2024-06-20',
-      amount: 320000,
-      paymentStatus: 'paid',
-      invoiceFile: 'invoice_P001.pdf'
-    },
-    {
-      id: 'P002',
-      project: 'Office Complex Building',
-      material: 'Glass Panels',
-      quantity: '150 panels',
-      supplier: 'BuildPro Suppliers',
-      orderDate: '2024-06-12',
-      deliveryDate: '2024-06-25',
-      amount: 180000,
-      paymentStatus: 'pending',
-      invoiceFile: null
-    },
-    {
-      id: 'P003',
-      project: 'Shopping Mall Development',
-      material: 'HVAC Systems',
-      quantity: '5 units',
-      supplier: 'ABC Building Materials',
-      orderDate: '2024-06-14',
-      deliveryDate: '2024-07-01',
-      amount: 950000,
-      paymentStatus: 'paid',
-      invoiceFile: 'invoice_P003.pdf'
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/qs/projects/${qsEmpId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects');
+      }
+      const data = await response.json();
+      setOngoingProjects(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      // Fallback to empty array if API fails
+      setOngoingProjects([]);
     }
-  ]);  const handleQuotationSubmit = (e) => {
+  };
+
+  const fetchQuotationDetails = async (quotationId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/${quotationId}/with-items`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Quotation detail response:', data);
+        return data;
+      }
+    } catch (error) {
+      console.error('Error fetching quotation details:', error);
+    }
+    return null;
+  };
+
+  const createQuotation = async (quotationData, status = 'pending') => {
+    setLoading(true);
+    try {
+      const dataWithStatus = {
+        ...quotationData,
+        quotation: {
+          ...quotationData.quotation,
+          status: status
+        }
+      };
+
+      const response = await fetch(`${API_BASE_URL}/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataWithStatus),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh quotations list
+        await fetchQuotations();
+        return data;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create quotation');
+      }
+    } catch (error) {
+      setError('Error creating quotation: ' + error.message);
+      console.error('Error creating quotation:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update quotation function
+  const updateQuotation = async (quotationId, quotationData, status = 'pending') => {
+    setLoading(true);
+    try {
+      const dataWithStatus = {
+        ...quotationData,
+        quotation: {
+          ...quotationData.quotation,
+          status: status
+        }
+      };
+
+      const response = await fetch(`${API_BASE_URL}/${quotationId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataWithStatus),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh quotations list
+        await fetchQuotations();
+        return data;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update quotation');
+      }
+    } catch (error) {
+      setError('Error updating quotation: ' + error.message);
+      console.error('Error updating quotation:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load quotations and projects on component mount
+  useEffect(() => {
+    fetchQuotations();
+    fetchProjects();
+  }, []);  
+  
+  const handleQuotationSubmit = async (e, submitType = 'send') => {
     e.preventDefault();
     
-    // Validate that at least one supplier is selected
+    // Validate that all required fields are filled
+    if (!quotationFormData.project) {
+      alert('Please select a project');
+      return;
+    }
+    if (!quotationFormData.requiredDate) {
+      alert('Please select a required date');
+      return;
+    }
+    if (!quotationFormData.description.trim()) {
+      alert('Please enter a description');
+      return;
+    }
+    if (quotationFormData.materials.length === 0) {
+      alert('Please add at least one material/service');
+      return;
+    }
     if (quotationFormData.suppliers.length === 0) {
       alert('Please select at least one supplier');
       return;
     }
+
+    // Show confirmation dialog for sending
+    if (submitType === 'send') {
+      setShowConfirmDialog(true);
+      return;
+    }
+
+    await processQuotationSubmission(submitType);
+  };
+
+  const processQuotationSubmission = async (submitType) => {
+    try {
+      const status = submitType === 'send' ? 'sent' : 'pending';
+      
+      // Transform data to match backend expected format
+      const quotationData = {
+        quotation: {
+          projectId: quotationFormData.project, // This should be project ID from dropdown
+          qsId: qsEmpId, // Use the QS employee ID
+          date: new Date().toISOString().split('T')[0], // Current date
+          deadline: quotationFormData.requiredDate,
+          description: quotationFormData.description.trim(),
+          status: status
+        },
+        items: quotationFormData.materials.map(material => ({
+          name: material.name,
+          description: material.description,
+          amount: parseFloat(material.amount) || 0,
+          quantity: parseInt(material.quantity) || 1
+        })),
+        supplierIds: quotationFormData.suppliers.map(supplierName => {
+          // Find supplier ID by name - for now using mock IDs
+          const supplier = suppliers.find(s => s.name === supplierName);
+          return supplier ? supplier.id : 1; // Fallback to ID 1 if not found
+        })
+      };
+
+      if (isEditMode && selectedQuotation) {
+        await updateQuotation(selectedQuotation.qId, quotationData, status);
+        setIsEditMode(false);
+        setSelectedQuotation(null);
+        alert(`Quotation ${status === 'sent' ? 'sent' : 'updated'} successfully!`);
+      } else {
+        await createQuotation(quotationData, status);
+        alert(`Quotation ${status === 'sent' ? 'sent' : 'saved as draft'} successfully!`);
+      }
+      
+      // Reset form on success
+      setShowQuotationForm(false);
+      setQuotationFormData({
+        project: '',
+        requiredDate: '',
+        description: '',
+        materials: [],
+        suppliers: []
+      });
+      setCurrentMaterial({ name: '', description: '', quantity: '', amount: '' });
+      setSupplierSearch('');
+      setShowConfirmDialog(false);
+      
+    } catch (error) {
+      alert(`Failed to ${submitType === 'send' ? 'send' : 'save'} quotation request. Please try again.`);
+    }
+  };
+
+  // Handle editing a quotation
+  const handleEditQuotation = async (quotation) => {
+    // Get detailed quotation data first
+    const detailedQuotation = await fetchQuotationDetails(quotation.qId);
     
-    // Handle form submission logic here
-    console.log('Quotation Request:', quotationFormData);
-    setShowQuotationForm(false);
-    setQuotationFormData({
-      project: '',
-      material: '',
-      quantity: '',
-      requiredDate: '',
-      suppliers: []
-    });
+    if (detailedQuotation) {
+      // Populate the form with existing data
+      setQuotationFormData({
+        project: detailedQuotation.quotation?.projectId || quotation.projectName,
+        requiredDate: detailedQuotation.quotation?.deadline || quotation.requiredDate,
+        description: detailedQuotation.quotation?.description || quotation.description || '',
+        materials: detailedQuotation.items || [],
+        suppliers: detailedQuotation.suppliers ? 
+          detailedQuotation.suppliers.map(supplier => supplier.supplierName) : []
+      });
+    } else {
+      // Fallback to basic quotation data
+      setQuotationFormData({
+        project: quotation.projectName || '',
+        requiredDate: quotation.requiredDate || '',
+        description: quotation.description || '',
+        materials: quotation.items || [],
+        suppliers: quotation.suppliers || []
+      });
+    }
+    
+    setSelectedQuotation(quotation);
+    setIsEditMode(true);
+    setShowQuotationDetail(false);
+    setShowQuotationForm(true);
   };
 
   const handleInputChange = (e) => {
@@ -136,28 +335,91 @@ const Purchasing = () => {
     }));
   };
 
-  const handleSupplierToggle = (supplierName) => {
-    setQuotationFormData(prev => ({
+  const handleMaterialChange = (e) => {
+    const { name, value } = e.target;
+    setCurrentMaterial(prev => ({
       ...prev,
-      suppliers: prev.suppliers.includes(supplierName)
-        ? prev.suppliers.filter(s => s !== supplierName)
-        : [...prev.suppliers, supplierName]
+      [name]: value
     }));
   };
 
+  const addMaterial = () => {
+    if (currentMaterial.name && currentMaterial.quantity && parseInt(currentMaterial.quantity) >= 1) {
+      const amount = parseFloat(currentMaterial.amount) || 0;
+      if (amount >= 0) {
+        setQuotationFormData(prev => ({
+          ...prev,
+          materials: [...prev.materials, { 
+            ...currentMaterial, 
+            itemId: Date.now(), 
+            qId: null,
+            quantity: parseInt(currentMaterial.quantity),
+            amount: amount
+          }]
+        }));
+        setCurrentMaterial({ name: '', description: '', quantity: '', amount: '' });
+      }
+    }
+  };
+
+  const removeMaterial = (itemId) => {
+    setQuotationFormData(prev => ({
+      ...prev,
+      materials: prev.materials.filter(material => material.itemId !== itemId)
+    }));
+  };
+
+  const handleSupplierSearch = (e) => {
+    setSupplierSearch(e.target.value);
+    setShowSupplierDropdown(e.target.value.length > 0);
+  };
+
+  const addSupplier = (supplierName) => {
+    if (!quotationFormData.suppliers.includes(supplierName)) {
+      setQuotationFormData(prev => ({
+        ...prev,
+        suppliers: [...prev.suppliers, supplierName]
+      }));
+    }
+    setSupplierSearch('');
+    setShowSupplierDropdown(false);
+  };
+
+  const removeSupplier = (supplierName) => {
+    setQuotationFormData(prev => ({
+      ...prev,
+      suppliers: prev.suppliers.filter(s => s !== supplierName)
+    }));
+  };
+
+  const getFilteredSuppliers = () => {
+    return suppliers.filter(supplier => 
+      supplier.name.toLowerCase().includes(supplierSearch.toLowerCase()) &&
+      !quotationFormData.suppliers.includes(supplier.name)
+    );
+  };
+
   const getStatusBadge = (status) => {
-    if (status === 'received') {
+    const upperStatus = status?.toUpperCase();
+    if (upperStatus === 'RECEIVED') {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
           <CheckCircle className="w-3 h-3 mr-1" />
           Received
         </span>
       );
-    } else {
+    } else if (upperStatus === 'PENDING') {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
           <Clock className="w-3 h-3 mr-1" />
           Pending
+        </span>
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <Clock className="w-3 h-3 mr-1" />
+          {status || 'Unknown'}
         </span>
       );
     }
@@ -179,6 +441,43 @@ const Purchasing = () => {
         </span>
       );
     }
+  };
+
+  const handleViewQuotation = async (quotation) => {
+    // Try to get detailed quotation data with items
+    const detailedQuotation = await fetchQuotationDetails(quotation.qId);
+    
+    if (detailedQuotation) {
+      console.log('Detailed quotation data:', detailedQuotation);
+      
+      // Extract supplier names from the supplier objects
+      const suppliersArray = detailedQuotation.suppliers ? 
+        detailedQuotation.suppliers.map(supplier => supplier.supplierName) : [];
+      
+      const mergedQuotation = {
+        ...quotation,
+        // Handle quotation object from the response
+        qId: detailedQuotation.quotation?.qid || quotation.qId,
+        projectName: detailedQuotation.quotation?.projectId || quotation.projectName,
+        requiredDate: detailedQuotation.quotation?.deadline || quotation.requiredDate,
+        status: detailedQuotation.quotation?.status || quotation.status,
+        createdDate: detailedQuotation.quotation?.date || quotation.createdDate,
+        description: detailedQuotation.quotation?.description || quotation.description,
+        // Items from the detailed response
+        items: detailedQuotation.items || [],
+        // Suppliers - extract supplier names from the supplier objects
+        suppliers: suppliersArray,
+        // Keep the full supplier details for additional information
+        supplierDetails: detailedQuotation.suppliers || []
+      };
+      
+      setSelectedQuotation(mergedQuotation);
+    } else {
+      // Fallback to basic quotation data
+      setSelectedQuotation(quotation);
+    }
+    
+    setShowQuotationDetail(true);
   };
 
   return (
@@ -206,7 +505,7 @@ const Purchasing = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Quotations</p>
-              <p className="text-2xl font-bold text-gray-900">{quotations.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{Array.isArray(quotations) ? quotations.length : 0}</p>
             </div>
           </div>
         </div>
@@ -219,7 +518,7 @@ const Purchasing = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Received Quotations</p>
               <p className="text-2xl font-bold text-gray-900">
-                {quotations.filter(q => q.status === 'received').length}
+                {Array.isArray(quotations) ? quotations.filter(q => q.status === 'RECEIVED' || q.status === 'received').length : 0}
               </p>
             </div>
           </div>
@@ -233,7 +532,7 @@ const Purchasing = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Pending Quotations</p>
               <p className="text-2xl font-bold text-gray-900">
-                {quotations.filter(q => q.status === 'pending').length}
+                {Array.isArray(quotations) ? quotations.filter(q => q.status === 'PENDING' || q.status === 'pending').length : 0}
               </p>
             </div>
           </div>
@@ -285,10 +584,7 @@ const Purchasing = () => {
                   Project
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Material
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Supplier
+                  Description
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Required Date
@@ -302,43 +598,67 @@ const Purchasing = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {quotations.map((quotation) => (
-                <tr key={quotation.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {quotation.id}
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                    Loading quotations...
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {quotation.project}
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 text-center text-red-500">
+                    {error}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {quotation.material} ({quotation.quantity})
+                </tr>
+              ) : !Array.isArray(quotations) || quotations.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                    No quotations found
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {quotation.supplier}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {quotation.requiredDate}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(quotation.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      {quotation.status === 'received' ? (
+                </tr>
+              ) : (
+                quotations.map((quotation) => (
+                  <tr key={quotation.qId} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      Q{quotation.qId.toString().padStart(3, '0')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {quotation.projectName}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={quotation.description}>
+                      {quotation.description || 'No description'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {quotation.requiredDate}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(quotation.status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
                         <button
+                          onClick={() => handleViewQuotation(quotation)}
                           className="text-[#FAAD00] hover:text-[#FAAD00]/80 flex items-center"
-                          title="View Quotation"
+                          title="View Quotation Details"
                         >
                           <Eye className="w-4 h-4 mr-1" />
                           View
                         </button>
-                      ) : (
-                        <span className="text-gray-400 text-xs">Awaiting response</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {quotation.status === 'pending' && (
+                          <button
+                            onClick={() => handleEditQuotation(quotation)}
+                            className="text-blue-600 hover:text-blue-800 flex items-center"
+                            title="Edit Quotation"
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -443,7 +763,7 @@ const Purchasing = () => {
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  New Quotation Request
+                  {isEditMode ? 'Edit Quotation Request' : 'New Quotation Request'}
                 </h3>
                 <button
                   onClick={() => setShowQuotationForm(false)}
@@ -455,134 +775,473 @@ const Purchasing = () => {
             </div>
 
             <form onSubmit={handleQuotationSubmit} className="p-6 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Building className="w-4 h-4 inline mr-2" />
-                  Select Project
-                </label>
-                <select
-                  name="project"
-                  value={quotationFormData.project}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                >
-                  <option value="">Choose a project...</option>
-                  {ongoingProjects.map((project) => (
-                    <option key={project.id} value={project.name}>
-                      {project.name} - {project.location}
-                    </option>
-                  ))}
-                </select>
+              {/* Project and Required Date Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Building className="w-4 h-4 inline mr-2" />
+                    Select Project
+                  </label>
+                  <select
+                    name="project"
+                    value={quotationFormData.project}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  >
+                    <option value="">Choose a project...</option>
+                    {Array.isArray(ongoingProjects) && ongoingProjects.map((project) => (
+                      <option key={project.id || project.projectId} value={project.id || project.projectId}>
+                        {project.name || project.projectName} {project.location && `- ${project.location}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-2" />
+                    Required Date
+                  </label>
+                  <input
+                    type="date"
+                    name="requiredDate"
+                    value={quotationFormData.requiredDate}
+                    onChange={handleInputChange}
+                    min={new Date().toISOString().split('T')[0]}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  />
+                </div>
               </div>
 
+              {/* Description Section */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FileDown className="w-4 h-4 inline mr-2" />
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={quotationFormData.description}
+                  onChange={handleInputChange}
+                  required
+                  rows="3"
+                  placeholder="Enter a description for this quotation request..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent resize-none"
+                />
+              </div>
+
+              {/* Materials/Services Section */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Package className="w-4 h-4 inline mr-2" />
-                  Material/Service
+                  Materials/Services
                 </label>
-                <input
-                  type="text"
-                  name="material"
-                  value={quotationFormData.material}
-                  onChange={handleInputChange}
-                  placeholder="Enter material or service description"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                />
+                
+                {/* Add Material Form */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4 p-4 bg-gray-50 rounded-lg">
+                  <input
+                    type="text"
+                    name="name"
+                    value={currentMaterial.name}
+                    onChange={handleMaterialChange}
+                    placeholder="Material/Service name"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  />
+                  <input
+                    type="text"
+                    name="description"
+                    value={currentMaterial.description}
+                    onChange={handleMaterialChange}
+                    placeholder="Description"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  />
+                  <input
+                    type="number"
+                    name="quantity"
+                    value={currentMaterial.quantity}
+                    onChange={handleMaterialChange}
+                    placeholder="Quantity"
+                    min="1"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  />
+                  <input
+                    type="number"
+                    name="amount"
+                    value={currentMaterial.amount}
+                    onChange={handleMaterialChange}
+                    placeholder="Amount"
+                    min="0"
+                    step="0.01"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={addMaterial}
+                    className="px-4 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
+                  >
+                    <Plus className="w-4 h-4 inline mr-1" />
+                    Add
+                  </button>
+                </div>
+
+                {/* Materials Table */}
+                {quotationFormData.materials.length > 0 && (
+                  <div className="border border-gray-300 rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Material/Service
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Description
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Quantity
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Estimated Amount
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {quotationFormData.materials.map((material) => (
+                          <tr key={material.itemId}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {material.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {material.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {material.quantity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {material.amount ? `Rs. ${parseFloat(material.amount).toLocaleString()}` : '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <button
+                                type="button"
+                                onClick={() => removeMaterial(material.itemId)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {quotationFormData.materials.length === 0 && (
+                  <p className="text-red-500 text-xs mt-1">Please add at least one material/service</p>
+                )}
               </div>
 
+              {/* Suppliers Section */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantity
-                </label>
-                <input
-                  type="text"
-                  name="quantity"
-                  value={quotationFormData.quantity}
-                  onChange={handleInputChange}
-                  placeholder="Enter quantity (e.g., 100 units, 50 tons)"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-2" />
-                  Required Date
-                </label>
-                <input
-                  type="date"
-                  name="requiredDate"
-                  value={quotationFormData.requiredDate}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                />
-              </div>              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <User className="w-4 h-4 inline mr-2" />
-                  Select Suppliers (Multiple)
+                  Select Suppliers
                 </label>
-                <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3">
-                  {suppliers.map((supplier) => (
-                    <label key={supplier.id} className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={quotationFormData.suppliers.includes(supplier.name)}
-                        onChange={() => handleSupplierToggle(supplier.name)}
-                        className="mr-3 h-4 w-4 text-[#FAAD00] focus:ring-[#FAAD00] border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">
-                        {supplier.name} (Rating: {supplier.rating}/5)
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {quotationFormData.suppliers.length === 0 && (
-                  <p className="text-red-500 text-xs mt-1">Please select at least one supplier</p>
-                )}
+
+                {/* Selected Suppliers */}
                 {quotationFormData.suppliers.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-600">Selected suppliers:</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">Selected suppliers:</p>
+                    <div className="flex flex-wrap gap-2">
                       {quotationFormData.suppliers.map((supplier) => (
                         <span
                           key={supplier}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#FAAD00] bg-opacity-10 text-[#000000]"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#FAAD00] bg-opacity-10 text-[#000000]"
                         >
                           {supplier}
                           <button
                             type="button"
-                            onClick={() => handleSupplierToggle(supplier)}
-                            className="ml-1 text-[#FAAD00] hover:text-[#FAAD00]/80"
+                            onClick={() => removeSupplier(supplier)}
+                            className="ml-2 text-black hover:text-gray-700"
                           >
-                            <X className="w-3 h-3" />
+                            <X className="w-4 h-4" />
                           </button>
                         </span>
                       ))}
                     </div>
                   </div>
                 )}
+
+                {/* Supplier Search */}
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      value={supplierSearch}
+                      onChange={handleSupplierSearch}
+                      placeholder="Search and add suppliers..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Supplier Dropdown */}
+                  {showSupplierDropdown && getFilteredSuppliers().length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {getFilteredSuppliers().map((supplier) => (
+                        <div
+                          key={supplier.id}
+                          onClick={() => addSupplier(supplier.name)}
+                          className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex justify-between items-center"
+                        >
+                          <span className="text-sm text-gray-700">{supplier.name}</span>
+                          <span className="text-xs text-gray-500">Rating: {supplier.rating}/5</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {quotationFormData.suppliers.length === 0 && (
+                  <p className="text-red-500 text-xs mt-1">Please select at least one supplier</p>
+                )}
               </div>
 
               <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <button
                   type="button"
-                  onClick={() => setShowQuotationForm(false)}
+                  onClick={() => {
+                    setShowQuotationForm(false);
+                    setIsEditMode(false);
+                    setSelectedQuotation(null);
+                    setQuotationFormData({
+                      project: '',
+                      requiredDate: '',
+                      description: '',
+                      materials: [],
+                      suppliers: []
+                    });
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={(e) => handleQuotationSubmit(e, 'draft')}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Save as Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => handleQuotationSubmit(e, 'send')}
                   className="px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
                 >
-                  Send Request
+                  {isEditMode ? 'Update & Send' : 'Send Request'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quotation Detail Modal */}
+      {showQuotationDetail && selectedQuotation && (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Quotation Details - Q{selectedQuotation.qId.toString().padStart(3, '0')}
+                </h3>
+                <button
+                  onClick={() => setShowQuotationDetail(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Quotation Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Quotation Information</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Quotation ID:</span>
+                      <span className="font-medium">Q{selectedQuotation.qId.toString().padStart(3, '0')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Project:</span>
+                      <span className="font-medium">{selectedQuotation.projectName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Required Date:</span>
+                      <span className="font-medium">{selectedQuotation.requiredDate}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <span>{getStatusBadge(selectedQuotation.status)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Description</h4>
+                  <p className="text-gray-700 leading-relaxed">
+                    {selectedQuotation.description || 'No description provided'}
+                  </p>
+                </div>
+              </div>
+
+              {/* QS Officer Information */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-3">QS Officer</h4>
+                <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">QS ID:</span>
+                      <span className="font-medium">{qsEmpId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Created Date:</span>
+                      <span className="font-medium">{selectedQuotation.createdDate || new Date().toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+              {/* Items Section */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3">Materials/Services</h4>
+                <div className="border border-gray-300 rounded-lg overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Item
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Quantity
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Estimated Amount
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {selectedQuotation.items && selectedQuotation.items.length > 0 ? (
+                        selectedQuotation.items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {item.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.quantity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.amount ? `Rs. ${parseFloat(item.amount).toLocaleString()}` : '-'}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                            No items found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Suppliers Section */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3">Selected Suppliers</h4>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  {selectedQuotation.suppliers && selectedQuotation.suppliers.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedQuotation.suppliers.map((supplier, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#FAAD00] bg-opacity-10 text-[#000000]"
+                        >
+                          {supplier}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">No suppliers selected</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => setShowQuotationDetail(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Close
+                </button>
+                {selectedQuotation.status === 'pending' && (
+                  <button
+                    onClick={() => handleEditQuotation(selectedQuotation)}
+                    className="px-4 py-2 border border-[#FAAD00] text-[#FAAD00] rounded-lg hover:bg-[#FAAD00]/10 transition-colors duration-200"
+                  >
+                    Edit
+                  </button>
+                )}
+                {selectedQuotation.status === 'RECEIVED' && (
+                  <button
+                    className="px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
+                  >
+                    Process Order
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 backdrop-blur-md bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl border max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Confirm Send Quotation
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to send this quotation request to suppliers? 
+              Once sent, the status will be changed to "sent" and the quotation cannot be edited.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => processQuotationSubmission('send')}
+                className="px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
+              >
+                Confirm Send
+              </button>
+            </div>
           </div>
         </div>
       )}

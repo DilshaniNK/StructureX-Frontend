@@ -35,6 +35,13 @@ const Purchasing = () => {
   const [quotationResponses, setQuotationResponses] = useState([]);
   const [responseLoading, setResponseLoading] = useState(false);
   const [responseCounts, setResponseCounts] = useState({});
+  const [filters, setFilters] = useState({
+    project: '',
+    dateFrom: '',
+    dateTo: '',
+    supplier: ''
+  });
+  const [activeSection, setActiveSection] = useState('ongoing'); // 'ongoing' or 'closed'
 
   // Mock QS ID - In real app, this would come from authentication context
   const qsId = 1;
@@ -42,6 +49,7 @@ const Purchasing = () => {
 
   // State for projects from API
   const [ongoingProjects, setOngoingProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
 
   // Sample data for suppliers
   const suppliers = [
@@ -102,17 +110,35 @@ const Purchasing = () => {
   };
 
   const fetchProjects = async () => {
+    setProjectsLoading(true);
     try {
+      console.log('Fetching projects for QS:', qsEmpId);
       const response = await fetch(`http://localhost:8086/api/v1/qs/projects/${qsEmpId}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch projects');
+        throw new Error(`Failed to fetch projects: ${response.status} ${response.statusText}`);
       }
       const data = await response.json();
-      setOngoingProjects(Array.isArray(data) ? data : []);
+      console.log('Projects API response:', data);
+      
+      // Handle different possible response structures
+      let projectsArray = [];
+      if (Array.isArray(data)) {
+        projectsArray = data;
+      } else if (data && Array.isArray(data.projects)) {
+        projectsArray = data.projects;
+      } else if (data && data.data && Array.isArray(data.data)) {
+        projectsArray = data.data;
+      }
+      
+      setOngoingProjects(projectsArray);
+      console.log('Processed projects:', projectsArray);
     } catch (error) {
       console.error('Error fetching projects:', error);
       // Fallback to empty array if API fails
       setOngoingProjects([]);
+      setError('Failed to load projects: ' + error.message);
+    } finally {
+      setProjectsLoading(false);
     }
   };
 
@@ -465,6 +491,27 @@ const Purchasing = () => {
           Pending
         </span>
       );
+    } else if (upperStatus === 'SENT') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <Clock className="w-3 h-3 mr-1" />
+          Sent
+        </span>
+      );
+    } else if (upperStatus === 'CLOSED' || upperStatus === 'COMPLETED') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          {upperStatus === 'COMPLETED' ? 'Completed' : 'Closed'}
+        </span>
+      );
+    } else if (upperStatus === 'CANCELLED') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          <X className="w-3 h-3 mr-1" />
+          Cancelled
+        </span>
+      );
     } else {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
@@ -537,12 +584,150 @@ const Purchasing = () => {
     setShowResponseModal(true);
   };
 
-  const handlePurchaseResponse = (response) => {
-    // Handle purchase logic here
-    console.log('Purchasing from response:', response);
-    alert(`Purchase order will be created for ${response.supplierName} with total amount Rs. ${response.totalAmount.toLocaleString()}`);
-    // In a real application, this would make an API call to create a purchase order
+  // Function to update quotation status
+  const updateQuotationStatus = async (quotationId, status) => {
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/quotation/${quotationId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: status
+        }),
+      });
+
+      if (response.ok) {
+        return await response.json();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update quotation status');
+      }
+    } catch (error) {
+      console.error('Error updating quotation status:', error);
+      throw error;
+    }
   };
+
+  const handlePurchaseResponse = (response) => {
+    // Show confirmation dialog for purchase
+    const confirmed = window.confirm(
+      `Are you sure you want to select this quotation for purchase?\n\n` +
+      `Supplier: ${response.supplierName}\n` +
+      `Total Amount: Rs. ${response.totalAmount.toLocaleString()}\n` +
+      `Delivery Date: ${response.deliveryDate}\n\n` +
+      `This will update the quotation status to "closed".`
+    );
+
+    if (confirmed) {
+      processPurchaseOrder(response);
+    }
+  };
+
+  const processPurchaseOrder = async (response) => {
+    try {
+      setLoading(true);
+      
+      // Create purchase order using the API
+      const purchaseOrderResponse = await fetch(`http://localhost:8086/api/v1/quotation/responses/${response.responseId}/create-purchase-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          // Add any additional data required for purchase order creation
+          // The API should handle the purchase order creation based on the response ID
+        }),
+      });
+
+      if (!purchaseOrderResponse.ok) {
+        const errorData = await purchaseOrderResponse.json();
+        throw new Error(errorData.message || `Failed to create purchase order: ${purchaseOrderResponse.status} ${purchaseOrderResponse.statusText}`);
+      }
+
+      const purchaseOrderData = await purchaseOrderResponse.json();
+      console.log('Purchase order created:', purchaseOrderData);
+      
+      // Update the quotation status to "closed" (this should already be handled by the API, but we'll keep it as fallback)
+      try {
+        await updateQuotationStatus(selectedQuotation.qId, 'closed');
+      } catch (statusError) {
+        console.warn('Status update failed, but purchase order was created:', statusError);
+        // Don't throw error here since the main operation (purchase order creation) succeeded
+      }
+      
+      // Refresh quotations list to reflect the status change
+      await fetchQuotations();
+      
+      // Close modals
+      setShowResponseModal(false);
+      setShowQuotationDetail(false);
+      
+      // Show success message with purchase order details
+      alert(
+        `Purchase order created successfully!\n\n` +
+        `Purchase Order ID: ${purchaseOrderData.purchaseOrderId || 'Generated'}\n` +
+        `Supplier: ${response.supplierName}\n` +
+        `Total Amount: Rs. ${response.totalAmount.toLocaleString()}\n` +
+        `Delivery Date: ${response.deliveryDate}\n` +
+        `Quotation status updated to "Closed"`
+      );
+      
+    } catch (error) {
+      console.error('Error creating purchase order:', error);
+      alert(`Failed to process purchase order: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter quotations based on selected filters and separate by status
+  const allFilteredQuotations = quotations.filter(quotation => {
+    // Project filter
+    if (filters.project && quotation.projectId !== filters.project) {
+      return false;
+    }
+    
+    // Date range filter
+    if (filters.dateFrom && quotation.createdDate) {
+      const quotationDate = new Date(quotation.createdDate);
+      const fromDate = new Date(filters.dateFrom);
+      if (quotationDate < fromDate) {
+        return false;
+      }
+    }
+    
+    if (filters.dateTo && quotation.createdDate) {
+      const quotationDate = new Date(quotation.createdDate);
+      const toDate = new Date(filters.dateTo);
+      if (quotationDate > toDate) {
+        return false;
+      }
+    }
+    
+    // Supplier filter
+    if (filters.supplier && quotation.suppliers) {
+      const hasSupplier = quotation.suppliers.some(supplier => 
+        supplier.toLowerCase().includes(filters.supplier.toLowerCase())
+      );
+      if (!hasSupplier) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+
+  // Separate quotations into ongoing and closed
+  const ongoingQuotations = allFilteredQuotations.filter(quotation => {
+    const status = quotation.status?.toUpperCase();
+    return status !== 'CLOSED' && status !== 'COMPLETED' && status !== 'CANCELLED';
+  });
+
+  const closedQuotations = allFilteredQuotations.filter(quotation => {
+    const status = quotation.status?.toUpperCase();
+    return status === 'CLOSED' || status === 'COMPLETED' || status === 'CANCELLED';
+  });
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -560,66 +745,116 @@ const Purchasing = () => {
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Package className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Quotations</p>
-              <p className="text-2xl font-bold text-gray-900">{Array.isArray(quotations) ? quotations.length : 0}</p>
-            </div>
+      {/* Filters Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 p-4">
+        <h3 className="text-base font-semibold text-gray-900 mb-3">Filters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          {/* Project Filter */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Project</label>
+            <select
+              value={filters.project}
+              onChange={(e) => setFilters({...filters, project: e.target.value})}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+              disabled={projectsLoading}
+            >
+              <option value="">
+                {projectsLoading ? 'Loading projects...' : 
+                 ongoingProjects.length === 0 ? 'No projects available' : 'All Projects'}
+              </option>
+              {Array.isArray(ongoingProjects) && ongoingProjects.map((project) => (
+                <option key={project.projectId || project.id} value={project.projectId || project.id}>
+                  {project.projectName || project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date From Filter */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Date From</label>
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+            />
+          </div>
+
+          {/* Date To Filter */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Date To</label>
+            <input
+              type="date"
+              value={filters.dateTo}
+              onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+            />
+          </div>
+
+          {/* Supplier Filter */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Supplier</label>
+            <select
+              value={filters.supplier}
+              onChange={(e) => setFilters({...filters, supplier: e.target.value})}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+            >
+              <option value="">All Suppliers</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.name}>
+                  {supplier.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Received Quotations</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {Array.isArray(quotations) ? quotations.filter(q => q.status === 'RECEIVED' || q.status === 'received').length : 0}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <Clock className="w-6 h-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending Quotations</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {Array.isArray(quotations) ? quotations.filter(q => q.status === 'PENDING' || q.status === 'pending').length : 0}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Purchases</p>
-              <p className="text-2xl font-bold text-gray-900">{purchasedItems.length}</p>
-            </div>
-          </div>
+        {/* Clear Filters Button */}
+        <div className="mt-3 flex justify-end">
+          <button
+            onClick={() => setFilters({ project: '', dateFrom: '', dateTo: '', supplier: '' })}
+            className="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+          >
+            Clear Filters
+          </button>
         </div>
       </div>
 
-      {/* Quotations Table */}
+      {/* Quotations Sections with Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200">
+          <div className="flex">
+            <button
+              onClick={() => setActiveSection('ongoing')}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                activeSection === 'ongoing'
+                  ? 'border-[#FAAD00] text-[#FAAD00] bg-orange-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Ongoing Quotations ({ongoingQuotations.length})
+            </button>
+            <button
+              onClick={() => setActiveSection('closed')}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                activeSection === 'closed'
+                  ? 'border-[#FAAD00] text-[#FAAD00] bg-orange-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Closed Quotations ({closedQuotations.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Quotation Requests</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {activeSection === 'ongoing' ? 'Ongoing Quotation Requests' : 'Closed Quotation Requests'}
+            </h2>
             <div className="flex space-x-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -674,55 +909,58 @@ const Purchasing = () => {
                     {error}
                   </td>
                 </tr>
-              ) : !Array.isArray(quotations) || quotations.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    No quotations found
-                  </td>
-                </tr>
-              ) : (
-                quotations.map((quotation) => (
-                  <tr key={quotation.qId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      Q{quotation.qId.toString().padStart(3, '0')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {quotation.projectName}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={quotation.description}>
-                      {quotation.description || 'No description'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {quotation.requiredDate}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(quotation.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleViewQuotation(quotation)}
-                          className="text-[#FAAD00] hover:text-[#FAAD00]/80 flex items-center"
-                          title="View Quotation Details"
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </button>
-                        {quotation.status === 'pending' && (
-                          <button
-                            onClick={() => handleEditQuotation(quotation)}
-                            className="text-blue-600 hover:text-blue-800 flex items-center"
-                            title="Edit Quotation"
-                          >
-                            <Edit className="w-4 h-4 mr-1" />
-                            Edit
-                          </button>
-                        )}
-                      </div>
+              ) : (() => {
+                const currentQuotations = activeSection === 'ongoing' ? ongoingQuotations : closedQuotations;
+                return !Array.isArray(currentQuotations) || currentQuotations.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      No {activeSection} quotations found
                     </td>
                   </tr>
-                ))
-              )}
+                ) : (
+                  currentQuotations.map((quotation) => (
+                    <tr key={quotation.qId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Q{quotation.qId.toString().padStart(3, '0')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {quotation.projectName}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={quotation.description}>
+                        {quotation.description || 'No description'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {quotation.requiredDate}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(quotation.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleViewQuotation(quotation)}
+                            className="text-[#FAAD00] hover:text-[#FAAD00]/80 flex items-center"
+                            title="View Quotation Details"
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </button>
+                          {quotation.status === 'pending' && activeSection === 'ongoing' && (
+                            <button
+                              onClick={() => handleEditQuotation(quotation)}
+                              className="text-blue-600 hover:text-blue-800 flex items-center"
+                              title="Edit Quotation"
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                );
+              })()}
             </tbody>
           </table>
         </div>
@@ -851,15 +1089,25 @@ const Purchasing = () => {
                     value={quotationFormData.project}
                     onChange={handleInputChange}
                     required
+                    disabled={projectsLoading}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
                   >
-                    <option value="">Choose a project...</option>
+                    <option value="">
+                      {projectsLoading ? 'Loading projects...' : 
+                       ongoingProjects.length === 0 ? 'No projects available' : 'Choose a project...'}
+                    </option>
                     {Array.isArray(ongoingProjects) && ongoingProjects.map((project) => (
-                      <option key={project.id || project.projectId} value={project.id || project.projectId}>
-                        {project.name || project.projectName} {project.location && `- ${project.location}`}
+                      <option key={project.projectId || project.id} value={project.projectId || project.id}>
+                        {project.projectName || project.name}
+                        {(project.location || project.projectLocation) && ` - ${project.location || project.projectLocation}`}
                       </option>
                     ))}
                   </select>
+                  {!projectsLoading && ongoingProjects.length === 0 && (
+                    <p className="text-red-500 text-xs mt-1">
+                      No projects available. Please contact your administrator.
+                    </p>
+                  )}
                 </div>
 
                 <div>

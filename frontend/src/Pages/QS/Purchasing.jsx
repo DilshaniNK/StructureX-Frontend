@@ -24,7 +24,9 @@ const Purchasing = () => {
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
   const [quotations, setQuotations] = useState([]);
-  const [purchasedItems, setPurchasedItems] = useState([]);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [purchaseOrdersLoading, setPurchaseOrdersLoading] = useState(false);
+  const [purchaseOrdersError, setPurchaseOrdersError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showQuotationDetail, setShowQuotationDetail] = useState(false);
@@ -32,6 +34,8 @@ const Purchasing = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showResponseModal, setShowResponseModal] = useState(false);
+  const [showPurchaseOrderDetail, setShowPurchaseOrderDetail] = useState(false);
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
   const [quotationResponses, setQuotationResponses] = useState([]);
   const [responseLoading, setResponseLoading] = useState(false);
   const [responseCounts, setResponseCounts] = useState({});
@@ -42,6 +46,11 @@ const Purchasing = () => {
     supplier: ''
   });
   const [activeSection, setActiveSection] = useState('ongoing'); // 'ongoing' or 'closed'
+  
+  // Pagination states
+  const [quotationCurrentPage, setQuotationCurrentPage] = useState(1);
+  const [purchaseOrderCurrentPage, setPurchaseOrderCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Mock QS ID - In real app, this would come from authentication context
   const qsId = 1;
@@ -106,6 +115,32 @@ const Purchasing = () => {
       setQuotations([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPurchaseOrders = async () => {
+    setPurchaseOrdersLoading(true);
+    setPurchaseOrdersError(null);
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/purchase-order/qs/${qsEmpId}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Purchase orders API response:', data);
+        
+        if (data.success && Array.isArray(data.orders)) {
+          setPurchaseOrders(data.orders);
+        } else {
+          setPurchaseOrders([]);
+        }
+      } else {
+        throw new Error(`Failed to fetch purchase orders: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      setPurchaseOrdersError('Error fetching purchase orders: ' + error.message);
+      console.error('Error fetching purchase orders:', error);
+      setPurchaseOrders([]);
+    } finally {
+      setPurchaseOrdersLoading(false);
     }
   };
 
@@ -273,6 +308,7 @@ const Purchasing = () => {
   useEffect(() => {
     fetchQuotations();
     fetchProjects();
+    fetchPurchaseOrders();
   }, []);
 
   // Fetch response counts when quotations change
@@ -280,7 +316,12 @@ const Purchasing = () => {
     if (quotations.length > 0) {
       fetchResponseCounts();
     }
-  }, [quotations]);  
+  }, [quotations]);
+
+  // Reset pagination when switching between tabs
+  useEffect(() => {
+    setQuotationCurrentPage(1);
+  }, [activeSection]);  
   
   const handleQuotationSubmit = async (e, submitType = 'send') => {
     e.preventDefault();
@@ -584,6 +625,11 @@ const Purchasing = () => {
     setShowResponseModal(true);
   };
 
+  const handleViewPurchaseOrder = (order) => {
+    setSelectedPurchaseOrder(order);
+    setShowPurchaseOrderDetail(true);
+  };
+
   // Function to update quotation status
   const updateQuotationStatus = async (quotationId, status) => {
     try {
@@ -607,6 +653,105 @@ const Purchasing = () => {
       console.error('Error updating quotation status:', error);
       throw error;
     }
+  };
+
+  // Pagination helper functions
+  const getPaginatedData = (data, currentPage) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return data.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = (dataLength) => {
+    return Math.ceil(dataLength / itemsPerPage);
+  };
+
+  const generatePageNumbers = (currentPage, totalPages) => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  // Pagination component
+  const PaginationComponent = ({ currentPage, totalPages, onPageChange }) => {
+    if (totalPages <= 1) return null;
+
+    const pageNumbers = generatePageNumbers(currentPage, totalPages);
+
+    return (
+      <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200">
+        <div className="flex items-center text-sm text-gray-700">
+          <span>
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalPages * itemsPerPage)} of {totalPages * itemsPerPage} entries
+          </span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          
+          {pageNumbers.map((page, index) => (
+            <React.Fragment key={index}>
+              {page === '...' ? (
+                <span className="px-3 py-1 text-sm text-gray-500">...</span>
+              ) : (
+                <button
+                  onClick={() => onPageChange(page)}
+                  className={`px-3 py-1 text-sm font-medium rounded-md ${
+                    currentPage === page
+                      ? 'bg-[#FAAD00] text-white'
+                      : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              )}
+            </React.Fragment>
+          ))}
+          
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const handlePurchaseResponse = (response) => {
@@ -658,6 +803,9 @@ const Purchasing = () => {
       
       // Refresh quotations list to reflect the status change
       await fetchQuotations();
+      
+      // Refresh purchase orders list to show the new purchase order
+      await fetchPurchaseOrders();
       
       // Close modals
       setShowResponseModal(false);
@@ -873,97 +1021,116 @@ const Purchasing = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Quotation ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Project
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Required Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
+          <div className="h-96 overflow-y-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    Loading quotations...
-                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Quotation ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Project
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Required Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-red-500">
-                    {error}
-                  </td>
-                </tr>
-              ) : (() => {
-                const currentQuotations = activeSection === 'ongoing' ? ongoingQuotations : closedQuotations;
-                return !Array.isArray(currentQuotations) || currentQuotations.length === 0 ? (
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {loading ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                      No {activeSection} quotations found
+                      Loading quotations...
                     </td>
                   </tr>
-                ) : (
-                  currentQuotations.map((quotation) => (
-                    <tr key={quotation.qId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        Q{quotation.qId.toString().padStart(3, '0')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {quotation.projectName}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={quotation.description}>
-                        {quotation.description || 'No description'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {quotation.requiredDate}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(quotation.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleViewQuotation(quotation)}
-                            className="text-[#FAAD00] hover:text-[#FAAD00]/80 flex items-center"
-                            title="View Quotation Details"
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            View
-                          </button>
-                          {quotation.status === 'pending' && activeSection === 'ongoing' && (
-                            <button
-                              onClick={() => handleEditQuotation(quotation)}
-                              className="text-blue-600 hover:text-blue-800 flex items-center"
-                              title="Edit Quotation"
-                            >
-                              <Edit className="w-4 h-4 mr-1" />
-                              Edit
-                            </button>
-                          )}
-                        </div>
+                ) : error ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-red-500">
+                      {error}
+                    </td>
+                  </tr>
+                ) : (() => {
+                  const currentQuotations = activeSection === 'ongoing' ? ongoingQuotations : closedQuotations;
+                  const paginatedQuotations = getPaginatedData(currentQuotations, quotationCurrentPage);
+                  
+                  return !Array.isArray(currentQuotations) || currentQuotations.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                        No {activeSection} quotations found
                       </td>
                     </tr>
-                  ))
-                );
-              })()}
-            </tbody>
-          </table>
+                  ) : (
+                    paginatedQuotations.map((quotation) => (
+                      <tr key={quotation.qId} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          Q{quotation.qId.toString().padStart(3, '0')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {quotation.projectName}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={quotation.description}>
+                          {quotation.description || 'No description'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {quotation.requiredDate}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(quotation.status)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleViewQuotation(quotation)}
+                              className="text-[#FAAD00] hover:text-[#FAAD00]/80 flex items-center"
+                              title="View Quotation Details"
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </button>
+                            {quotation.status === 'pending' && activeSection === 'ongoing' && (
+                              <button
+                                onClick={() => handleEditQuotation(quotation)}
+                                className="text-blue-600 hover:text-blue-800 flex items-center"
+                                title="Edit Quotation"
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                Edit
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  );
+                })()}
+              </tbody>
+            </table>
+          </div>
         </div>
+        
+        {/* Quotations Pagination */}
+        {(() => {
+          const currentQuotations = activeSection === 'ongoing' ? ongoingQuotations : closedQuotations;
+          const totalPages = getTotalPages(currentQuotations.length);
+          return (
+            <PaginationComponent 
+              currentPage={quotationCurrentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setQuotationCurrentPage(page);
+              }}
+            />
+          );
+        })()}
       </div>
 
       {/* Purchased Items Table */}
@@ -989,73 +1156,133 @@ const Purchasing = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Purchase ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Project
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Material
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Supplier
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Payment Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {purchasedItems.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {item.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.project}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.material} ({item.quantity})
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.supplier}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    Rs. {item.amount.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getPaymentStatusBadge(item.paymentStatus)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      {item.paymentStatus === 'paid' && item.invoiceFile ? (
-                        <button
-                          className="text-[#FAAD00] hover:text-[#FAAD00]/80 flex items-center"
-                          title="Download Invoice"
-                        >
-                          <FileDown className="w-4 h-4 mr-1" />
-                          Invoice
-                        </button>
-                      ) : (
-                        <span className="text-gray-400 text-xs">No invoice</span>
-                      )}
-                    </div>
-                  </td>
+          <div className="h-96 overflow-y-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Order ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Project
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Supplier
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Delivery Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {purchaseOrdersLoading ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      Loading purchase orders...
+                    </td>
+                  </tr>
+                ) : purchaseOrdersError ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-red-500">
+                      {purchaseOrdersError}
+                    </td>
+                  </tr>
+                ) : !Array.isArray(purchaseOrders) || purchaseOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      No purchase orders found
+                    </td>
+                  </tr>
+                ) : (
+                  getPaginatedData(purchaseOrders, purchaseOrderCurrentPage).map((order) => (
+                    <tr key={order.orderId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        PO{order.orderId.toString().padStart(3, '0')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>
+                          <div className="font-medium">{order.projectName || order.projectId}</div>
+                          <div className="text-xs text-gray-400">{order.projectId} • {order.projectLocation || 'Location not specified'}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>
+                          <div className="font-medium">{order.supplierDetails.supplierName}</div>
+                          <div className="text-xs text-gray-400">{order.supplierDetails.supplierEmail}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {order.estimatedDeliveryDate}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            order.orderStatus 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            <Clock className="w-3 h-3 mr-1" />
+                            {order.orderStatusText}
+                          </span>
+                          <div>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              order.paymentStatus === 'paid' || order.paymentStatus === 'completed'
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {order.paymentStatus === 'paid' || order.paymentStatus === 'completed' ? (
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                              ) : (
+                                <Clock className="w-3 h-3 mr-1" />
+                              )}
+                              {order.paymentStatusText}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleViewPurchaseOrder(order)}
+                            className="text-[#FAAD00] hover:text-[#FAAD00]/80 flex items-center"
+                            title="View Order Details"
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </button>
+                          {(order.paymentStatus === 'paid' || order.paymentStatus === 'completed') && (
+                            <button
+                              className="text-blue-600 hover:text-blue-800 flex items-center"
+                              title="Download Invoice"
+                            >
+                              <FileDown className="w-4 h-4 mr-1" />
+                              Invoice
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+        
+        {/* Purchase Orders Pagination */}
+        <PaginationComponent 
+          currentPage={purchaseOrderCurrentPage}
+          totalPages={getTotalPages(purchaseOrders.length)}
+          onPageChange={(page) => {
+            setPurchaseOrderCurrentPage(page);
+          }}
+        />
       </div>
 
       {/* Quotation Request Form Modal */}
@@ -1682,6 +1909,240 @@ const Purchasing = () => {
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Order Detail Modal */}
+      {showPurchaseOrderDetail && selectedPurchaseOrder && (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Purchase Order Details - PO{selectedPurchaseOrder.orderId.toString().padStart(3, '0')}
+                </h3>
+                <button
+                  onClick={() => setShowPurchaseOrderDetail(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Order Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Order Information</h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Order ID:</span>
+                      <span className="font-medium">PO{selectedPurchaseOrder.orderId.toString().padStart(3, '0')}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Quotation ID:</span>
+                      <span className="font-medium">Q{selectedPurchaseOrder.quotationId.toString().padStart(3, '0')}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Order Date:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.orderDate}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Order Status:</span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        selectedPurchaseOrder.orderStatus 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        <Clock className="w-3 h-3 mr-1" />
+                        {selectedPurchaseOrder.orderStatusText}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Project Information</h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Project:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.projectName || selectedPurchaseOrder.projectId}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Project ID:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.projectId}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Location:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.projectLocation || 'Not specified'}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Category:</span>
+                      <span className="font-medium capitalize">{selectedPurchaseOrder.projectCategory || 'Not specified'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Delivery Information</h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Original Delivery Date:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.originalDeliveryDate}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Estimated Delivery Date:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.estimatedDeliveryDate}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Payment Status:</span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        selectedPurchaseOrder.paymentStatus === 'paid' || selectedPurchaseOrder.paymentStatus === 'completed'
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedPurchaseOrder.paymentStatus === 'paid' || selectedPurchaseOrder.paymentStatus === 'completed' ? (
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                        ) : (
+                          <Clock className="w-3 h-3 mr-1" />
+                        )}
+                        {selectedPurchaseOrder.paymentStatusText}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Supplier Information */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-3">Supplier Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Supplier Name:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.supplierDetails.supplierName}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1 mt-2">
+                      <span className="text-gray-600 text-sm">Email:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.supplierDetails.supplierEmail}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Phone:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.supplierDetails.supplierPhone}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1 mt-2">
+                      <span className="text-gray-600 text-sm">Address:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.supplierDetails.supplierAddress}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Section */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3">Order Items</h4>
+                <div className="border border-gray-300 rounded-lg overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Item
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Unit Price
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Quantity
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total Amount
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {selectedPurchaseOrder.items && selectedPurchaseOrder.items.length > 0 ? (
+                        selectedPurchaseOrder.items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              Item #{item.itemId}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {item.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              Rs. {parseFloat(item.unitPrice).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.quantity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              Rs. {(parseFloat(item.unitPrice) * parseInt(item.quantity)).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                            No items found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Total Amounts */}
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-blue-700 font-medium">Original Quotation Amount:</span>
+                      <span className="text-xl font-bold text-blue-900">
+                        Rs. {selectedPurchaseOrder.totalQuotationAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-[#FAAD00] bg-opacity-10 p-4 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-gray-700 font-medium">Final Order Amount:</span>
+                      <span className="text-xl font-bold text-black">
+                        Rs. {selectedPurchaseOrder.totalAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => setShowPurchaseOrderDetail(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Close
+                </button>
+                {(selectedPurchaseOrder.paymentStatus === 'paid' || selectedPurchaseOrder.paymentStatus === 'completed') && (
+                  <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    <span>Download Invoice</span>
+                  </button>
+                )}
+                <button
+                  className="px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Export Order</span>
                 </button>
               </div>
             </div>

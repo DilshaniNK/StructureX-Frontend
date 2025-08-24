@@ -22,7 +22,7 @@ export default function Home() {
   // Determine active item based on current path
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path.includes('/legalofficer/dashboard') || path === '/') return 'dashboard';
+    if (path.includes('/legalofficer/home') || path === '/') return 'home';
     if (path.includes('/legalofficer/chat')) return 'chat';
     if (path.includes('/legalofficer/notifications')) return 'notifications';
     return 'home'; // default
@@ -50,7 +50,7 @@ export default function Home() {
         <div className="p-6">
           <Routes>
             <Route path="/" element={<Main />} />
-            <Route path="/dashboard" element={<Main />} >
+            <Route path="/home" element={<Main />} >
               <Route path='projectdetails' element={<ProjectDetails />} />
             </Route>
             <Route path='/chat' element={<Chat />} />

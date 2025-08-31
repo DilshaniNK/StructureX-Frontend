@@ -43,9 +43,21 @@ const Purchasing = () => {
     project: '',
     dateFrom: '',
     dateTo: '',
-    supplier: ''
+    supplier: '',
+    quotationId: '',
+    status: '',
+    description: ''
+  });
+  const [purchaseOrderFilters, setPurchaseOrderFilters] = useState({
+    project: '',
+    supplier: '',
+    dateFrom: '',
+    dateTo: '',
+    orderId: '',
+    status: ''
   });
   const [activeSection, setActiveSection] = useState('ongoing'); // 'ongoing' or 'closed'
+  const [activePurchaseSection, setActivePurchaseSection] = useState('pending'); // 'pending' or 'completed'
   
   // Pagination states
   const [quotationCurrentPage, setQuotationCurrentPage] = useState(1);
@@ -321,7 +333,12 @@ const Purchasing = () => {
   // Reset pagination when switching between tabs
   useEffect(() => {
     setQuotationCurrentPage(1);
-  }, [activeSection]);  
+  }, [activeSection]);
+
+  // Reset purchase order pagination when switching between tabs
+  useEffect(() => {
+    setPurchaseOrderCurrentPage(1);
+  }, [activePurchaseSection]);  
   
   const handleQuotationSubmit = async (e, submitType = 'send') => {
     e.preventDefault();
@@ -630,6 +647,99 @@ const Purchasing = () => {
     setShowPurchaseOrderDetail(true);
   };
 
+  // Function to download invoice
+  const handleDownloadInvoice = async (orderId) => {
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/pdf/invoice/${orderId}/download/format`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+      });
+
+      if (response.ok) {
+        // Get the filename from the response headers or use a default
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `invoice_${orderId}.pdf`;
+        
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+
+        // Create a blob from the response
+        const blob = await response.blob();
+        
+        // Create a temporary URL for the blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create a temporary anchor element and trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Failed to download invoice');
+      }
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      alert('Failed to download invoice. Please try again.');
+    }
+  };
+
+  const handleDownloadQuotation = async (quotationId) => {
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/pdf/quotation/${quotationId}/download/format`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+      });
+
+      if (response.ok) {
+        // Get the filename from the response headers or use a default
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `quotation_Q${quotationId.toString().padStart(3, '0')}.pdf`;
+        
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+
+        // Create a blob from the response
+        const blob = await response.blob();
+        
+        // Create a temporary URL for the blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create a temporary anchor element and trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Failed to download quotation');
+      }
+    } catch (error) {
+      console.error('Error downloading quotation:', error);
+      alert('Failed to download quotation. Please try again.');
+    }
+  };
+
   // Function to update quotation status
   const updateQuotationStatus = async (quotationId, status) => {
     try {
@@ -755,6 +865,12 @@ const Purchasing = () => {
   };
 
   const handlePurchaseResponse = (response) => {
+    // Check if the response status is rejected
+    if (response.status?.toLowerCase() === 'rejected') {
+      alert('Cannot proceed with purchase. This supplier response has been rejected.');
+      return;
+    }
+
     // Show confirmation dialog for purchase
     const confirmed = window.confirm(
       `Are you sure you want to select this quotation for purchase?\n\n` +
@@ -831,9 +947,37 @@ const Purchasing = () => {
 
   // Filter quotations based on selected filters and separate by status
   const allFilteredQuotations = quotations.filter(quotation => {
-    // Project filter
-    if (filters.project && quotation.projectId !== filters.project) {
-      return false;
+    // Project filter (check multiple possible fields)
+    if (filters.project) {
+      const searchTerm = filters.project.toLowerCase();
+      const projectName = quotation.projectName?.toLowerCase() || '';
+      const projectId = quotation.projectId?.toString().toLowerCase() || '';
+      
+      // Check if project name or ID contains the search term
+      if (!projectName.includes(searchTerm) && !projectId.includes(searchTerm)) {
+        return false;
+      }
+    }
+
+    // Quotation ID filter
+    if (filters.quotationId && quotation.qId) {
+      if (!quotation.qId.toString().includes(filters.quotationId)) {
+        return false;
+      }
+    }
+
+    // Status filter
+    if (filters.status && quotation.status) {
+      if (quotation.status.toLowerCase() !== filters.status.toLowerCase()) {
+        return false;
+      }
+    }
+
+    // Description filter
+    if (filters.description && quotation.description) {
+      if (!quotation.description.toLowerCase().includes(filters.description.toLowerCase())) {
+        return false;
+      }
     }
     
     // Date range filter
@@ -875,6 +1019,74 @@ const Purchasing = () => {
   const closedQuotations = allFilteredQuotations.filter(quotation => {
     const status = quotation.status?.toUpperCase();
     return status === 'CLOSED' || status === 'COMPLETED' || status === 'CANCELLED';
+  });
+
+  // Filter purchase orders based on selected filters
+  const allFilteredPurchaseOrders = purchaseOrders.filter(order => {
+    // Project filter
+    if (purchaseOrderFilters.project && order.projectName) {
+      if (!order.projectName.toLowerCase().includes(purchaseOrderFilters.project.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Supplier filter
+    if (purchaseOrderFilters.supplier && order.supplierName) {
+      if (!order.supplierName.toLowerCase().includes(purchaseOrderFilters.supplier.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Order ID filter
+    if (purchaseOrderFilters.orderId && order.orderId) {
+      if (!order.orderId.toString().includes(purchaseOrderFilters.orderId)) {
+        return false;
+      }
+    }
+
+    // Date range filter
+    if (purchaseOrderFilters.dateFrom && order.orderDate) {
+      const orderDate = new Date(order.orderDate);
+      const fromDate = new Date(purchaseOrderFilters.dateFrom);
+      if (orderDate < fromDate) {
+        return false;
+      }
+    }
+
+    if (purchaseOrderFilters.dateTo && order.orderDate) {
+      const orderDate = new Date(order.orderDate);
+      const toDate = new Date(purchaseOrderFilters.dateTo);
+      if (orderDate > toDate) {
+        return false;
+      }
+    }
+
+    // Status filter
+    if (purchaseOrderFilters.status) {
+      let orderPaymentStatus = '';
+      if (order.paymentStatus === 'paid' || order.paymentStatus === 'completed') {
+        orderPaymentStatus = 'completed';
+      } else if (order.paymentStatus === 'partial') {
+        orderPaymentStatus = 'partial';
+      } else {
+        orderPaymentStatus = 'pending';
+      }
+      
+      if (orderPaymentStatus !== purchaseOrderFilters.status.toLowerCase()) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // Separate purchase orders into pending and completed
+  const pendingPurchaseOrders = allFilteredPurchaseOrders.filter(order => {
+    return order.orderStatus === false || order.orderStatus === 0;
+  });
+
+  const completedPurchaseOrders = allFilteredPurchaseOrders.filter(order => {
+    return order.orderStatus === true || order.orderStatus === 1;
   });
 
   return (
@@ -999,23 +1211,103 @@ const Purchasing = () => {
 
         {/* Tab Content */}
         <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900">
               {activeSection === 'ongoing' ? 'Ongoing Quotation Requests' : 'Closed Quotation Requests'}
             </h2>
-            <div className="flex space-x-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          </div>
+
+          {/* Quotation Filters */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quotation ID</label>
                 <input
                   type="text"
-                  placeholder="Search quotations..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  placeholder="Search by ID..."
+                  value={filters.quotationId}
+                  onChange={(e) => setFilters(prev => ({ ...prev, quotationId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
                 />
               </div>
-              <button className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                <Filter className="w-4 h-4 mr-2" />
-                Filter
-              </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                <input
+                  type="text"
+                  placeholder="Search by project..."
+                  value={filters.project}
+                  onChange={(e) => setFilters(prev => ({ ...prev, project: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                <input
+                  type="text"
+                  placeholder="Search by supplier..."
+                  value={filters.supplier}
+                  onChange={(e) => setFilters(prev => ({ ...prev, supplier: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="sent">Sent</option>
+                  <option value="received">Received</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <input
+                  type="date"
+                  value={filters.dateTo}
+                  onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input
+                  type="text"
+                  placeholder="Search description..."
+                  value={filters.description}
+                  onChange={(e) => setFilters(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => setFilters({
+                    project: '',
+                    dateFrom: '',
+                    dateTo: '',
+                    supplier: '',
+                    quotationId: '',
+                    status: '',
+                    description: ''
+                  })}
+                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors duration-200"
+                >
+                  Clear Filters
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1133,24 +1425,121 @@ const Purchasing = () => {
         })()}
       </div>
 
-      {/* Purchased Items Table */}
+      {/* Purchase Orders Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200">
+          <div className="flex">
+            <button
+              onClick={() => setActivePurchaseSection('pending')}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                activePurchaseSection === 'pending'
+                  ? 'border-[#FAAD00] text-[#FAAD00] bg-orange-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Pending Orders ({pendingPurchaseOrders.length})
+            </button>
+            <button
+              onClick={() => setActivePurchaseSection('completed')}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                activePurchaseSection === 'completed'
+                  ? 'border-[#FAAD00] text-[#FAAD00] bg-orange-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Completed Orders ({completedPurchaseOrders.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
         <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Purchase Orders</h2>
-            <div className="flex space-x-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {activePurchaseSection === 'pending' ? 'Pending Purchase Orders' : 'Completed Purchase Orders'}
+            </h2>
+          </div>
+
+          {/* Purchase Order Filters */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
                 <input
                   type="text"
-                  placeholder="Search purchases..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  placeholder="Search by Order ID..."
+                  value={purchaseOrderFilters.orderId}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, orderId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
                 />
               </div>
-              <button className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                <input
+                  type="text"
+                  placeholder="Search by project..."
+                  value={purchaseOrderFilters.project}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, project: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                <input
+                  type="text"
+                  placeholder="Search by supplier..."
+                  value={purchaseOrderFilters.supplier}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, supplier: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <input
+                  type="date"
+                  value={purchaseOrderFilters.dateFrom}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <input
+                  type="date"
+                  value={purchaseOrderFilters.dateTo}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={purchaseOrderFilters.status}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                >
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="partial">Partial</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => setPurchaseOrderFilters({
+                    project: '',
+                    supplier: '',
+                    dateFrom: '',
+                    dateTo: '',
+                    orderId: '',
+                    status: ''
+                  })}
+                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors duration-200"
+                >
+                  Clear Filters
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1193,22 +1582,26 @@ const Purchasing = () => {
                       {purchaseOrdersError}
                     </td>
                   </tr>
-                ) : !Array.isArray(purchaseOrders) || purchaseOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                      No purchase orders found
-                    </td>
-                  </tr>
-                ) : (
-                  getPaginatedData(purchaseOrders, purchaseOrderCurrentPage).map((order) => (
+                ) : (() => {
+                  const currentPurchaseOrders = activePurchaseSection === 'pending' ? pendingPurchaseOrders : completedPurchaseOrders;
+                  return !Array.isArray(currentPurchaseOrders) || currentPurchaseOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                        No {activePurchaseSection} purchase orders found
+                      </td>
+                    </tr>
+                  ) : (
+                    getPaginatedData(currentPurchaseOrders, purchaseOrderCurrentPage).map((order) => (
                     <tr key={order.orderId} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         PO{order.orderId.toString().padStart(3, '0')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div>
-                          <div className="font-medium">{order.projectName || order.projectId}</div>
-                          <div className="text-xs text-gray-400">{order.projectId} • {order.projectLocation || 'Location not specified'}</div>
+                          <div className="font-medium">{order.projectName || order.projectDetails?.projectName || order.projectId}</div>
+                          <div className="text-xs text-gray-400">
+                            {order.projectId} • {order.projectDetails?.projectLocation || order.projectLocation || 'Location not specified'}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -1223,12 +1616,16 @@ const Purchasing = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            order.orderStatus 
+                            order.orderStatus === 1 || order.orderStatus === true
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            <Clock className="w-3 h-3 mr-1" />
-                            {order.orderStatusText}
+                            {order.orderStatus === 1 || order.orderStatus === true ? (
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                            ) : (
+                              <Clock className="w-3 h-3 mr-1" />
+                            )}
+                            {order.orderStatus === 1 || order.orderStatus === true ? 'Completed' : 'Pending'}
                           </span>
                           <div>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -1256,33 +1653,31 @@ const Purchasing = () => {
                             <Eye className="w-4 h-4 mr-1" />
                             View
                           </button>
-                          {(order.paymentStatus === 'paid' || order.paymentStatus === 'completed') && (
-                            <button
-                              className="text-blue-600 hover:text-blue-800 flex items-center"
-                              title="Download Invoice"
-                            >
-                              <FileDown className="w-4 h-4 mr-1" />
-                              Invoice
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
                   ))
-                )}
+                );
+              })()}
               </tbody>
             </table>
           </div>
         </div>
         
         {/* Purchase Orders Pagination */}
-        <PaginationComponent 
-          currentPage={purchaseOrderCurrentPage}
-          totalPages={getTotalPages(purchaseOrders.length)}
-          onPageChange={(page) => {
-            setPurchaseOrderCurrentPage(page);
-          }}
-        />
+        {(() => {
+          const currentPurchaseOrders = activePurchaseSection === 'pending' ? pendingPurchaseOrders : completedPurchaseOrders;
+          const totalPages = getTotalPages(currentPurchaseOrders.length);
+          return (
+            <PaginationComponent 
+              currentPage={purchaseOrderCurrentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setPurchaseOrderCurrentPage(page);
+              }}
+            />
+          );
+        })()}
       </div>
 
       {/* Quotation Request Form Modal */}
@@ -1750,6 +2145,13 @@ const Purchasing = () => {
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <button
+                  onClick={() => handleDownloadQuotation(selectedQuotation.qId)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download PDF</span>
+                </button>
+                <button
                   onClick={() => setShowQuotationDetail(false)}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >
@@ -1870,8 +2272,10 @@ const Purchasing = () => {
                         <div>
                           <span className="text-sm font-medium text-gray-600">Status:</span>
                           <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                            response.status === 'accepted' 
+                            response.status?.toLowerCase() === 'accepted' 
                               ? 'bg-green-100 text-green-800' 
+                              : response.status?.toLowerCase() === 'rejected'
+                              ? 'bg-red-100 text-red-800'
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {response.status}
@@ -1887,12 +2291,18 @@ const Purchasing = () => {
                       )}
 
                       <div className="flex justify-end">
-                        <button
-                          onClick={() => handlePurchaseResponse(response)}
-                          className="px-4 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
-                        >
-                          Select for Purchase
-                        </button>
+                        {response.status?.toLowerCase() === 'rejected' ? (
+                          <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed">
+                            Cannot Purchase (Rejected)
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handlePurchaseResponse(response)}
+                            className="px-4 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
+                          >
+                            Select for Purchase
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1955,12 +2365,16 @@ const Purchasing = () => {
                     <div className="flex flex-col space-y-1">
                       <span className="text-gray-600 text-sm">Order Status:</span>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        selectedPurchaseOrder.orderStatus 
+                        selectedPurchaseOrder.orderStatus === 1 || selectedPurchaseOrder.orderStatus === true
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        <Clock className="w-3 h-3 mr-1" />
-                        {selectedPurchaseOrder.orderStatusText}
+                        {selectedPurchaseOrder.orderStatus === 1 || selectedPurchaseOrder.orderStatus === true ? (
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                        ) : (
+                          <Clock className="w-3 h-3 mr-1" />
+                        )}
+                        {selectedPurchaseOrder.orderStatus === 1 || selectedPurchaseOrder.orderStatus === true ? 'Completed' : 'Pending'}
                       </span>
                     </div>
                   </div>
@@ -1971,7 +2385,7 @@ const Purchasing = () => {
                   <div className="space-y-3">
                     <div className="flex flex-col space-y-1">
                       <span className="text-gray-600 text-sm">Project:</span>
-                      <span className="font-medium">{selectedPurchaseOrder.projectName || selectedPurchaseOrder.projectId}</span>
+                      <span className="font-medium">{selectedPurchaseOrder.projectName || selectedPurchaseOrder.projectDetails?.projectName || selectedPurchaseOrder.projectId}</span>
                     </div>
                     <div className="flex flex-col space-y-1">
                       <span className="text-gray-600 text-sm">Project ID:</span>
@@ -1979,11 +2393,11 @@ const Purchasing = () => {
                     </div>
                     <div className="flex flex-col space-y-1">
                       <span className="text-gray-600 text-sm">Location:</span>
-                      <span className="font-medium">{selectedPurchaseOrder.projectLocation || 'Not specified'}</span>
+                      <span className="font-medium">{selectedPurchaseOrder.projectDetails?.projectLocation || selectedPurchaseOrder.projectLocation || 'Not specified'}</span>
                     </div>
                     <div className="flex flex-col space-y-1">
                       <span className="text-gray-600 text-sm">Category:</span>
-                      <span className="font-medium capitalize">{selectedPurchaseOrder.projectCategory || 'Not specified'}</span>
+                      <span className="font-medium capitalize">{selectedPurchaseOrder.projectDetails?.projectCategory || selectedPurchaseOrder.projectCategory || 'Not specified'}</span>
                     </div>
                   </div>
                 </div>
@@ -2132,18 +2546,13 @@ const Purchasing = () => {
                 </button>
                 {(selectedPurchaseOrder.paymentStatus === 'paid' || selectedPurchaseOrder.paymentStatus === 'completed') && (
                   <button
+                    onClick={() => handleDownloadInvoice(selectedPurchaseOrder.orderId)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
                   >
                     <FileDown className="w-4 h-4" />
-                    <span>Download Invoice</span>
+                    <span>Download Document</span>
                   </button>
                 )}
-                <button
-                  className="px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200 flex items-center space-x-2"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Export Order</span>
-                </button>
               </div>
             </div>
           </div>

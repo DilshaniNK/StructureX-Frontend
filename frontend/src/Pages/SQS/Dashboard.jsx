@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../Components/SQS/Layout';
 import CalendarCard from '../../Components/Financial_officer/CalenderCard';
@@ -25,6 +25,14 @@ function Dashboard() {
   // State to control QS assignment overlay
   const [showQSAssignmentOverlay, setShowQSAssignmentOverlay] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
+  
+  // State for projects without QS officers
+  const [pendingProjects, setPendingProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  
+  // State for QS officers
+  const [qsOfficers, setQsOfficers] = useState([]);
+  const [loadingQsOfficers, setLoadingQsOfficers] = useState(false);
 
   // Sample data for quick demo
   const todoItems = [
@@ -50,20 +58,47 @@ function Dashboard() {
     { status: 'Active' },
   ];
 
-  // Sample data for QS officers
-  const qsOfficers = [
-    { id: 1, name: 'John Smith', expertise: 'Commercial Buildings', availableProjects: 2 },
-    { id: 2, name: 'Sarah Wilson', expertise: 'Infrastructure', availableProjects: 1 },
-    { id: 3, name: 'Mike Johnson', expertise: 'Residential', availableProjects: 3 },
-    { id: 4, name: 'Emily Davis', expertise: 'Industrial', availableProjects: 1 },
-  ];
+  // Fetch projects without QS officers from API
+  useEffect(() => {
+    const fetchProjectsWithoutQS = async () => {
+      try {
+        setLoadingProjects(true);
+        const response = await fetch('http://localhost:8086/api/v1/sqs/projects_without_qs');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch projects: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        setPendingProjects(data);
+      } catch (error) {
+        console.error('Error fetching projects without QS:', error);
+        // Keep empty array if fetch fails
+        setPendingProjects([]);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
 
-  // Sample data for pending projects without QS
-  const pendingProjects = [
-    { id: 1, name: 'Shopping Mall Complex', type: 'Commercial', priority: 'High', client: 'ABC Corp' },
-    { id: 2, name: 'Highway Extension', type: 'Infrastructure', priority: 'Medium', client: 'Government' },
-    { id: 3, name: 'Residential Tower', type: 'Residential', priority: 'High', client: 'XYZ Developers' },
-  ];
+    const fetchQsOfficers = async () => {
+      try {
+        setLoadingQsOfficers(true);
+        const response = await fetch('http://localhost:8086/api/v1/sqs/get_qs_officers');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch QS officers: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        setQsOfficers(data);
+      } catch (error) {
+        console.error('Error fetching QS officers:', error);
+        // Keep empty array if fetch fails
+        setQsOfficers([]);
+      } finally {
+        setLoadingQsOfficers(false);
+      }
+    };
+
+    fetchProjectsWithoutQS();
+    fetchQsOfficers();
+  }, []);
   // Sample data for recent customer registrations
   const recentCustomers = [
     { id: 1, name: 'John Anderson', type: 'Individual', registeredDate: '2025-06-22', status: 'Pending' },
@@ -77,11 +112,55 @@ function Dashboard() {
   };
 
   // Function to handle QS assignment
-  const handleQSAssignment = (qsOfficer) => {
-    console.log(`Assigning ${qsOfficer.name} to project ${selectedProject.name}`);
-    // Here you would typically make an API call to assign the QS officer
-    setShowQSAssignmentOverlay(false);
-    setSelectedProject(null);
+  const handleQSAssignment = async (qsOfficer) => {
+    try {
+      const projectId = selectedProject?.projectId || selectedProject?.project_id || selectedProject?.id;
+      const employeeId = qsOfficer?.employee_id || qsOfficer?.id;
+      const projectName = selectedProject?.project_name || selectedProject?.name;
+      const officerName = qsOfficer?.first_name && qsOfficer?.last_name 
+        ? `${qsOfficer.first_name} ${qsOfficer.last_name}` 
+        : qsOfficer?.name;
+
+      // Validate that we have the required IDs
+      if (!projectId) {
+        alert('Error: Project ID is missing. Cannot assign QS officer.');
+        return;
+      }
+      
+      if (!employeeId) {
+        alert('Error: Employee ID is missing. Cannot assign QS officer.');
+        return;
+      }
+
+      console.log(`Assigning ${officerName} (ID: ${employeeId}) to project ${projectName} (ID: ${projectId})`);
+      
+      const response = await fetch(`http://localhost:8086/api/v1/sqs/assign_qs/${projectId}/${employeeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to assign QS officer: ${response.status} ${response.statusText}`);
+      }
+
+      // Show success message (you can implement a toast notification here)
+      alert(`Successfully assigned ${officerName} to ${projectName}`);
+      
+      // Refresh the pending projects list to reflect the assignment
+      const updatedProjects = pendingProjects.filter(p => 
+        (p.projectId || p.project_id || p.id) !== projectId
+      );
+      setPendingProjects(updatedProjects);
+      
+      // Close the overlay
+      setShowQSAssignmentOverlay(false);
+      setSelectedProject(null);
+    } catch (error) {
+      console.error('Error assigning QS officer:', error);
+      alert('Failed to assign QS officer. Please try again.');
+    }
   };
 
   // Navigation handlers for quick links
@@ -248,55 +327,96 @@ function Dashboard() {
             Assign QS Officers to Projects
           </h3>
           
-          {/* Pending Projects Table (Priority column removed) */}
+          {/* Pending Projects Table */}
           <div className="mb-6">
-            <h4 className="text-md font-medium mb-3 text-gray-700">Projects Awaiting QS Assignment</h4>
+            <h4 className="text-md font-medium mb-3 text-gray-700">
+              Projects Awaiting QS Assignment
+              {loadingProjects && (
+                <span className="ml-2 text-sm text-amber-500">(Loading...)</span>
+              )}
+            </h4>
             <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="py-2 text-left">Project Name</th>
-                    <th className="py-2 text-left">Type</th>
-                    <th className="py-2 text-left">Client</th>
-                    <th className="py-2 text-left">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendingProjects.map((project) => (
-                    <tr key={project.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 font-medium">{project.name}</td>
-                      <td className="py-3">{project.type}</td>
-                      <td className="py-3">{project.client}</td>
-                      <td className="py-3">
-                        <button 
-                          onClick={() => handleAssignQS(project)}
-                          className="bg-amber-500 text-white px-3 py-1 rounded hover:bg-amber-600 text-sm"
-                        >
-                          Assign QS
-                        </button>
-                      </td>
+              {loadingProjects ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="text-gray-500">Loading projects...</div>
+                </div>
+              ) : pendingProjects.length === 0 ? (
+                <div className="flex justify-center items-center py-8 text-gray-500">
+                  No projects awaiting QS assignment
+                </div>
+              ) : (
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b-2 border-gray-200">
+                      <th className="py-2 text-left">Project Name</th>
+                      <th className="py-2 text-left">Type</th>
+                      <th className="py-2 text-left">Client</th>
+                      <th className="py-2 text-left">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {pendingProjects.map((project) => (
+                      <tr key={project.projectId || project.project_id || project.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 font-medium">{project.project_name || project.name}</td>
+                        <td className="py-3">{project.category || project.project_type || project.type}</td>
+                        <td className="py-3">{project.clientName || project.client_name || project.client || 'N/A'}</td>
+                        <td className="py-3">
+                          <button 
+                            onClick={() => handleAssignQS(project)}
+                            className="bg-amber-500 text-white px-3 py-1 rounded hover:bg-amber-600 text-sm"
+                          >
+                            Assign QS
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Available QS Officers (only name and assigned project number) */}
+        {/* Available QS Officers */}
         <div className="w-full xl:w-1/3 bg-white p-6 rounded-lg shadow-md">
-          <h4 className="text-md font-medium mb-3 text-gray-700">Available QS Officers</h4>
+          <h4 className="text-md font-medium mb-3 text-gray-700">
+            Available QS Officers
+            {loadingQsOfficers && (
+              <span className="ml-2 text-sm text-amber-500">(Loading...)</span>
+            )}
+          </h4>
           <div className="space-y-3">
-            {qsOfficers.map((officer) => (
-              <div key={officer.id} className="p-3 border rounded-lg hover:bg-gray-50">
-                <div className="flex justify-between items-center">
-                  <p className="font-medium text-gray-800">{officer.name}</p>
-                  <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
-                    Assigned: {5 - officer.availableProjects}
-                  </span>
-                </div>
+            {loadingQsOfficers ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="text-gray-500">Loading QS officers...</div>
               </div>
-            ))}
+            ) : qsOfficers.length === 0 ? (
+              <div className="flex justify-center items-center py-8 text-gray-500">
+                No QS officers available
+              </div>
+            ) : (
+              <>
+                {qsOfficers.map((officer) => (
+                  <div key={officer.employee_id || officer.id} className="p-3 border rounded-lg hover:bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium text-gray-800">
+                          {officer.first_name && officer.last_name 
+                            ? `${officer.first_name} ${officer.last_name}` 
+                            : officer.name || 'Unknown Officer'}
+                        </p>
+                        {officer.role && (
+                          <p className="text-sm text-gray-600">{officer.role}</p>
+                        )}
+                      </div>
+                      <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                        Available
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -460,7 +580,7 @@ function Dashboard() {
           <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl border border-white/50">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">
-                Assign QS Officer to: {selectedProject?.name}
+                Assign QS Officer to: {selectedProject?.project_name || selectedProject?.name}
               </h2>
               <button
                 onClick={() => {
@@ -476,47 +596,61 @@ function Dashboard() {
             <div className="mb-4 p-4 bg-gray-50 rounded-lg">
               <h3 className="font-medium text-gray-700 mb-2">Project Details:</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><strong>Project:</strong> {selectedProject?.name}</div>
-                <div><strong>Type:</strong> {selectedProject?.type}</div>
-                <div><strong>Client:</strong> {selectedProject?.client}</div>
+                <div><strong>Project:</strong> {selectedProject?.project_name || selectedProject?.name}</div>
+                <div><strong>Type:</strong> {selectedProject?.category || selectedProject?.project_type || selectedProject?.type}</div>
+                <div><strong>Client:</strong> {selectedProject?.clientName || selectedProject?.client_name || selectedProject?.client || 'N/A'}</div>
               </div>
             </div>
 
             <div className="mb-4">
               <h3 className="text-lg font-semibold mb-3">Available QS Officers</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full border border-gray-200 rounded-lg">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Name</th>
-                      <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Expertise</th>
-                      <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Current Projects</th>
-                      <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {qsOfficers.map((officer) => (
-                      <tr key={officer.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-800">{officer.name}</td>
-                        <td className="py-3 px-4 text-gray-600">{officer.expertise}</td>
-                        <td className="py-3 px-4 text-center">
-                          <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-sm font-medium">
-                            {5 - officer.availableProjects}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() => handleQSAssignment(officer)}
-                            className="bg-amber-500 text-white px-4 py-2 rounded text-sm font-medium hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                          >
-                            Assign
-                          </button>
-                        </td>
+              {loadingQsOfficers ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="text-gray-500">Loading QS officers...</div>
+                </div>
+              ) : qsOfficers.length === 0 ? (
+                <div className="flex justify-center items-center py-8 text-gray-500">
+                  No QS officers available
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-gray-200 rounded-lg">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Name</th>
+                        <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Role</th>
+                        <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Status</th>
+                        <th className="py-3 px-4 text-left font-medium text-gray-700 border-b">Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {qsOfficers.map((officer) => (
+                        <tr key={officer.employee_id || officer.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-800">
+                            {officer.first_name && officer.last_name 
+                              ? `${officer.first_name} ${officer.last_name}` 
+                              : officer.name || 'Unknown Officer'}
+                          </td>
+                          <td className="py-3 px-4 text-gray-600">{officer.role || 'QS Officer'}</td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-sm font-medium">
+                              Available
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => handleQSAssignment(officer)}
+                              className="bg-amber-500 text-white px-4 py-2 rounded text-sm font-medium hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            >
+                              Assign
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
             
             <div className="flex justify-end pt-4 border-t">

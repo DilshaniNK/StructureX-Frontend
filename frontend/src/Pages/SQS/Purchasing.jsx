@@ -1,25 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, Filter, Download, Eye, FileDown, CheckCircle, Clock, 
-  X, Calendar, Package, User, Building, MapPin, DollarSign
+  X, Calendar, Package, User, Building, MapPin, DollarSign, Edit
 } from 'lucide-react';
+
+const API_BASE_URL = 'http://localhost:8086/api/v1/quotation';
 
 const Purchasing = () => {
   const [showQuotationForm, setShowQuotationForm] = useState(false);
   const [quotationFormData, setQuotationFormData] = useState({
     project: '',
-    material: '',
-    quantity: '',
     requiredDate: '',
+    description: '',
+    materials: [],
     suppliers: []
   });
+  const [currentMaterial, setCurrentMaterial] = useState({
+    name: '',
+    description: '',
+    quantity: '',
+    amount: ''
+  });
+  const [supplierSearch, setSupplierSearch] = useState('');
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+  const [quotations, setQuotations] = useState([]);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [purchaseOrdersLoading, setPurchaseOrdersLoading] = useState(false);
+  const [purchaseOrdersError, setPurchaseOrdersError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showQuotationDetail, setShowQuotationDetail] = useState(false);
+  const [selectedQuotation, setSelectedQuotation] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showResponseModal, setShowResponseModal] = useState(false);
+  const [showPurchaseOrderDetail, setShowPurchaseOrderDetail] = useState(false);
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
+  const [quotationResponses, setQuotationResponses] = useState([]);
+  const [responseLoading, setResponseLoading] = useState(false);
+  const [responseCounts, setResponseCounts] = useState({});
+  const [filters, setFilters] = useState({
+    project: '',
+    dateFrom: '',
+    dateTo: '',
+    supplier: '',
+    quotationId: '',
+    status: '',
+    description: ''
+  });
+  const [purchaseOrderFilters, setPurchaseOrderFilters] = useState({
+    project: '',
+    supplier: '',
+    dateFrom: '',
+    dateTo: '',
+    orderId: '',
+    status: ''
+  });
+  const [activeSection, setActiveSection] = useState('ongoing'); // 'ongoing' or 'closed'
+  const [activePurchaseSection, setActivePurchaseSection] = useState('pending'); // 'pending' or 'completed'
 
-  // Sample data for ongoing projects
-  const ongoingProjects = [
-    { id: 1, name: 'Luxury Villa Construction', location: 'Colombo' },
-    { id: 2, name: 'Office Complex Building', location: 'Kandy' },
-    { id: 3, name: 'Shopping Mall Development', location: 'Galle' },
-  ];
+  // Pagination states
+  const [quotationCurrentPage, setQuotationCurrentPage] = useState(1);
+  const [purchaseOrderCurrentPage, setPurchaseOrderCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  // Mock QS ID - In real app, this would come from authentication context  
+  const qsId = 2; // Different ID for SQS
+  const qsEmpId = 'EMP_003'; // SQS Employee ID for fetching projects
+
+  // State for projects from API
+  const [ongoingProjects, setOngoingProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
 
   // Sample data for suppliers
   const suppliers = [
@@ -29,103 +80,385 @@ const Purchasing = () => {
     { id: 4, name: 'BuildPro Suppliers', rating: 4.0 },
   ];
 
-  // Sample quotations data
-  const [quotations] = useState([
-    {
-      id: 'Q001',
-      project: 'Luxury Villa Construction',
-      material: 'Cement Bags',
-      quantity: '500 units',
-      supplier: 'ABC Building Materials',
-      requestDate: '2024-06-15',
-      requiredDate: '2024-06-25',
-      status: 'received',
-      amount: 150000,
-      quotationFile: 'quotation_Q001.pdf'
-    },
-    {
-      id: 'Q002',
-      project: 'Office Complex Building',
-      material: 'Steel Bars',
-      quantity: '200 tons',
-      supplier: 'Quality Construction Supplies',
-      requestDate: '2024-06-18',
-      requiredDate: '2024-06-30',
-      status: 'pending',
-      amount: null,
-      quotationFile: null
-    },
-    {
-      id: 'Q003',
-      project: 'Shopping Mall Development',
-      material: 'Concrete Blocks',
-      quantity: '1000 units',
-      supplier: 'Premium Materials Ltd',
-      requestDate: '2024-06-20',
-      requiredDate: '2024-07-05',
-      status: 'received',
-      amount: 280000,
-      quotationFile: 'quotation_Q003.pdf'
+  // API Functions
+  const fetchQuotations = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/qs/${qsEmpId}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Raw API response:', data);
+        
+        // Extract quotations array from the response
+        const quotationsArray = data.quotations || data || [];
+        
+        // Transform the API response to match UI expectations
+        const transformedData = Array.isArray(quotationsArray) ? quotationsArray.map(item => {
+          console.log('Processing quotation item:', item);
+          
+          return {
+            qId: item.qid || item.qId || item.id,
+            projectId: item.projectId || 'Unknown ID',
+            projectName: item.projectName || 'Unknown Project',
+            requiredDate: item.deadline || item.requiredDate || item.date,
+            status: item.status || 'PENDING',
+            description: item.description || 'No description',
+            items: item.items || item.quotationItems || [],
+            suppliers: item.supplierIds ? 
+              item.supplierIds.map(id => {
+                const supplier = suppliers.find(s => s.id === id);
+                return supplier ? supplier.name : `Supplier ${id}`;
+              }) : 
+              (item.suppliers || item.supplierNames || []),
+            createdDate: item.date || item.createdDate,
+            // Add original item for debugging
+            _original: item
+          };
+        }) : [];
+        
+        setQuotations(transformedData);
+        console.log('Transformed quotations:', transformedData);
+      } else {
+        throw new Error('Failed to fetch quotations');
+      }
+    } catch (error) {
+      setError('Error fetching quotations: ' + error.message);
+      console.error('Error fetching quotations:', error);
+      setQuotations([]);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
-  // Sample purchased items data
-  const [purchasedItems] = useState([
-    {
-      id: 'P001',
-      project: 'Luxury Villa Construction',
-      material: 'Ceramic Tiles',
-      quantity: '2000 sq ft',
-      supplier: 'Premium Materials Ltd',
-      orderDate: '2024-06-10',
-      deliveryDate: '2024-06-20',
-      amount: 320000,
-      paymentStatus: 'paid',
-      invoiceFile: 'invoice_P001.pdf'
-    },
-    {
-      id: 'P002',
-      project: 'Office Complex Building',
-      material: 'Glass Panels',
-      quantity: '150 panels',
-      supplier: 'BuildPro Suppliers',
-      orderDate: '2024-06-12',
-      deliveryDate: '2024-06-25',
-      amount: 180000,
-      paymentStatus: 'pending',
-      invoiceFile: null
-    },
-    {
-      id: 'P003',
-      project: 'Shopping Mall Development',
-      material: 'HVAC Systems',
-      quantity: '5 units',
-      supplier: 'ABC Building Materials',
-      orderDate: '2024-06-14',
-      deliveryDate: '2024-07-01',
-      amount: 950000,
-      paymentStatus: 'paid',
-      invoiceFile: 'invoice_P003.pdf'
+  const fetchPurchaseOrders = async () => {
+    setPurchaseOrdersLoading(true);
+    setPurchaseOrdersError(null);
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/purchase-order/qs/${qsEmpId}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('SQS Purchase orders API response:', data);
+        
+        if (data.success && Array.isArray(data.orders)) {
+          setPurchaseOrders(data.orders);
+        } else {
+          setPurchaseOrders([]);
+        }
+      } else {
+        throw new Error(`Failed to fetch purchase orders: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      setPurchaseOrdersError('Error fetching purchase orders: ' + error.message);
+      console.error('Error fetching purchase orders:', error);
+      setPurchaseOrders([]);
+    } finally {
+      setPurchaseOrdersLoading(false);
     }
-  ]);  const handleQuotationSubmit = (e) => {
+  };
+
+  const fetchProjects = async () => {
+    setProjectsLoading(true);
+    try {
+      console.log('Fetching projects for SQS:', qsEmpId);
+      const response = await fetch(`http://localhost:8086/api/v1/qs/projects/${qsEmpId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch projects: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log('SQS Projects API response:', data);
+      
+      // Handle different possible response structures
+      let projectsArray = [];
+      if (Array.isArray(data)) {
+        projectsArray = data;
+      } else if (data && Array.isArray(data.projects)) {
+        projectsArray = data.projects;
+      } else if (data && data.data && Array.isArray(data.data)) {
+        projectsArray = data.data;
+      }
+      
+      setOngoingProjects(projectsArray);
+      console.log('Processed SQS projects:', projectsArray);
+    } catch (error) {
+      console.error('Error fetching SQS projects:', error);
+      // Fallback to empty array if API fails
+      setOngoingProjects([]);
+      setError('Failed to load projects: ' + error.message);
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
+  const fetchQuotationDetails = async (quotationId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/${quotationId}/with-items`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Quotation detail response:', data);
+        return data;
+      }
+    } catch (error) {
+      console.error('Error fetching quotation details:', error);
+    }
+    return null;
+  };
+
+  const createQuotation = async (quotationData, status = 'pending') => {
+    setLoading(true);
+    try {
+      const dataWithStatus = {
+        ...quotationData,
+        quotation: {
+          ...quotationData.quotation,
+          status: status
+        }
+      };
+
+      const response = await fetch(`${API_BASE_URL}/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataWithStatus),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh quotations list
+        await fetchQuotations();
+        return data;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create quotation');
+      }
+    } catch (error) {
+      setError('Error creating quotation: ' + error.message);
+      console.error('Error creating quotation:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update quotation function
+  const updateQuotation = async (quotationId, quotationData, status = 'pending') => {
+    setLoading(true);
+    try {
+      const dataWithStatus = {
+        ...quotationData,
+        quotation: {
+          ...quotationData.quotation,
+          status: status
+        }
+      };
+
+      const response = await fetch(`${API_BASE_URL}/${quotationId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataWithStatus),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh quotations list
+        await fetchQuotations();
+        return data;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update quotation');
+      }
+    } catch (error) {
+      setError('Error updating quotation: ' + error.message);
+      console.error('Error updating quotation:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchQuotationResponses = async (quotationId) => {
+    setResponseLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/quotation/${quotationId}/responses`);
+      if (response.ok) {
+        const data = await response.json();
+        setQuotationResponses(data.responses || []);
+        return data.responses || [];
+      } else {
+        throw new Error('Failed to fetch responses');
+      }
+    } catch (error) {
+      console.error('Error fetching responses:', error);
+      setQuotationResponses([]);
+      return [];
+    } finally {
+      setResponseLoading(false);
+    }
+  };
+
+  const fetchResponseCounts = async () => {
+    try {
+      const counts = {};
+      for (const quotation of quotations) {
+        if (quotation.status === 'sent') {
+          const responses = await fetch(`http://localhost:8086/api/v1/quotation/${quotation.qId}/responses`);
+          if (responses.ok) {
+            const data = await responses.json();
+            counts[quotation.qId] = data.responses ? data.responses.length : 0;
+          }
+        }
+      }
+      setResponseCounts(counts);
+    } catch (error) {
+      console.error('Error fetching response counts:', error);
+    }
+  };
+
+  // Load quotations and projects on component mount
+  useEffect(() => {
+    fetchQuotations();
+    fetchProjects();
+    fetchPurchaseOrders();
+  }, []);
+
+  // Fetch response counts when quotations change
+  useEffect(() => {
+    if (quotations.length > 0) {
+      fetchResponseCounts();
+    }
+  }, [quotations]);
+
+  // Reset pagination when switching between tabs
+  useEffect(() => {
+    setQuotationCurrentPage(1);
+  }, [activeSection]);
+
+  // Reset purchase order pagination when switching between tabs
+  useEffect(() => {
+    setPurchaseOrderCurrentPage(1);
+  }, [activePurchaseSection]);
+
+  const handleQuotationSubmit = async (e, submitType = 'send') => {
     e.preventDefault();
     
-    // Validate that at least one supplier is selected
+    // Validate that all required fields are filled
+    if (!quotationFormData.project) {
+      alert('Please select a project');
+      return;
+    }
+    if (!quotationFormData.requiredDate) {
+      alert('Please select a required date');
+      return;
+    }
+    if (!quotationFormData.description.trim()) {
+      alert('Please enter a description');
+      return;
+    }
+    if (quotationFormData.materials.length === 0) {
+      alert('Please add at least one material/service');
+      return;
+    }
     if (quotationFormData.suppliers.length === 0) {
       alert('Please select at least one supplier');
       return;
     }
+
+    // Show confirmation dialog for sending
+    if (submitType === 'send') {
+      setShowConfirmDialog(true);
+      return;
+    }
+
+    await processQuotationSubmission(submitType);
+  };
+
+  const processQuotationSubmission = async (submitType) => {
+    try {
+      const status = submitType === 'send' ? 'sent' : 'pending';
+      
+      // Transform data to match backend expected format
+      const quotationData = {
+        quotation: {
+          projectId: quotationFormData.project, // This should be project ID from dropdown
+          qsId: qsEmpId, // Use the QS employee ID
+          date: new Date().toISOString().split('T')[0], // Current date
+          deadline: quotationFormData.requiredDate,
+          description: quotationFormData.description.trim(),
+          status: status
+        },
+        items: quotationFormData.materials.map(material => ({
+          name: material.name,
+          description: material.description,
+          amount: parseFloat(material.amount) || 0,
+          quantity: parseInt(material.quantity) || 1
+        })),
+        supplierIds: quotationFormData.suppliers.map(supplierName => {
+          // Find supplier ID by name - for now using mock IDs
+          const supplier = suppliers.find(s => s.name === supplierName);
+          return supplier ? supplier.id : 1; // Fallback to ID 1 if not found
+        })
+      };
+
+      if (isEditMode && selectedQuotation) {
+        await updateQuotation(selectedQuotation.qId, quotationData, status);
+        setIsEditMode(false);
+        setSelectedQuotation(null);
+        alert(`Quotation ${status === 'sent' ? 'sent' : 'updated'} successfully!`);
+      } else {
+        await createQuotation(quotationData, status);
+        alert(`Quotation ${status === 'sent' ? 'sent' : 'saved as draft'} successfully!`);
+      }
+      
+      // Reset form on success
+      setShowQuotationForm(false);
+      setQuotationFormData({
+        project: '',
+        requiredDate: '',
+        description: '',
+        materials: [],
+        suppliers: []
+      });
+      setCurrentMaterial({ name: '', description: '', quantity: '', amount: '' });
+      setSupplierSearch('');
+      setShowConfirmDialog(false);
+      
+    } catch (error) {
+      alert(`Failed to ${submitType === 'send' ? 'send' : 'save'} quotation request. Please try again.`);
+    }
+  };
+
+  // Handle editing a quotation
+  const handleEditQuotation = async (quotation) => {
+    // Get detailed quotation data first
+    const detailedQuotation = await fetchQuotationDetails(quotation.qId);
     
-    // Handle form submission logic here
-    console.log('Quotation Request:', quotationFormData);
-    setShowQuotationForm(false);
-    setQuotationFormData({
-      project: '',
-      material: '',
-      quantity: '',
-      requiredDate: '',
-      suppliers: []
-    });
+    if (detailedQuotation) {
+      // Populate the form with existing data
+      setQuotationFormData({
+        project: detailedQuotation.quotation?.projectId || quotation.projectName,
+        requiredDate: detailedQuotation.quotation?.deadline || quotation.requiredDate,
+        description: detailedQuotation.quotation?.description || quotation.description || '',
+        materials: detailedQuotation.items || [],
+        suppliers: detailedQuotation.suppliers ? 
+          detailedQuotation.suppliers.map(supplier => supplier.supplierName) : []
+      });
+    } else {
+      // Fallback to basic quotation data
+      setQuotationFormData({
+        project: quotation.projectName || '',
+        requiredDate: quotation.requiredDate || '',
+        description: quotation.description || '',
+        materials: quotation.items || [],
+        suppliers: quotation.suppliers || []
+      });
+    }
+    
+    setSelectedQuotation(quotation);
+    setIsEditMode(true);
+    setShowQuotationDetail(false);
+    setShowQuotationForm(true);
   };
 
   const handleInputChange = (e) => {
@@ -136,28 +469,112 @@ const Purchasing = () => {
     }));
   };
 
-  const handleSupplierToggle = (supplierName) => {
-    setQuotationFormData(prev => ({
+  const handleMaterialChange = (e) => {
+    const { name, value } = e.target;
+    setCurrentMaterial(prev => ({
       ...prev,
-      suppliers: prev.suppliers.includes(supplierName)
-        ? prev.suppliers.filter(s => s !== supplierName)
-        : [...prev.suppliers, supplierName]
+      [name]: value
     }));
   };
 
+  const addMaterial = () => {
+    if (currentMaterial.name && currentMaterial.quantity && parseInt(currentMaterial.quantity) >= 1) {
+      const amount = parseFloat(currentMaterial.amount) || 0;
+      if (amount >= 0) {
+        setQuotationFormData(prev => ({
+          ...prev,
+          materials: [...prev.materials, { 
+            ...currentMaterial, 
+            itemId: Date.now(), 
+            qId: null,
+            quantity: parseInt(currentMaterial.quantity),
+            amount: amount
+          }]
+        }));
+        setCurrentMaterial({ name: '', description: '', quantity: '', amount: '' });
+      }
+    }
+  };
+
+  const removeMaterial = (itemId) => {
+    setQuotationFormData(prev => ({
+      ...prev,
+      materials: prev.materials.filter(material => material.itemId !== itemId)
+    }));
+  };
+
+  const handleSupplierSearch = (e) => {
+    setSupplierSearch(e.target.value);
+    setShowSupplierDropdown(e.target.value.length > 0);
+  };
+
+  const addSupplier = (supplierName) => {
+    if (!quotationFormData.suppliers.includes(supplierName)) {
+      setQuotationFormData(prev => ({
+        ...prev,
+        suppliers: [...prev.suppliers, supplierName]
+      }));
+    }
+    setSupplierSearch('');
+    setShowSupplierDropdown(false);
+  };
+
+  const removeSupplier = (supplierName) => {
+    setQuotationFormData(prev => ({
+      ...prev,
+      suppliers: prev.suppliers.filter(s => s !== supplierName)
+    }));
+  };
+
+  const getFilteredSuppliers = () => {
+    return suppliers.filter(supplier => 
+      supplier.name.toLowerCase().includes(supplierSearch.toLowerCase()) &&
+      !quotationFormData.suppliers.includes(supplier.name)
+    );
+  };
+
   const getStatusBadge = (status) => {
-    if (status === 'received') {
+    const upperStatus = status?.toUpperCase();
+    if (upperStatus === 'RECEIVED') {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
           <CheckCircle className="w-3 h-3 mr-1" />
           Received
         </span>
       );
-    } else {
+    } else if (upperStatus === 'PENDING') {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
           <Clock className="w-3 h-3 mr-1" />
           Pending
+        </span>
+      );
+    } else if (upperStatus === 'SENT') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <Clock className="w-3 h-3 mr-1" />
+          Sent
+        </span>
+      );
+    } else if (upperStatus === 'CLOSED' || upperStatus === 'COMPLETED') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          {upperStatus === 'COMPLETED' ? 'Completed' : 'Closed'}
+        </span>
+      );
+    } else if (upperStatus === 'CANCELLED') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          <X className="w-3 h-3 mr-1" />
+          Cancelled
+        </span>
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <Clock className="w-3 h-3 mr-1" />
+          {status || 'Unknown'}
         </span>
       );
     }
@@ -181,15 +598,503 @@ const Purchasing = () => {
     }
   };
 
+  const handleViewQuotation = async (quotation) => {
+    // Try to get detailed quotation data with items
+    const detailedQuotation = await fetchQuotationDetails(quotation.qId);
+    
+    if (detailedQuotation) {
+      console.log('Detailed quotation data:', detailedQuotation);
+      
+      // Extract supplier names from the supplier objects
+      const suppliersArray = detailedQuotation.suppliers ? 
+        detailedQuotation.suppliers.map(supplier => supplier.supplierName) : [];
+      
+      const mergedQuotation = {
+        ...quotation,
+        // Handle quotation object from the response
+        qId: detailedQuotation.quotation?.qid || quotation.qId,
+        projectId: detailedQuotation.quotation?.projectId || quotation.projectId,
+        projectName: detailedQuotation.quotation?.projectName || quotation.projectName,
+        requiredDate: detailedQuotation.quotation?.deadline || quotation.requiredDate,
+        status: detailedQuotation.quotation?.status || quotation.status,
+        createdDate: detailedQuotation.quotation?.date || quotation.createdDate,
+        description: detailedQuotation.quotation?.description || quotation.description,
+        // Items from the detailed response
+        items: detailedQuotation.items || [],
+        // Suppliers - extract supplier names from the supplier objects
+        suppliers: suppliersArray,
+        // Keep the full supplier details for additional information
+        supplierDetails: detailedQuotation.suppliers || []
+      };
+      
+      setSelectedQuotation(mergedQuotation);
+    } else {
+      // Fallback to basic quotation data
+      setSelectedQuotation(quotation);
+    }
+    
+    setShowQuotationDetail(true);
+  };
+
+  const handleViewResponses = async (quotation) => {
+    await fetchQuotationResponses(quotation.qId);
+    setSelectedQuotation(quotation);
+    setShowResponseModal(true);
+  };
+
+  const handleViewPurchaseOrder = (order) => {
+    setSelectedPurchaseOrder(order);
+    setShowPurchaseOrderDetail(true);
+  };
+
+  // Function to download invoice
+  const handleDownloadInvoice = async (orderId) => {
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/invoice-pdf/${orderId}/download/format`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+      });
+
+      if (response.ok) {
+        // Get the filename from the response headers or use a default
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `invoice_${orderId}.pdf`;
+        
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+
+        // Create a blob from the response
+        const blob = await response.blob();
+        
+        // Create a temporary URL for the blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create a temporary anchor element and trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Failed to download invoice');
+      }
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      alert('Failed to download invoice. Please try again.');
+    }
+  };
+
+  const handleDownloadQuotation = async (quotationId) => {
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/pdf/quotation/${quotationId}/download/format`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+      });
+
+      if (response.ok) {
+        // Get the filename from the response headers or use a default
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `quotation_Q${quotationId.toString().padStart(3, '0')}.pdf`;
+        
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+
+        // Create a blob from the response
+        const blob = await response.blob();
+        
+        // Create a temporary URL for the blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create a temporary anchor element and trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Failed to download quotation');
+      }
+    } catch (error) {
+      console.error('Error downloading quotation:', error);
+      alert('Failed to download quotation. Please try again.');
+    }
+  };
+
+  // Function to update quotation status
+  const updateQuotationStatus = async (quotationId, status) => {
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/quotation/${quotationId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: status
+        }),
+      });
+
+      if (response.ok) {
+        return await response.json();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update quotation status');
+      }
+    } catch (error) {
+      console.error('Error updating quotation status:', error);
+      throw error;
+    }
+  };
+
+  // Pagination helper functions
+  const getPaginatedData = (data, currentPage) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return data.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = (dataLength) => {
+    return Math.ceil(dataLength / itemsPerPage);
+  };
+
+  const generatePageNumbers = (currentPage, totalPages) => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  // Pagination component
+  const PaginationComponent = ({ currentPage, totalPages, onPageChange }) => {
+    if (totalPages <= 1) return null;
+
+    const pageNumbers = generatePageNumbers(currentPage, totalPages);
+
+    return (
+      <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200">
+        <div className="flex items-center text-sm text-gray-700">
+          <span>
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalPages * itemsPerPage)} of {totalPages * itemsPerPage} entries
+          </span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          
+          {pageNumbers.map((page, index) => (
+            <React.Fragment key={index}>
+              {page === '...' ? (
+                <span className="px-3 py-1 text-sm text-gray-500">...</span>
+              ) : (
+                <button
+                  onClick={() => onPageChange(page)}
+                  className={`px-3 py-1 text-sm font-medium rounded-md ${
+                    currentPage === page
+                      ? 'bg-[#FAAD00] text-white'
+                      : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              )}
+            </React.Fragment>
+          ))}
+          
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const handlePurchaseResponse = (response) => {
+    // Check if the response status is rejected
+    if (response.status?.toLowerCase() === 'rejected') {
+      alert('Cannot proceed with purchase. This supplier response has been rejected.');
+      return;
+    }
+
+    // Show confirmation dialog for purchase
+    const confirmed = window.confirm(
+      `Are you sure you want to select this quotation for purchase?\n\n` +
+      `Supplier: ${response.supplierName}\n` +
+      `Total Amount: Rs. ${response.totalAmount.toLocaleString()}\n` +
+      `Delivery Date: ${response.deliveryDate}\n\n` +
+      `This will update the quotation status to "closed".`
+    );
+
+    if (confirmed) {
+      processPurchaseOrder(response);
+    }
+  };
+
+  const processPurchaseOrder = async (response) => {
+    try {
+      setLoading(true);
+      
+      // Create purchase order using the API
+      const purchaseOrderResponse = await fetch(`http://localhost:8086/api/v1/quotation/responses/${response.responseId}/create-purchase-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          // Add any additional data required for purchase order creation
+          // The API should handle the purchase order creation based on the response ID
+        }),
+      });
+
+      if (!purchaseOrderResponse.ok) {
+        const errorData = await purchaseOrderResponse.json();
+        throw new Error(errorData.message || `Failed to create purchase order: ${purchaseOrderResponse.status} ${purchaseOrderResponse.statusText}`);
+      }
+
+      const purchaseOrderData = await purchaseOrderResponse.json();
+      console.log('Purchase order created:', purchaseOrderData);
+      
+      // Update the quotation status to "closed" (this should already be handled by the API, but we'll keep it as fallback)
+      try {
+        await updateQuotationStatus(selectedQuotation.qId, 'closed');
+      } catch (statusError) {
+        console.warn('Status update failed, but purchase order was created:', statusError);
+        // Don't throw error here since the main operation (purchase order creation) succeeded
+      }
+      
+      // Refresh quotations list to reflect the status change
+      await fetchQuotations();
+      
+      // Refresh purchase orders list to show the new purchase order
+      await fetchPurchaseOrders();
+      
+      // Close modals
+      setShowResponseModal(false);
+      setShowQuotationDetail(false);
+      
+      // Show success message with purchase order details
+      alert(
+        `Purchase order created successfully!\n\n` +
+        `Purchase Order ID: ${purchaseOrderData.purchaseOrderId || 'Generated'}\n` +
+        `Supplier: ${response.supplierName}\n` +
+        `Total Amount: Rs. ${response.totalAmount.toLocaleString()}\n` +
+        `Delivery Date: ${response.deliveryDate}\n` +
+        `Quotation status updated to "Closed"`
+      );
+      
+    } catch (error) {
+      console.error('Error creating purchase order:', error);
+      alert(`Failed to process purchase order: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter quotations based on selected filters and separate by status
+  const allFilteredQuotations = quotations.filter(quotation => {
+    // Project filter (check multiple possible fields)
+    if (filters.project) {
+      const searchTerm = filters.project.toLowerCase();
+      const projectName = quotation.projectName?.toLowerCase() || '';
+      const projectId = quotation.projectId?.toString().toLowerCase() || '';
+      
+      // Check if project name or ID contains the search term
+      if (!projectName.includes(searchTerm) && !projectId.includes(searchTerm)) {
+        return false;
+      }
+    }
+
+    // Quotation ID filter
+    if (filters.quotationId && quotation.qId) {
+      if (!quotation.qId.toString().includes(filters.quotationId)) {
+        return false;
+      }
+    }
+
+    // Status filter
+    if (filters.status && quotation.status) {
+      if (quotation.status.toLowerCase() !== filters.status.toLowerCase()) {
+        return false;
+      }
+    }
+
+    // Description filter
+    if (filters.description && quotation.description) {
+      if (!quotation.description.toLowerCase().includes(filters.description.toLowerCase())) {
+        return false;
+      }
+    }
+    
+    // Date range filter
+    if (filters.dateFrom && quotation.createdDate) {
+      const quotationDate = new Date(quotation.createdDate);
+      const fromDate = new Date(filters.dateFrom);
+      if (quotationDate < fromDate) {
+        return false;
+      }
+    }
+    
+    if (filters.dateTo && quotation.createdDate) {
+      const quotationDate = new Date(quotation.createdDate);
+      const toDate = new Date(filters.dateTo);
+      if (quotationDate > toDate) {
+        return false;
+      }
+    }
+    
+    // Supplier filter
+    if (filters.supplier && quotation.suppliers) {
+      const hasSupplier = quotation.suppliers.some(supplier => 
+        supplier.toLowerCase().includes(filters.supplier.toLowerCase())
+      );
+      if (!hasSupplier) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+
+  // Separate quotations into ongoing and closed
+  const ongoingQuotations = allFilteredQuotations.filter(quotation => {
+    const status = quotation.status?.toUpperCase();
+    return status !== 'CLOSED' && status !== 'COMPLETED' && status !== 'CANCELLED';
+  });
+
+  const closedQuotations = allFilteredQuotations.filter(quotation => {
+    const status = quotation.status?.toUpperCase();
+    return status === 'CLOSED' || status === 'COMPLETED' || status === 'CANCELLED';
+  });
+
+  // Filter purchase orders based on selected filters
+  const allFilteredPurchaseOrders = purchaseOrders.filter(order => {
+    // Project filter
+    if (purchaseOrderFilters.project && order.projectName) {
+      if (!order.projectName.toLowerCase().includes(purchaseOrderFilters.project.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Supplier filter
+    if (purchaseOrderFilters.supplier && order.supplierName) {
+      if (!order.supplierName.toLowerCase().includes(purchaseOrderFilters.supplier.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Order ID filter
+    if (purchaseOrderFilters.orderId && order.orderId) {
+      if (!order.orderId.toString().includes(purchaseOrderFilters.orderId)) {
+        return false;
+      }
+    }
+
+    // Date range filter
+    if (purchaseOrderFilters.dateFrom && order.orderDate) {
+      const orderDate = new Date(order.orderDate);
+      const fromDate = new Date(purchaseOrderFilters.dateFrom);
+      if (orderDate < fromDate) {
+        return false;
+      }
+    }
+
+    if (purchaseOrderFilters.dateTo && order.orderDate) {
+      const orderDate = new Date(order.orderDate);
+      const toDate = new Date(purchaseOrderFilters.dateTo);
+      if (orderDate > toDate) {
+        return false;
+      }
+    }
+
+    // Status filter
+    if (purchaseOrderFilters.status) {
+      let orderPaymentStatus = '';
+      if (order.paymentStatus === 'paid' || order.paymentStatus === 'completed') {
+        orderPaymentStatus = 'completed';
+      } else if (order.paymentStatus === 'partial') {
+        orderPaymentStatus = 'partial';
+      } else {
+        orderPaymentStatus = 'pending';
+      }
+      
+      if (orderPaymentStatus !== purchaseOrderFilters.status.toLowerCase()) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // Separate purchase orders into pending and completed
+  const pendingPurchaseOrders = allFilteredPurchaseOrders.filter(order => {
+    return order.orderStatus === false || order.orderStatus === 0;
+  });
+
+  const completedPurchaseOrders = allFilteredPurchaseOrders.filter(order => {
+    return order.orderStatus === true || order.orderStatus === 1;
+  });
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Purchasing Management</h1>
-            <p className="text-gray-600 mt-2">Manage quotation requests and purchase orders</p>
-          </div>
+          
           <button
             onClick={() => setShowQuotationForm(true)}
             className="flex items-center px-4 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
@@ -200,79 +1105,439 @@ const Purchasing = () => {
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Package className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Quotations</p>
-              <p className="text-2xl font-bold text-gray-900">{quotations.length}</p>
-            </div>
+      {/* Filters Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 p-4">
+        <h3 className="text-base font-semibold text-gray-900 mb-3">Filters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          {/* Project Filter */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Project</label>
+            <select
+              value={filters.project}
+              onChange={(e) => setFilters({...filters, project: e.target.value})}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+              disabled={projectsLoading}
+            >
+              <option value="">
+                {projectsLoading ? 'Loading projects...' : 
+                 ongoingProjects.length === 0 ? 'No projects available' : 'All Projects'}
+              </option>
+              {Array.isArray(ongoingProjects) && ongoingProjects.map((project) => (
+                <option key={project.projectId || project.id} value={project.projectId || project.id}>
+                  {project.projectName || project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date From Filter */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Date From</label>
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+            />
+          </div>
+
+          {/* Date To Filter */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Date To</label>
+            <input
+              type="date"
+              value={filters.dateTo}
+              onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+            />
+          </div>
+
+          {/* Supplier Filter */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Supplier</label>
+            <select
+              value={filters.supplier}
+              onChange={(e) => setFilters({...filters, supplier: e.target.value})}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+            >
+              <option value="">All Suppliers</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.name}>
+                  {supplier.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Received Quotations</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {quotations.filter(q => q.status === 'received').length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <Clock className="w-6 h-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending Quotations</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {quotations.filter(q => q.status === 'pending').length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Purchases</p>
-              <p className="text-2xl font-bold text-gray-900">{purchasedItems.length}</p>
-            </div>
-          </div>
+        {/* Clear Filters Button */}
+        <div className="mt-3 flex justify-end">
+          <button
+            onClick={() => setFilters({ project: '', dateFrom: '', dateTo: '', supplier: '' })}
+            className="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+          >
+            Clear Filters
+          </button>
         </div>
       </div>
 
-      {/* Quotations Table */}
+      {/* Quotations Sections with Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200">
+          <div className="flex">
+            <button
+              onClick={() => setActiveSection('ongoing')}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                activeSection === 'ongoing'
+                  ? 'border-[#FAAD00] text-[#FAAD00] bg-orange-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Ongoing Quotations ({ongoingQuotations.length})
+            </button>
+            <button
+              onClick={() => setActiveSection('closed')}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                activeSection === 'closed'
+                  ? 'border-[#FAAD00] text-[#FAAD00] bg-orange-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Closed Quotations ({closedQuotations.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
         <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Quotation Requests</h2>
-            <div className="flex space-x-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {activeSection === 'ongoing' ? 'Ongoing Quotation Requests' : 'Closed Quotation Requests'}
+            </h2>
+          </div>
+
+          {/* Quotation Filters */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quotation ID</label>
                 <input
                   type="text"
-                  placeholder="Search quotations..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  placeholder="Search by ID..."
+                  value={filters.quotationId}
+                  onChange={(e) => setFilters(prev => ({ ...prev, quotationId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
                 />
               </div>
-              <button className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                <Filter className="w-4 h-4 mr-2" />
-                Filter
-              </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                <input
+                  type="text"
+                  placeholder="Search by project..."
+                  value={filters.project}
+                  onChange={(e) => setFilters(prev => ({ ...prev, project: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                <input
+                  type="text"
+                  placeholder="Search by supplier..."
+                  value={filters.supplier}
+                  onChange={(e) => setFilters(prev => ({ ...prev, supplier: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="sent">Sent</option>
+                  <option value="received">Received</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <input
+                  type="date"
+                  value={filters.dateTo}
+                  onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input
+                  type="text"
+                  placeholder="Search description..."
+                  value={filters.description}
+                  onChange={(e) => setFilters(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => setFilters({
+                    project: '',
+                    dateFrom: '',
+                    dateTo: '',
+                    supplier: '',
+                    quotationId: '',
+                    status: '',
+                    description: ''
+                  })}
+                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors duration-200"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <div className="h-96 overflow-y-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Quotation ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Project
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Required Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {loading ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      Loading quotations...
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-red-500">
+                      {error}
+                    </td>
+                  </tr>
+                ) : (() => {
+                  const currentQuotations = activeSection === 'ongoing' ? ongoingQuotations : closedQuotations;
+                  const paginatedQuotations = getPaginatedData(currentQuotations, quotationCurrentPage);
+                  return !Array.isArray(currentQuotations) || currentQuotations.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                        No {activeSection} quotations found
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedQuotations.map((quotation) => (
+                      <tr key={quotation.qId} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          Q{quotation.qId.toString().padStart(3, '0')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {quotation.projectName}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={quotation.description}>
+                          {quotation.description || 'No description'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {quotation.requiredDate}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(quotation.status)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleViewQuotation(quotation)}
+                              className="text-[#FAAD00] hover:text-[#FAAD00]/80 flex items-center"
+                              title="View Quotation Details"
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </button>
+                            {quotation.status === 'pending' && activeSection === 'ongoing' && (
+                              <button
+                                onClick={() => handleEditQuotation(quotation)}
+                                className="text-blue-600 hover:text-blue-800 flex items-center"
+                                title="Edit Quotation"
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                Edit
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  );
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {/* Quotations Pagination */}
+        {(() => {
+          const currentQuotations = activeSection === 'ongoing' ? ongoingQuotations : closedQuotations;
+          const totalPages = getTotalPages(currentQuotations.length);
+          return (
+            <PaginationComponent 
+              currentPage={quotationCurrentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setQuotationCurrentPage(page);
+              }}
+            />
+          );
+        })()}
+      </div>
+
+      {/* Purchase Orders Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200">
+          <div className="flex">
+            <button
+              onClick={() => setActivePurchaseSection('pending')}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                activePurchaseSection === 'pending'
+                  ? 'border-[#FAAD00] text-[#FAAD00] bg-orange-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Pending Orders ({pendingPurchaseOrders.length})
+            </button>
+            <button
+              onClick={() => setActivePurchaseSection('completed')}
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                activePurchaseSection === 'completed'
+                  ? 'border-[#FAAD00] text-[#FAAD00] bg-orange-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Completed Orders ({completedPurchaseOrders.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {activePurchaseSection === 'pending' ? 'Pending Purchase Orders' : 'Completed Purchase Orders'}
+            </h2>
+          </div>
+
+          {/* Purchase Order Filters */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
+                <input
+                  type="text"
+                  placeholder="Search by Order ID..."
+                  value={purchaseOrderFilters.orderId}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, orderId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                <input
+                  type="text"
+                  placeholder="Search by project..."
+                  value={purchaseOrderFilters.project}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, project: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                <input
+                  type="text"
+                  placeholder="Search by supplier..."
+                  value={purchaseOrderFilters.supplier}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, supplier: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <input
+                  type="date"
+                  value={purchaseOrderFilters.dateFrom}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <input
+                  type="date"
+                  value={purchaseOrderFilters.dateTo}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={purchaseOrderFilters.status}
+                  onChange={(e) => setPurchaseOrderFilters(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                >
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="partial">Partial</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => setPurchaseOrderFilters({
+                    project: '',
+                    supplier: '',
+                    dateFrom: '',
+                    dateTo: '',
+                    orderId: '',
+                    status: ''
+                  })}
+                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors duration-200"
+                >
+                  Clear Filters
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -282,19 +1547,16 @@ const Purchasing = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Quotation ID
+                  Order ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Project
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Material
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Supplier
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Required Date
+                  Delivery Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -305,138 +1567,113 @@ const Purchasing = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {quotations.map((quotation) => (
-                <tr key={quotation.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {quotation.id}
+              {purchaseOrdersLoading ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                    Loading purchase orders...
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {quotation.project}
+                </tr>
+              ) : purchaseOrdersError ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 text-center text-red-500">
+                    {purchaseOrdersError}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {quotation.material} ({quotation.quantity})
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {quotation.supplier}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {quotation.requiredDate}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(quotation.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      {quotation.status === 'received' ? (
+                </tr>
+              ) : (() => {
+                const currentPurchaseOrders = activePurchaseSection === 'pending' ? pendingPurchaseOrders : completedPurchaseOrders;
+                return !Array.isArray(currentPurchaseOrders) || currentPurchaseOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      No {activePurchaseSection} purchase orders found
+                    </td>
+                  </tr>
+                ) : (
+                  getPaginatedData(currentPurchaseOrders, purchaseOrderCurrentPage).map((order) => (
+                  <tr key={order.orderId} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      PO{order.orderId.toString().padStart(3, '0')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div>
+                        <div className="font-medium">{order.projectName || order.projectDetails?.projectName || order.projectId}</div>
+                        <div className="text-xs text-gray-400">
+                          {order.projectId} • {order.projectDetails?.projectLocation || order.projectLocation || 'Location not specified'}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div>
+                        <div className="font-medium">{order.supplierDetails.supplierName}</div>
+                        <div className="text-xs text-gray-400">{order.supplierDetails.supplierEmail}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {order.estimatedDeliveryDate}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="space-y-1">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          order.orderStatus === 1 || order.orderStatus === true
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {order.orderStatus === 1 || order.orderStatus === true ? (
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                          ) : (
+                            <Clock className="w-3 h-3 mr-1" />
+                          )}
+                          {order.orderStatus === 1 || order.orderStatus === true ? 'Completed' : 'Pending'}
+                        </span>
+                        <div>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            order.paymentStatus === 'paid' || order.paymentStatus === 'completed'
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {order.paymentStatus === 'paid' || order.paymentStatus === 'completed' ? (
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                            ) : (
+                              <Clock className="w-3 h-3 mr-1" />
+                            )}
+                            {order.paymentStatusText}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
                         <button
+                          onClick={() => handleViewPurchaseOrder(order)}
                           className="text-[#FAAD00] hover:text-[#FAAD00]/80 flex items-center"
-                          title="View Quotation"
+                          title="View Order Details"
                         >
                           <Eye className="w-4 h-4 mr-1" />
                           View
                         </button>
-                      ) : (
-                        <span className="text-gray-400 text-xs">Awaiting response</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      </div>
+                    </td>
+                  </tr>
+                  ))
+                );
+              })()}
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* Purchased Items Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Purchase Orders</h2>
-            <div className="flex space-x-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search purchases..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                />
-              </div>
-              <button className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Purchase ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Project
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Material
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Supplier
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Payment Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {purchasedItems.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {item.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.project}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.material} ({item.quantity})
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.supplier}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    Rs. {item.amount.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getPaymentStatusBadge(item.paymentStatus)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      {item.paymentStatus === 'paid' && item.invoiceFile ? (
-                        <button
-                          className="text-[#FAAD00] hover:text-[#FAAD00]/80 flex items-center"
-                          title="Download Invoice"
-                        >
-                          <FileDown className="w-4 h-4 mr-1" />
-                          Invoice
-                        </button>
-                      ) : (
-                        <span className="text-gray-400 text-xs">No invoice</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        
+        {/* Purchase Orders Pagination */}
+        {(() => {
+          const currentPurchaseOrders = activePurchaseSection === 'pending' ? pendingPurchaseOrders : completedPurchaseOrders;
+          const totalPages = getTotalPages(currentPurchaseOrders.length);
+          return (
+            <PaginationComponent 
+              currentPage={purchaseOrderCurrentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setPurchaseOrderCurrentPage(page);
+              }}
+            />
+          );
+        })()}
       </div>
 
       {/* Quotation Request Form Modal */}
@@ -446,7 +1683,7 @@ const Purchasing = () => {
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  New Quotation Request
+                  {isEditMode ? 'Edit Quotation Request' : 'New Quotation Request'}
                 </h3>
                 <button
                   onClick={() => setShowQuotationForm(false)}
@@ -458,134 +1695,862 @@ const Purchasing = () => {
             </div>
 
             <form onSubmit={handleQuotationSubmit} className="p-6 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Building className="w-4 h-4 inline mr-2" />
-                  Select Project
-                </label>
-                <select
-                  name="project"
-                  value={quotationFormData.project}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                >
-                  <option value="">Choose a project...</option>
-                  {ongoingProjects.map((project) => (
-                    <option key={project.id} value={project.name}>
-                      {project.name} - {project.location}
+              {/* Project and Required Date Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Building className="w-4 h-4 inline mr-2" />
+                    Select Project
+                  </label>
+                  <select
+                    name="project"
+                    value={quotationFormData.project}
+                    onChange={handleInputChange}
+                    required
+                    disabled={projectsLoading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  >
+                    <option value="">
+                      {projectsLoading ? 'Loading projects...' : 
+                       ongoingProjects.length === 0 ? 'No projects available' : 'Choose a project...'}
                     </option>
-                  ))}
-                </select>
+                    {Array.isArray(ongoingProjects) && ongoingProjects.map((project) => (
+                      <option key={project.projectId || project.id} value={project.projectId || project.id}>
+                        {project.projectName || project.name}
+                        {(project.location || project.projectLocation) && ` - ${project.location || project.projectLocation}`}
+                      </option>
+                    ))}
+                  </select>
+                  {!projectsLoading && ongoingProjects.length === 0 && (
+                    <p className="text-red-500 text-xs mt-1">
+                      No projects available. Please contact your administrator.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-2" />
+                    Required Date
+                  </label>
+                  <input
+                    type="date"
+                    name="requiredDate"
+                    value={quotationFormData.requiredDate}
+                    onChange={handleInputChange}
+                    min={new Date().toISOString().split('T')[0]}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  />
+                </div>
               </div>
 
+              {/* Description Section */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FileDown className="w-4 h-4 inline mr-2" />
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={quotationFormData.description}
+                  onChange={handleInputChange}
+                  required
+                  rows="3"
+                  placeholder="Enter a description for this quotation request..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent resize-none"
+                />
+              </div>
+
+              {/* Materials/Services Section */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Package className="w-4 h-4 inline mr-2" />
-                  Material/Service
+                  Materials/Services
                 </label>
-                <input
-                  type="text"
-                  name="material"
-                  value={quotationFormData.material}
-                  onChange={handleInputChange}
-                  placeholder="Enter material or service description"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                />
+                
+                {/* Add Material Form */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4 p-4 bg-gray-50 rounded-lg">
+                  <input
+                    type="text"
+                    name="name"
+                    value={currentMaterial.name}
+                    onChange={handleMaterialChange}
+                    placeholder="Material/Service name"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  />
+                  <input
+                    type="text"
+                    name="description"
+                    value={currentMaterial.description}
+                    onChange={handleMaterialChange}
+                    placeholder="Description"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  />
+                  <input
+                    type="number"
+                    name="quantity"
+                    value={currentMaterial.quantity}
+                    onChange={handleMaterialChange}
+                    placeholder="Quantity"
+                    min="1"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  />
+                  <input
+                    type="number"
+                    name="amount"
+                    value={currentMaterial.amount}
+                    onChange={handleMaterialChange}
+                    placeholder="Estimated Amount"
+                    min="0"
+                    step="0.01"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={addMaterial}
+                    className="px-4 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
+                  >
+                    <Plus className="w-4 h-4 inline mr-1" />
+                    Add
+                  </button>
+                </div>
+
+                {/* Materials Table */}
+                {quotationFormData.materials.length > 0 && (
+                  <div className="border border-gray-300 rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Material/Service
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Description
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Quantity
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {quotationFormData.materials.map((material) => (
+                          <tr key={material.itemId}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {material.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {material.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {material.quantity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {material.amount ? `Rs. ${parseFloat(material.amount).toLocaleString()}` : '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <button
+                                type="button"
+                                onClick={() => removeMaterial(material.itemId)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {quotationFormData.materials.length === 0 && (
+                  <p className="text-red-500 text-xs mt-1">Please add at least one material/service</p>
+                )}
               </div>
 
+              {/* Suppliers Section */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantity
-                </label>
-                <input
-                  type="text"
-                  name="quantity"
-                  value={quotationFormData.quantity}
-                  onChange={handleInputChange}
-                  placeholder="Enter quantity (e.g., 100 units, 50 tons)"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-2" />
-                  Required Date
-                </label>
-                <input
-                  type="date"
-                  name="requiredDate"
-                  value={quotationFormData.requiredDate}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                />
-              </div>              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <User className="w-4 h-4 inline mr-2" />
-                  Select Suppliers (Multiple)
+                  Select Suppliers
                 </label>
-                <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3">
-                  {suppliers.map((supplier) => (
-                    <label key={supplier.id} className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={quotationFormData.suppliers.includes(supplier.name)}
-                        onChange={() => handleSupplierToggle(supplier.name)}
-                        className="mr-3 h-4 w-4 text-[#FAAD00] focus:ring-[#FAAD00] border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">
-                        {supplier.name} (Rating: {supplier.rating}/5)
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {quotationFormData.suppliers.length === 0 && (
-                  <p className="text-red-500 text-xs mt-1">Please select at least one supplier</p>
-                )}
+
+                {/* Selected Suppliers */}
                 {quotationFormData.suppliers.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-600">Selected suppliers:</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">Selected suppliers:</p>
+                    <div className="flex flex-wrap gap-2">
                       {quotationFormData.suppliers.map((supplier) => (
                         <span
                           key={supplier}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#FAAD00] bg-opacity-10 text-[#000000]"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#FAAD00] bg-opacity-10 text-[#000000]"
                         >
                           {supplier}
                           <button
                             type="button"
-                            onClick={() => handleSupplierToggle(supplier)}
-                            className="ml-1 text-[#FAAD00] hover:text-[#FAAD00]/80"
+                            onClick={() => removeSupplier(supplier)}
+                            className="ml-2 text-black hover:text-gray-700"
                           >
-                            <X className="w-3 h-3" />
+                            <X className="w-4 h-4" />
                           </button>
                         </span>
                       ))}
                     </div>
                   </div>
                 )}
+
+                {/* Supplier Search */}
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      value={supplierSearch}
+                      onChange={handleSupplierSearch}
+                      placeholder="Search and add suppliers..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Supplier Dropdown */}
+                  {showSupplierDropdown && getFilteredSuppliers().length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {getFilteredSuppliers().map((supplier) => (
+                        <div
+                          key={supplier.id}
+                          onClick={() => addSupplier(supplier.name)}
+                          className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex justify-between items-center"
+                        >
+                          <span className="text-sm text-gray-700">{supplier.name}</span>
+                          <span className="text-xs text-gray-500">Rating: {supplier.rating}/5</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {quotationFormData.suppliers.length === 0 && (
+                  <p className="text-red-500 text-xs mt-1">Please select at least one supplier</p>
+                )}
               </div>
 
               <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <button
                   type="button"
-                  onClick={() => setShowQuotationForm(false)}
+                  onClick={() => {
+                    setShowQuotationForm(false);
+                    setIsEditMode(false);
+                    setSelectedQuotation(null);
+                    setQuotationFormData({
+                      project: '',
+                      requiredDate: '',
+                      description: '',
+                      materials: [],
+                      suppliers: []
+                    });
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={(e) => handleQuotationSubmit(e, 'draft')}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Save as Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => handleQuotationSubmit(e, 'send')}
                   className="px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
                 >
-                  Send Request
+                  {isEditMode ? 'Update & Send' : 'Send Request'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quotation Detail Modal */}
+      {showQuotationDetail && selectedQuotation && (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Quotation Details - Q{selectedQuotation.qId.toString().padStart(3, '0')}
+                </h3>
+                <button
+                  onClick={() => setShowQuotationDetail(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Quotation Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Quotation Information</h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Quotation ID:</span>
+                      <span className="font-medium">Q{selectedQuotation.qId.toString().padStart(3, '0')}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Project:</span>
+                      <span className="font-medium">{selectedQuotation.projectId} - {selectedQuotation.projectName}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Required Date:</span>
+                      <span className="font-medium">{selectedQuotation.requiredDate}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Status:</span>
+                      <span>{getStatusBadge(selectedQuotation.status)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">SQS Officer Details</h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">SQS ID:</span>
+                      <span className="font-medium">{qsEmpId}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Created Date:</span>
+                      <span className="font-medium">{selectedQuotation.createdDate || new Date().toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Description</h4>
+                  <p className="text-gray-700 leading-relaxed">
+                    {selectedQuotation.description || 'No description provided'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Items Section */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3">Materials/Services</h4>
+                <div className="border border-gray-300 rounded-lg overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Item
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Quantity
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Estimated Amount
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {selectedQuotation.items && selectedQuotation.items.length > 0 ? (
+                        selectedQuotation.items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {item.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.quantity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.amount ? `Rs. ${parseFloat(item.amount).toLocaleString()}` : '-'}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                            No items found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Total Amount */}
+                <div className="mt-4 flex justify-end">
+                  <div className="bg-[#FAAD00] bg-opacity-10 p-4 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-gray-700 font-medium">Total Estimated Amount:</span>
+                      <span className="text-xl font-bold text-black">
+                        Rs. {selectedQuotation.items && selectedQuotation.items.length > 0 
+                          ? selectedQuotation.items
+                              .reduce((total, item) => {
+                                const quantity = parseFloat(item.quantity) || 0;
+                                const amount = parseFloat(item.amount) || 0;
+                                return total + (quantity * amount);
+                              }, 0)
+                              .toLocaleString()
+                          : '0'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Suppliers Section */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3">Selected Suppliers</h4>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  {selectedQuotation.suppliers && selectedQuotation.suppliers.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedQuotation.suppliers.map((supplier, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#FAAD00] bg-opacity-10 text-[#000000]"
+                        >
+                          {supplier}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">No suppliers selected</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => handleDownloadQuotation(selectedQuotation.qId)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download PDF</span>
+                </button>
+                <button
+                  onClick={() => setShowQuotationDetail(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Close
+                </button>
+                {selectedQuotation.status === 'pending' && (
+                  <button
+                    onClick={() => handleEditQuotation(selectedQuotation)}
+                    className="px-4 py-2 border border-[#FAAD00] text-[#FAAD00] rounded-lg hover:bg-[#FAAD00]/10 transition-colors duration-200"
+                  >
+                    Edit
+                  </button>
+                )}
+                {selectedQuotation.status === 'sent' && (
+                  <button
+                    onClick={() => handleViewResponses(selectedQuotation)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+                  >
+                    <span>View Response</span>
+                    {responseCounts[selectedQuotation.qId] > 0 && (
+                      <span className="bg-blue-800 text-white text-xs px-2 py-1 rounded-full">
+                        {responseCounts[selectedQuotation.qId]}
+                      </span>
+                    )}
+                  </button>
+                )}
+                {selectedQuotation.status === 'RECEIVED' && (
+                  <button
+                    className="px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
+                  >
+                    Process Order
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 backdrop-blur-md bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl border max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Confirm Send Quotation
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to send this quotation request to suppliers? 
+              Once sent, the status will be changed to "sent" and the quotation cannot be edited.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => processQuotationSubmission('send')}
+                className="px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
+              >
+                Confirm Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Response Modal */}
+      {showResponseModal && selectedQuotation && (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Responses for Quotation Q{selectedQuotation.qId.toString().padStart(3, '0')}
+                </h3>
+                <button
+                  onClick={() => setShowResponseModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {responseLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FAAD00]"></div>
+                  <span className="ml-2 text-gray-600">Loading responses...</span>
+                </div>
+              ) : quotationResponses.length > 0 ? (
+                <div className="space-y-4">
+                  {quotationResponses.map((response, index) => (
+                    <div key={response.responseId} className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900">{response.supplierName}</h4>
+                          <p className="text-sm text-gray-600">{response.supplierEmail} | {response.supplierPhone}</p>
+                          <p className="text-sm text-gray-600">{response.supplierAddress}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-[#FAAD00]">
+                            Rs. {response.totalAmount.toLocaleString()}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Delivery: {response.deliveryDate}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <span className="text-sm font-medium text-gray-600">Response Date:</span>
+                          <span className="ml-2 text-sm text-gray-900">{response.respondDate}</span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-600">Status:</span>
+                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                            response.status?.toLowerCase() === 'accepted' 
+                              ? 'bg-green-100 text-green-800' 
+                              : response.status?.toLowerCase() === 'rejected'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {response.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      {response.additionalNote && (
+                        <div className="mb-4">
+                          <span className="text-sm font-medium text-gray-600">Additional Notes:</span>
+                          <p className="text-sm text-gray-900 mt-1">{response.additionalNote}</p>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end">
+                        {response.status?.toLowerCase() === 'rejected' ? (
+                          <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed">
+                            Cannot Purchase (Rejected)
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handlePurchaseResponse(response)}
+                            className="px-4 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
+                          >
+                            Select for Purchase
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No responses received yet for this quotation.</p>
+                </div>
+              )}
+
+              <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowResponseModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Order Detail Modal */}
+      {showPurchaseOrderDetail && selectedPurchaseOrder && (
+        <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/50 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Purchase Order Details - PO{selectedPurchaseOrder.orderId.toString().padStart(3, '0')}
+                </h3>
+                <button
+                  onClick={() => setShowPurchaseOrderDetail(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Order Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Order Information</h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Order ID:</span>
+                      <span className="font-medium">PO{selectedPurchaseOrder.orderId.toString().padStart(3, '0')}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Quotation ID:</span>
+                      <span className="font-medium">Q{selectedPurchaseOrder.quotationId.toString().padStart(3, '0')}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Order Date:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.orderDate}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Order Status:</span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        selectedPurchaseOrder.orderStatus === 1 || selectedPurchaseOrder.orderStatus === true
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {selectedPurchaseOrder.orderStatus === 1 || selectedPurchaseOrder.orderStatus === true ? (
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                        ) : (
+                          <Clock className="w-3 h-3 mr-1" />
+                        )}
+                        {selectedPurchaseOrder.orderStatus === 1 || selectedPurchaseOrder.orderStatus === true ? 'Completed' : 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Project Information</h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Project:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.projectName || selectedPurchaseOrder.projectDetails?.projectName || selectedPurchaseOrder.projectId}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Project ID:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.projectId}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Location:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.projectDetails?.projectLocation || selectedPurchaseOrder.projectLocation || 'Not specified'}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Category:</span>
+                      <span className="font-medium capitalize">{selectedPurchaseOrder.projectDetails?.projectCategory || selectedPurchaseOrder.projectCategory || 'Not specified'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Delivery Information</h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Original Delivery Date:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.originalDeliveryDate}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Estimated Delivery Date:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.estimatedDeliveryDate}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Payment Status:</span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        selectedPurchaseOrder.paymentStatus === 'paid' || selectedPurchaseOrder.paymentStatus === 'completed'
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedPurchaseOrder.paymentStatus === 'paid' || selectedPurchaseOrder.paymentStatus === 'completed' ? (
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                        ) : (
+                          <Clock className="w-3 h-3 mr-1" />
+                        )}
+                        {selectedPurchaseOrder.paymentStatusText}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Supplier Information */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-3">Supplier Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Supplier Name:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.supplierDetails.supplierName}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1 mt-2">
+                      <span className="text-gray-600 text-sm">Email:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.supplierDetails.supplierEmail}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-gray-600 text-sm">Phone:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.supplierDetails.supplierPhone}</span>
+                    </div>
+                    <div className="flex flex-col space-y-1 mt-2">
+                      <span className="text-gray-600 text-sm">Address:</span>
+                      <span className="font-medium">{selectedPurchaseOrder.supplierDetails.supplierAddress}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Section */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3">Order Items</h4>
+                <div className="border border-gray-300 rounded-lg overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Item
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Unit Price
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Quantity
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total Amount
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {selectedPurchaseOrder.items && selectedPurchaseOrder.items.length > 0 ? (
+                        selectedPurchaseOrder.items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              Item #{item.itemId}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {item.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              Rs. {parseFloat(item.unitPrice).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.quantity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              Rs. {(parseFloat(item.unitPrice) * parseInt(item.quantity)).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                            No items found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Total Amounts */}
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-blue-700 font-medium">Original Quotation Amount:</span>
+                      <span className="text-xl font-bold text-blue-900">
+                        Rs. {selectedPurchaseOrder.totalQuotationAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-[#FAAD00] bg-opacity-10 p-4 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-gray-700 font-medium">Final Order Amount:</span>
+                      <span className="text-xl font-bold text-black">
+                        Rs. {selectedPurchaseOrder.totalAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => setShowPurchaseOrderDetail(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Close
+                </button>
+                {(selectedPurchaseOrder.paymentStatus === 'paid' || selectedPurchaseOrder.paymentStatus === 'completed') && (
+                  <button
+                    onClick={() => handleDownloadInvoice(selectedPurchaseOrder.orderId)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    <span>Download Document</span>
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

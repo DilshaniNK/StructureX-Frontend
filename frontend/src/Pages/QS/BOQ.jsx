@@ -14,7 +14,8 @@ import {
   Eye,
   Download,
   Filter,
-  MoreVertical
+  MoreVertical,
+  AlertCircle
 } from 'lucide-react';
 
 
@@ -68,62 +69,101 @@ function BOQ() {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [projectError, setProjectError] = useState(null);
 
-  // Fetch all projects with BOQ data when component mounts
-  useEffect(() => {
+  // Function to fetch projects data
+  const fetchProjectsData = async () => {
     setLoadingProjects(true);
     setProjectError(null);
-    fetch('http://localhost:8086/api/v1/qs/projects-with-data/EMP_001')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch projects');
-        return res.json();
-      })
-      .then(data => {
-        // Separate projects based on whether they have BOQs
-        const withoutBOQ = [];
-        const withBOQ = [];
-        
-        data.forEach(project => {
-          if (project.boq_data && project.boq_data.boq) {
-            // Project has BOQ - add to edit list
-            const boq = project.boq_data.boq;
-            const items = project.boq_data.items || [];
-            const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0);
-            
-            withBOQ.push({
-              id: boq.boqId,
-              projectName: project.name,
-              projectId: project.project_id,
-              clientName: `${project.client_data?.first_name || ''} ${project.client_data?.last_name || ''}`.trim() || 'Unknown Client',
-              status: boq.status || 'Draft',
-              totalAmount: totalAmount,
-              lastModified: boq.date || new Date().toISOString().split('T')[0],
-              createdBy: boq.qsId || 'Unknown',
-              itemsCount: items.length,
-              boqData: {
-                ...boq,
-                items: items,
-                createdDate: boq.date
-              },
-              projectData: project
-            });
-          } else {
-            // Project has no BOQ - add to create list
-            withoutBOQ.push({
-              id: project.project_id,
-              name: project.name,
-              client: `${project.client_data?.first_name || ''} ${project.client_data?.last_name || ''}`.trim() || 'Unknown Client'
-            });
-          }
-        });
-        
-        setProjectsWithoutBOQ(withoutBOQ);
-        setProjectsWithBOQ(withBOQ);
-      })
-      .catch(err => {
-        setProjectError('Could not load projects');
-        console.error('Error fetching projects:', err);
-      })
-      .finally(() => setLoadingProjects(false));
+    console.log('[QS BOQ] Starting fetch...');
+    
+    try {
+      // Add timeout to the fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const res = await fetch('http://localhost:8086/api/v1/qs/projects-with-data/EMP_001', {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) {
+        const errorMessage = `Failed to fetch projects: ${res.status} ${res.statusText}`;
+        console.error('[QS BOQ] HTTP Error:', errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      const data = await res.json();
+      console.log('[QS BOQ] Data received:', data);
+      
+      // Separate projects based on whether they have BOQs
+      const withoutBOQ = [];
+      const withBOQ = [];
+      
+      data.forEach(project => {
+        if (project.boq_data && project.boq_data.boq) {
+          // Project has BOQ - add to edit list
+          const boq = project.boq_data.boq;
+          const items = project.boq_data.items || [];
+          const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+          
+          withBOQ.push({
+            id: boq.boqId,
+            projectName: project.name,
+            projectId: project.project_id,
+            clientName: `${project.client_data?.first_name || ''} ${project.client_data?.last_name || ''}`.trim() || 'Unknown Client',
+            status: boq.status || 'Draft',
+            totalAmount: totalAmount,
+            lastModified: boq.date || new Date().toISOString().split('T')[0],
+            createdBy: 'QS Officer', // Default value
+            itemsCount: items.length,
+            boqData: {
+              boqId: boq.boqId,
+              createdDate: boq.date,
+              items: items
+            }
+          });
+        } else {
+          // Project doesn't have BOQ - add to create list
+          withoutBOQ.push({
+            id: project.project_id,
+            name: project.name,
+            client: `${project.client_data?.first_name || ''} ${project.client_data?.last_name || ''}`.trim() || 'Unknown Client'
+          });
+        }
+      });
+      
+      setProjectsWithoutBOQ(withoutBOQ);
+      setProjectsWithBOQ(withBOQ);
+      console.log('[QS BOQ] Data processed successfully');
+    } catch (err) {
+      console.error('[QS BOQ] Error fetching BOQs:', err);
+      let errorMessage = 'Could not load BOQs';
+      
+      if (err.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setProjectError(errorMessage);
+      
+      // Clear data on error - let user see the error
+      setProjectsWithoutBOQ([]);
+      setProjectsWithBOQ([]);
+    } finally {
+      setLoadingProjects(false);
+      console.log('[QS BOQ] Fetch completed');
+    }
+  };
+
+  // Function to refresh data manually
+  const handleRefresh = () => {
+    fetchProjectsData();
+  };
+
+  // Fetch all projects with BOQ data when component mounts
+  useEffect(() => {
+    fetchProjectsData();
   }, []);
 
   // State for create form fields
@@ -202,9 +242,19 @@ function BOQ() {
   };
 
   const [boqs, setBOQs] = useState([]);
+  
+  // Separate BOQs into approved and editable (draft/final)
   const filteredBOQs = boqs.filter(boq =>
     boq.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     boq.projectId.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const approvedBOQs = filteredBOQs.filter(boq => 
+    boq.status === 'APPROVED' || boq.status === 'Approved'
+  );
+  
+  const editableBOQs = filteredBOQs.filter(boq => 
+    boq.status !== 'APPROVED' && boq.status !== 'Approved'
   );
 
   // Update BOQs list when projects with BOQ data loads
@@ -227,8 +277,61 @@ function BOQ() {
   }, [showEditForm, selectedProject]);
 
   // Handler to update status in the table
-  const handleStatusChange = (id, newStatus) => {
-    setBOQs(prev => prev.map(boq => boq.id === id ? { ...boq, status: newStatus } : boq));
+  const handleStatusChange = async (id, newStatus, currentStatus) => {
+    // Show confirmation dialog
+    const confirmMessage = `Are you sure you want to change the BOQ status from "${currentStatus}" to "${newStatus}"?`;
+    if (!window.confirm(confirmMessage)) {
+      return; // User cancelled, don't proceed
+    }
+
+    try {
+      // Make API call to update status
+      const response = await fetch(`http://localhost:8086/api/v1/sqs/boqs/${id}/status?status=${newStatus}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update BOQ status: ${errorText}`);
+      }
+
+      // Update local state only if API call was successful
+      setBOQs(prev => prev.map(boq => boq.id === id ? { ...boq, status: newStatus } : boq));
+      
+      // Show success message
+      alert(`BOQ status successfully updated to "${newStatus}"`);
+    } catch (error) {
+      console.error('Error updating BOQ status:', error);
+      alert(`Error updating BOQ status: ${error.message}`);
+    }
+  };
+
+  // Handler to download BOQ PDF
+  const handleDownloadBOQ = async (boqId) => {
+    try {
+      const res = await fetch(`http://localhost:8086/api/v1/boq/${boqId}/download`, {
+        method: 'GET',
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error('Failed to download BOQ PDF: ' + errorText);
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `BOQ_${boqId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Error downloading BOQ PDF: ' + err.message);
+      console.error('[BOQ Download] Exception:', err);
+    }
   };
 
   // Helper to format date as yyyy-MM-dd
@@ -392,16 +495,16 @@ function BOQ() {
 
         {activeTab === 'edit' && (
           <div className="space-y-6">
-            {/* Edit Existing BOQ Section */}
+            {/* Search and Filter Section */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 flex items-center">
                       <Edit3 className="w-5 h-5 mr-2 text-[#FAAD00]" />
-                      Edit Existing BOQ
+                      Manage Existing BOQs
                     </h2>
-                    <p className="text-gray-600 mt-1">Modify and update existing Bills of Quantities</p>
+                    <p className="text-gray-600 mt-1">View and manage existing Bills of Quantities</p>
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="relative">
@@ -414,134 +517,307 @@ function BOQ() {
                         className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
                       />
                     </div>
+                    <button 
+                      onClick={handleRefresh}
+                      disabled={loadingProjects}
+                      className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50"
+                      title="Refresh BOQs"
+                    >
+                      <svg className={`w-4 h-4 text-gray-600 ${loadingProjects ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
                     <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
                       <Filter className="w-4 h-4 text-gray-600" />
                     </button>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* BOQ List */}
-              <div className="p-6">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          BOQ Details
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Project
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Total Amount
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Last Modified
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredBOQs.map((boq) => (
-                        <tr key={boq.id} className="hover:bg-gray-50 transition-colors duration-200">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <div className="text-sm font-medium text-gray-900">{boq.id}</div>
-                              <div className="text-sm text-gray-500">{boq.itemsCount} items</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <div className="text-sm font-medium text-gray-900">{boq.projectName}</div>
-                              <div className="text-sm text-gray-500">{boq.projectId}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {boq.status === 'APPROVED' ? (
-                              <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(boq.status)} bg-white`}>
-                                Approved
-                              </span>
-                            ) : (
+            {/* Loading State */}
+            {loadingProjects && (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FAAD00] mx-auto mb-4"></div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Loading BOQs...</h3>
+                <p className="text-gray-500">Please wait while we fetch the data.</p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {projectError && !loadingProjects && (
+              <div className="text-center py-12">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+                  <div className="text-red-600 font-medium mb-2">Error Loading BOQs</div>
+                  <div className="text-red-500 text-sm">{projectError}</div>
+                  <button 
+                    onClick={handleRefresh}
+                    className="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* BOQ Content - Only show when not loading and no error */}
+            {!loadingProjects && !projectError && (
+              <>
+            {/* Editable BOQs Section */}
+            {editableBOQs.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                        <Edit3 className="w-5 h-5 mr-2 text-blue-600" />
+                        Draft & Final BOQs
+                      </h3>
+                      <p className="text-gray-600 mt-1">BOQs that can be edited and status updated</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                        {editableBOQs.length} BOQ{editableBOQs.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            BOQ Details
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Project
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total Amount
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Last Modified
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {editableBOQs.map((boq) => (
+                          <tr key={boq.id} className="hover:bg-gray-50 transition-colors duration-200">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                <div className="text-sm font-medium text-gray-900">{boq.id}</div>
+                                <div className="text-sm text-gray-500">{boq.itemsCount} items</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                <div className="text-sm font-medium text-gray-900">{boq.projectName}</div>
+                                <div className="text-sm text-gray-500">{boq.projectId}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
                               <select
                                 value={boq.status}
-                                onChange={e => handleStatusChange(boq.id, e.target.value)}
+                                onChange={e => handleStatusChange(boq.id, e.target.value, boq.status)}
                                 className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(boq.status)} bg-white`}
                               >
                                 <option value="DRAFT">Draft</option>
                                 <option value="FINAL">Final</option>
                               </select>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <span className="text-sm font-medium text-gray-900">
-                                LKR {boq.totalAmount.toLocaleString()}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <Calendar className="w-4 h-4 mr-1" />
-                              {new Date(boq.lastModified).toLocaleDateString()}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex items-center space-x-2">
-                              <button 
-                                onClick={() => {
-                                  setSelectedProject(boq);
-                                  setShowEditForm(true);
-                                }}
-                                className="text-[#FAAD00] hover:text-[#FAAD00]/80 p-1 rounded transition-colors duration-200"
-                                title="Edit BOQ"
-                              >
-                                <Edit3 className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  setSelectedProject(boq);
-                                  setShowViewForm(true);
-                                }}
-                                className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors duration-200"
-                                title="View BOQ"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              <button 
-                                className="text-green-600 hover:text-green-800 p-1 rounded transition-colors duration-200"
-                                title="Download BOQ"
-                              >
-                                <Download className="w-4 h-4" />
-                              </button>
-                              <button 
-                                className="text-gray-400 hover:text-gray-600 p-1 rounded transition-colors duration-200"
-                                title="More actions"
-                              >
-                                <MoreVertical className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <span className="text-sm font-medium text-gray-900">
+                                  LKR {boq.totalAmount.toLocaleString()}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <div className="flex items-center">
+                                <Calendar className="w-4 h-4 mr-1" />
+                                {new Date(boq.lastModified).toLocaleDateString()}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex items-center space-x-2">
+                                <button 
+                                  onClick={() => {
+                                    setSelectedProject(boq);
+                                    setShowEditForm(true);
+                                  }}
+                                  className="text-[#FAAD00] hover:text-[#FAAD00]/80 p-1 rounded transition-colors duration-200"
+                                  title="Edit BOQ"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    setSelectedProject(boq);
+                                    setShowViewForm(true);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors duration-200"
+                                  title="View BOQ"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDownloadBOQ(boq.id)}
+                                  className="text-green-600 hover:text-green-800 p-1 rounded transition-colors duration-200"
+                                  title="Download BOQ"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  className="text-gray-400 hover:text-gray-600 p-1 rounded transition-colors duration-200"
+                                  title="More actions"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Approved BOQs Section */}
+            {approvedBOQs.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                        <Eye className="w-5 h-5 mr-2 text-green-600" />
+                        Approved BOQs
+                      </h3>
+                      <p className="text-gray-600 mt-1">Finalized BOQs that are approved and locked</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                        {approvedBOQs.length} Approved BOQ{approvedBOQs.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {filteredBOQs.length === 0 && (
-                  <div className="text-center py-12">
-                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No BOQs found</h3>
-                    <p className="text-gray-500">No BOQs match your search criteria.</p>
+                <div className="p-6">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            BOQ Details
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Project
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total Amount
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Last Modified
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {approvedBOQs.map((boq) => (
+                          <tr key={boq.id} className="hover:bg-gray-50 transition-colors duration-200">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                <div className="text-sm font-medium text-gray-900">{boq.id}</div>
+                                <div className="text-sm text-gray-500">{boq.itemsCount} items</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                <div className="text-sm font-medium text-gray-900">{boq.projectName}</div>
+                                <div className="text-sm text-gray-500">{boq.projectId}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(boq.status)} bg-white`}>
+                                Approved
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <span className="text-sm font-medium text-gray-900">
+                                  LKR {boq.totalAmount.toLocaleString()}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <div className="flex items-center">
+                                <Calendar className="w-4 h-4 mr-1" />
+                                {new Date(boq.lastModified).toLocaleDateString()}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex items-center space-x-2">
+                                <button 
+                                  onClick={() => {
+                                    setSelectedProject(boq);
+                                    setShowViewForm(true);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors duration-200"
+                                  title="View BOQ"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDownloadBOQ(boq.id)}
+                                  className="text-green-600 hover:text-green-800 p-1 rounded transition-colors duration-200"
+                                  title="Download BOQ"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  className="text-gray-400 hover:text-gray-600 p-1 rounded transition-colors duration-200"
+                                  title="More actions"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                )}
+                </div>
               </div>
-            </div>
+            )}
+              </>
+            )}
+
+            {/* No BOQs Message - Show when not loading, no error, but no BOQs found */}
+            {!loadingProjects && !projectError && filteredBOQs.length === 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-12 text-center">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No BOQs found</h3>
+                  <p className="text-gray-500">No BOQs match your search criteria.</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

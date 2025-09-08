@@ -262,38 +262,6 @@ function Projects() {
         image: '/Projects/site2.png'
       }
     ],
-    pending: [
-      {
-        id: 'P004',
-        name: 'Shopping Mall Complex',
-        code: 'SMC-2025-001',
-        location: '',
-        startDate: '2025-09-01',
-        estimatedEndDate: '2026-08-30',
-        status: 'Pending',
-        description: 'Machine A , Machine B ',
-      },
-      {
-        id: 'P005',
-        name: 'Eco-Friendly Housing Project',
-        code: 'EHP-2025-002',
-        location: '',
-        startDate: '2025-11-15',
-        estimatedEndDate: '2027-05-30',
-        status: 'Pending',
-        description: 'Machine A , Machine B '
-      },
-      {
-        id: 'P006',
-        name: 'Hospital Expansion Wing',
-        code: 'HEW-2025-003',
-        location: '',
-        startDate: '2025-12-01',
-        estimatedEndDate: '2027-01-15',
-        status: 'Pending',
-        description: 'Machine A , Machine B '
-      }
-    ],
     finished: [
       {
         id: 'P003',
@@ -346,7 +314,6 @@ function Projects() {
   const getAllProjects = () => {
     return [
       ...projectsData.ongoing,
-      ...projectsData.pending,
       ...projectsData.finished
     ]
   }
@@ -406,52 +373,27 @@ function Projects() {
         {projects.map(project => (
           <div
             key={project.id}
-            className={`bg-white border border-gray-200 rounded-lg p-4 transition duration-200 transform ${activeTab === 'pending'
-              ? 'hover:shadow-md'
-              : 'hover:shadow-lg cursor-pointer hover:-translate-y-1'
-              }`}
-            onClick={() => activeTab !== 'pending' && handleProjectSelect(project)}
+            className="bg-white border border-gray-200 rounded-lg p-4 transition duration-200 transform hover:shadow-lg cursor-pointer hover:-translate-y-1"
+            onClick={() => handleProjectSelect(project)}
           >
-            {/* Only show image for non-pending projects */}
-            {activeTab !== 'pending' && (
-              <img
-                src={project.image}
-                alt={project.name}
-                className="w-full h-48 object-cover rounded-lg mb-4"
-              />
-            )}
+            <img
+              src={project.image}
+              alt={project.name}
+              className="w-full h-48 object-cover rounded-lg mb-4"
+            />
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">{project.name}</h3>
               <p className="text-sm text-gray-600 mb-2"><span className="font-bold">ID:</span> {project.code}</p>
               <p className="text-sm text-gray-600 mb-2"><span className="font-bold">Location:</span> {project.location}</p>
 
-              {/* Show description for pending projects */}
-              {activeTab === 'pending' && project.description && (
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-3">
-                  <h4 className="font-medium text-blue-900 mb-1 text-sm">Description:</h4>
-                  <p className="text-blue-800 text-xs leading-relaxed">{project.description}</p>
-                </div>
-              )}
-
-              {/* Show start date and due date for pending projects */}
-              {activeTab === 'pending' && (
-                <div className="mb-2">
-                  <p className="text-sm text-gray-600"><span className="font-bold">Start Date:</span> {project.startDate}</p>
-                  <p className="text-sm text-gray-600"><span className="font-bold">Due Date:</span> {project.estimatedEndDate}</p>
-                </div>
-              )}
-
               <div className="flex justify-between items-center">
                 <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(project.status)}`}>
                   {project.status}
                 </span>
-                {/* Only show "View Details" button for non-pending projects */}
-                {activeTab !== 'pending' && (
-                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                    View Details →
-                  </button>
-                )}
+                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  View Details →
+                </button>
               </div>
             </div>
           </div>
@@ -462,22 +404,6 @@ function Projects() {
 
   const renderSectionContent = () => {
     switch (activeSection) {
-      case 'overview':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Project Overview</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Progress Summary</h4>
-                <p className="text-blue-700">Overall project progress: 65%</p>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-medium text-green-900 mb-2">Budget Status</h4>
-                <p className="text-green-700">Budget utilization: 58%</p>
-              </div>
-            </div>
-          </div>
-        )
 
       case 'design':
         return (
@@ -963,7 +889,7 @@ function Projects() {
     if (!selectedProject) return null
 
     return (
-      
+
       <div className="space-y-6">
         <button
           onClick={() => setSelectedProject(null)}
@@ -1016,77 +942,44 @@ function Projects() {
                     {selectedProject.status}
                   </span>
                 </div>
-                {/* Only show owner for non-pending projects */}
-                {selectedProject.status !== 'Pending' && (
-                  <div>
-                    <span className="font-medium text-gray-700">Client:</span>
-                    <p className="text-gray-600">{selectedProject.owner}</p>
-                  </div>
-                )}
-                {/* Only show team members for non-pending projects */}
-                {selectedProject.status !== 'Pending' && (
-                  <div className="md:col-span-2">
-                    <span className="font-medium text-gray-700">Assigned Team Members:</span>
-                    <p className="text-gray-600">{selectedProject.teamMembers.join(', ')}</p>
-                  </div>
-                )}
+                <div>
+                  <span className="font-medium text-gray-700">Client:</span>
+                  <p className="text-gray-600">{selectedProject.owner}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <span className="font-medium text-gray-700">Assigned Team Members:</span>
+                  <p className="text-gray-600">{selectedProject.teamMembers.join(', ')}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Only show tabs for non-pending projects */}
-          {selectedProject.status !== 'Pending' && (
-            <>
-              <div className="border-b border-gray-200">
-                <nav className="flex flex-wrap -mb-px space-x-8">
-                  {[
-                    { id: 'overview', label: 'Overview' },
-                    { id: 'design', label: 'Design/Plans' },
-                    { id: 'wbs', label: 'WBS & Milestones' },
-                    { id: 'boq', label: 'BOQ Summary' },
-                    { id: 'financial', label: 'Financial' },
-                    { id: 'materials', label: 'Materials' },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveSection(tab.id)}
-                      className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeSection === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </nav>
-              </div>
+          <div className="border-b border-gray-200">
+            <nav className="flex flex-wrap -mb-px space-x-8">
+              {[
+                { id: 'design', label: 'Design/Plans' },
+                { id: 'wbs', label: 'WBS & Milestones' },
+                { id: 'boq', label: 'BOQ Summary' },
+                { id: 'financial', label: 'Financial' },
+                { id: 'materials', label: 'Materials' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveSection(tab.id)}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeSection === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
 
-              <div className="mt-6">
-                {renderSectionContent()}
-              </div>
-            </>
-          )}
-
-          {/* Simple view for pending projects */}
-          {/* {selectedProject.status === 'Pending' && (
-            <div className="mt-6">
-              <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
-                <div className="flex items-center mb-4">
-                  <svg className="w-6 h-6 text-orange-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z" clipRule="evenodd" />
-                  </svg>
-                  <h3 className="text-lg font-semibold text-orange-900">Project Status: Pending</h3>
-                </div>
-                <p className="text-orange-800 mb-4">
-                  This project is scheduled to begin on <span className="font-semibold">{selectedProject.startDate}</span> and 
-                  is expected to be completed by <span className="font-semibold">{selectedProject.estimatedEndDate}</span>.
-                </p>
-                <p className="text-orange-700 text-sm">
-                  Detailed project information including WBS, BOQ, and financial details will be available once the project begins.
-                </p>
-              </div>
-            </div>
-          )} */}
+          <div className="mt-6">
+            {renderSectionContent()}
+          </div>
         </div>
       </div>
     )
@@ -1179,7 +1072,7 @@ function Projects() {
                           />
                         </div>
 
-                     
+
 
                         {/* Location (editable) */}
                         <div>
@@ -1246,15 +1139,6 @@ function Projects() {
                   Ongoing Projects
                 </button>
                 <button
-                  onClick={() => setActiveTab('pending')}
-                  className={`px-4 py-2 rounded-md font-medium transition duration-200 ${activeTab === 'pending'
-                    ? 'bg-amber-400 text-white'
-                    : 'bg-white text-amber-400 border border-amber-400 hover:bg-blue-50'
-                    }`}
-                >
-                  Pending Projects
-                </button>
-                <button
                   onClick={() => setActiveTab('finished')}
                   className={`px-4 py-2 rounded-md font-medium transition duration-200 ${activeTab === 'finished'
                     ? 'bg-amber-400 text-white'
@@ -1269,9 +1153,7 @@ function Projects() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">
-                  {activeTab === 'ongoing' ? 'Ongoing Projects' :
-                    activeTab === 'pending' ? 'Pending Projects' :
-                      'Finished Projects'}
+                  {activeTab === 'ongoing' ? 'Ongoing Projects' : 'Finished Projects'}
                 </h2>
               </div>
 

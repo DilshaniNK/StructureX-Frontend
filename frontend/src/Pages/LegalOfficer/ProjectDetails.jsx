@@ -282,46 +282,50 @@ export default function ProjectDetails({ projectId, onBack, user }) {
                 </button>
               </div>
             ) : (
-              processes.map(process => (
-                <div key={process.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-300">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="text-lg font-medium text-gray-900">Project ID: <span className="font-normal text-amber-700">{process.project_id || process.projectId || projectId}</span></h3>
-                          <p className="text-sm text-gray-600 mt-2"><strong className="text-gray-700">Description:</strong> {process.description || '—'}</p>
-                        </div>
-                        <div className="text-right">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(process.status)}`}>
-                            {getStatusIcon(process.status)}
-                            <span className="ml-1.5 capitalize">{process.status || '—'}</span>
-                          </span>
-                          <p className="text-sm text-gray-500 mt-2">Approval Date: <span className="text-gray-900 font-medium">{formatDate(process.approval_date || process.approvalDate || process.approvaldate)}</span></p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {processes.map(process => (
+                  <div key={process.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="flex flex-col h-full">
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900">Project ID: <span className="font-normal text-amber-700">{process.project_id || process.projectId || projectId}</span></h3>
+                        <div className="mt-2">
+                          <div className="flex items-center mb-1">
+                            <strong className="text-gray-700 text-sm">Description:</strong>
+                          </div>
+                          <div className="bg-gray-50 p-2 rounded-md max-h-24 overflow-y-auto">
+                            <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">{process.description || '—'}</p>
+                          </div>
                         </div>
                       </div>
+                      <div className="mt-3">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(process.status)}`}>
+                          {getStatusIcon(process.status)}
+                          <span className="ml-1.5 capitalize">{process.status || '—'}</span>
+                        </span>
+                        <p className="text-sm text-gray-500 mt-2">Approval Date: <span className="text-gray-900 font-medium">{formatDate(process.approval_date || process.approvalDate || process.approvaldate)}</span></p>
+                      </div>
+
+                      <div className="flex justify-between mt-auto pt-4 space-x-2">
+                        <button
+                          onClick={() => handleStatusUpdate(process.id)}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                        >
+                          <Edit3 className="h-4 w-4 mr-1.5 text-amber-600" />
+                          Update
+                        </button>
+
+                        <button
+                          onClick={() => confirmDelete(process.id)}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-red-300 text-sm font-medium rounded-lg text-red-700 bg-white hover:bg-red-50 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1.5" />
+                          Delete
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleStatusUpdate(process.id)}
-                        className="inline-flex items-center px-3.5 py-1.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
-                      >
-                        <Edit3 className="h-4 w-4 mr-1.5 text-amber-600" />
-                        Update
-                      </button>
-
-                      <button
-                        onClick={() => confirmDelete(process.id)}
-                        className="inline-flex items-center px-3.5 py-1.5 border border-red-300 text-sm font-medium rounded-lg text-red-700 bg-white hover:bg-red-50 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1.5" />
-                        Delete
-                      </button>
-                    </div>
-
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         )}

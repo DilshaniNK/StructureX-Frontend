@@ -135,16 +135,6 @@ const Sidebar = ({
 
   return (
     <>
-      {/* Custom CSS to hide the scrollbar across browsers */}
-      <style jsx>{`
-        .hide-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;     /* Firefox */
-        }
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none; /* Chrome, Safari, Opera */
-        }
-      `}</style>
 
       {/* Mobile Overlay */}
       {isSidebarOpen && (

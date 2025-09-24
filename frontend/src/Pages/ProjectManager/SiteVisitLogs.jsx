@@ -93,6 +93,16 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
       background-size: 200px 100%;
       animation: shimmer 1.5s infinite;
     }
+
+    /* Disabled button styles */
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    button:disabled:hover {
+      background-color: inherit !important;
+    }
   `;
 
   const [showAddForme, setShowAddForme] = useState(false);
@@ -131,12 +141,14 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
     status: '',
   });
 
+  const pmId = 'EMP_001'; // Example PM ID
+
 
   // Fetch visits data from database
   const fetchVisits = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:8086/api/v1/project_manager/visits', {
+      const response = await axios.get(`http://localhost:8086/api/v1/project_manager/site-visits/${pmId}`, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -160,7 +172,7 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
   const fetchVisitRequests = async () => {
     try {
       setRequestsLoading(true);
-      const response = await axios.get('http://localhost:8086/api/v1/project_manager/request', {
+      const response = await axios.get(`http://localhost:8086/api/v1/project_manager/request/${pmId}`, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -172,6 +184,11 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
         if (response.data && response.data.length > 0) {
           console.log('First request object structure:', response.data[0]);
           console.log('Available keys in first request:', Object.keys(response.data[0]));
+          
+          // Log all unique status values in the response
+          const statuses = response.data.map(req => req.status).filter(Boolean);
+          const uniqueStatuses = [...new Set(statuses)];
+          console.log('Unique status values in API response:', uniqueStatuses);
         }
         setVisitRequests(response.data || []);
       }
@@ -205,6 +222,24 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
 
     return matchesSearch && matchesDate;
   });
+
+  // Filter visit requests to only show pending requests
+  const filteredVisitRequests = visitRequests.filter(request => {
+    const status = request.status?.toLowerCase();
+    console.log('Filtering request with status:', status, 'for request:', request);
+    
+    // Show requests that are pending, have no status, or are in a 'new' state
+    const shouldShow = status === 'pending' || 
+                      status === 'new' || 
+                      status === 'submitted' ||
+                      !status || 
+                      status === '';
+    
+    console.log(`Request ${request.id || request._id || 'unknown'} - Status: "${status}" - Should show: ${shouldShow}`);
+    return shouldShow;
+  });
+
+  console.log(`Total visit requests: ${visitRequests.length}, Filtered (pending): ${filteredVisitRequests.length}`);
 
 
 
@@ -321,9 +356,21 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
       });
 
       if (response.status === 200) {
+        console.log('Request accepted successfully:', response.data);
         setSuccessMessage('Visit request accepted and marked as completed!');
         setShowSuccessAlert(true);
-        fetchVisitRequests(); // Refresh the requests list
+        
+        // Immediately update local state to remove the request from pending list
+        setVisitRequests(prevRequests => 
+          prevRequests.map(req => {
+            const reqId = req.id || req._id || req.requestId || req.visitRequestId || 
+                         req.request_id || req.visitId || req.visit_id || req.siteVisitId || req.site_visit_id;
+            return reqId === requestId ? { ...req, status: 'accepted' } : req;
+          })
+        );
+        
+        // Also refresh from server
+        fetchVisitRequests();
       } else {
         setErrorMessage('Failed to accept visit request');
         setShowErrorAlert(true);
@@ -356,9 +403,21 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
       });
 
       if (response.status === 200) {
+        console.log('Request rejected successfully:', response.data);
         setSuccessMessage('Visit request rejected and marked as cancelled!');
         setShowSuccessAlert(true);
-        fetchVisitRequests(); // Refresh the requests list
+        
+        // Immediately update local state to remove the request from pending list
+        setVisitRequests(prevRequests => 
+          prevRequests.map(req => {
+            const reqId = req.id || req._id || req.requestId || req.visitRequestId || 
+                         req.request_id || req.visitId || req.visit_id || req.siteVisitId || req.site_visit_id;
+            return reqId === requestId ? { ...req, status: 'rejected' } : req;
+          })
+        );
+        
+        // Also refresh from server
+        fetchVisitRequests();
       } else {
         setErrorMessage('Failed to reject visit request');
         setShowErrorAlert(true);
@@ -552,10 +611,10 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
               <p className="text-gray-500">Loading visit requests...</p>
             </div>
           </div>
-        ) : visitRequests.length === 0 ? (
+        ) : filteredVisitRequests.length === 0 ? (
           <div className="p-6">
             <div className="text-center py-8">
-              <p className="text-gray-500">No visit requests found.</p>
+              <p className="text-gray-500">No pending visit requests found.</p>
             </div>
           </div>
         ) : (
@@ -571,13 +630,29 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {visitRequests.map((request, index) => {
+                {filteredVisitRequests.map((request, index) => {
                   // Enhanced logging to debug the request object
                   console.log(`Request ${index}:`, request);
+                  console.log('Available keys:', Object.keys(request));
                   
                   // Try to get the ID from various possible field names
-                  const requestId = request.id || request._id || request.requestId || request.visitRequestId;
+                  // Add more possible field names based on your API response
+                  const requestId = request.id || 
+                                   request._id || 
+                                   request.requestId || 
+                                   request.visitRequestId || 
+                                   request.request_id ||
+                                   request.visitId ||
+                                   request.visit_id ||
+                                   request.siteVisitId ||
+                                   request.site_visit_id;
+                  
                   console.log(`Request ${index} ID:`, requestId);
+                  
+                  // If still no ID found, warn about it
+                  if (!requestId) {
+                    console.warn(`No valid ID found for request ${index}:`, request);
+                  }
                   
                   return (
                     <tr key={requestId || index} className="hover:bg-gray-50">
@@ -610,9 +685,16 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                               onClick={() => {
                                 console.log('Accept button clicked for request:', request);
                                 console.log('Using ID:', requestId);
+                                if (!requestId) {
+                                  console.error('Cannot accept request - ID is undefined');
+                                  setErrorMessage('Cannot process request - Invalid or missing ID');
+                                  setShowErrorAlert(true);
+                                  return;
+                                }
                                 handleAcceptRequest(requestId);
                               }}
                               className="flex items-center px-3 py-2 bg-green-500 text-white cursor-pointer hover:bg-green-600 rounded-lg text-sm font-medium transition-colors"
+                              disabled={!requestId}
                             >
                               <CircleCheckBig size={16} className="mr-1" />
                               Accept
@@ -621,9 +703,16 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                               onClick={() => {
                                 console.log('Reject button clicked for request:', request);
                                 console.log('Using ID:', requestId);
+                                if (!requestId) {
+                                  console.error('Cannot reject request - ID is undefined');
+                                  setErrorMessage('Cannot process request - Invalid or missing ID');
+                                  setShowErrorAlert(true);
+                                  return;
+                                }
                                 showRejectConfirmation(requestId);
                               }}
                               className="flex items-center px-3 py-2 bg-red-500 text-white cursor-pointer hover:bg-red-600 rounded-lg text-sm font-medium transition-colors"
+                              disabled={!requestId}
                             >
                               <CircleMinus size={16} className="mr-1" />
                               Reject

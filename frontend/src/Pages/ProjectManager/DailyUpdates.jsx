@@ -7,6 +7,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import axios from "axios";
+import { useParams } from "react-router-dom";
 
 export default function DailyUpdates() {
   const [update, setUpdate] = useState([]);
@@ -23,11 +24,25 @@ export default function DailyUpdates() {
         )
         .then((response) => {
           console.log("✅ Data from backend:", response.data);
-          setUpdate(response.data);
+          // Normalize the response into an array so callers can safely use array methods
+          const data = response.data;
+          let arr = [];
+          if (Array.isArray(data)) {
+            arr = data;
+          } else if (data && typeof data === "object" && Array.isArray(data.updates)) {
+            // some APIs wrap results in an `updates` field
+            arr = data.updates;
+          } else if (data && typeof data === "object") {
+            // single object -> wrap in array
+            arr = [data];
+          }
+          setUpdate(arr);
         })
         .catch((error) => {
           console.error("❌ Error fetching updates:", error);
         });
+    } else {
+      console.warn("⚠️ No user ID provided, skipping fetch.");
     }
   }, [userid]);
 

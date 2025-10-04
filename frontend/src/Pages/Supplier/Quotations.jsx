@@ -818,8 +818,8 @@ const Quotations = () => {
                   <FileText className="h-4 w-4 text-blue-600" />
                   Quotation ID
                 </Label>
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <span className="text-sm font-bold text-blue-700">#{selectedQuotation?.id}</span>
+                <div className="p-3 border border-gray-200 rounded-md">
+                  <span className="text-sm font-bold text-gray-700">#{selectedQuotation?.id}</span>
                 </div>
               </div>
               <div className="space-y-2">
@@ -827,7 +827,7 @@ const Quotations = () => {
                   <Calendar className="h-4 w-4 text-green-600" />
                   Status
                 </Label>
-                <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                <div className="p-3 border border-gray-200 rounded-md">
                   <Badge variant={getStatusVariant(selectedQuotation?.status)} className="font-medium">
                     {getStatusIcon(selectedQuotation?.status)}
                     {getStatusText(selectedQuotation?.status)}
@@ -839,21 +839,21 @@ const Quotations = () => {
             {/* Project Information */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-gray-700">Project Information</Label>
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+              <div className="p-4 border border-gray-200 rounded-lg">
                 <div className="grid grid-cols-2 gap-4 mb-3">
                   <div>
-                    <span className="text-xs text-blue-600 font-medium">Request Date</span>
-                    <p className="text-sm font-semibold text-blue-800">{selectedQuotation?.date || 'Not specified'}</p>
+                    <span className="text-xs text-gray-600 font-medium">Request Date</span>
+                    <p className="text-sm font-semibold text-gray-800">{selectedQuotation?.date || 'Not specified'}</p>
                   </div>
                   <div>
-                    <span className="text-xs text-blue-600 font-medium">Deadline</span>
-                    <p className="text-sm font-semibold text-blue-800">{selectedQuotation?.deadline || 'Not specified'}</p>
+                    <span className="text-xs text-gray-600 font-medium">Deadline</span>
+                    <p className="text-sm font-semibold text-gray-800">{selectedQuotation?.deadline || 'Not specified'}</p>
                   </div>
                 </div>
                 {selectedQuotation?.description && (
                   <div>
-                    <span className="text-xs text-blue-600 font-medium">Description</span>
-                    <p className="text-sm text-blue-700">{selectedQuotation.description}</p>
+                    <span className="text-xs text-gray-600 font-medium">Description</span>
+                    <p className="text-sm text-gray-700">{selectedQuotation.description}</p>
                   </div>
                 )}
               </div>

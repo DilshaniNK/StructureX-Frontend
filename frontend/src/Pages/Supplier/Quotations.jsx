@@ -109,6 +109,7 @@ const Badge = ({ children, variant = "default", className, ...props }) => {
     default: "bg-blue-100 text-blue-800 border-blue-200 shadow-sm",
     pending: "bg-amber-100 text-amber-800 border-amber-200 shadow-sm animate-pulse",
     responded: "bg-green-100 text-green-800 border-green-200 shadow-sm",
+    accepted: "bg-green-100 text-green-800 border-green-200 shadow-sm",
     rejected: "bg-red-100 text-red-800 border-red-200 shadow-sm",
     expired: "bg-gray-100 text-gray-800 border-gray-200 shadow-sm",
   }
@@ -181,7 +182,7 @@ const Input = ({ className, type = "text", ...props }) => (
 
 const Textarea = ({ className, ...props }) => (
   <textarea
-    className={cn("flex min-h-[80px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FAAD00] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200", className)}
+    className={cn("flex min-h-[60px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FAAD00] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200", className)}
     {...props}
   />
 )
@@ -449,11 +450,21 @@ const Quotations = () => {
         return
       }
     }
+    
+    // For rejection, we can set minimal data
+    if (action === 'reject') {
+      // Set minimal required data for rejection
+      setResponseFormData({
+        totalAmount: '0',
+        deliveryTime: '0',
+        notes: responseFormData.notes || 'Quotation rejected'
+      })
+    }
 
     // Confirm action with user
     const confirmMessage = action === 'accept' 
-      ? `Are you sure you want to submit this quotation response with amount Rs.${responseFormData.totalAmount}?`
-      : 'Are you sure you want to reject this quotation?'
+      ? `Are you sure you want to submit this quotation with amount Rs.${responseFormData.totalAmount}? This will change the status to SUBMITTED.`
+      : 'Are you sure you want to reject this quotation? This will change the status to REJECTED.'
     
     if (!window.confirm(confirmMessage)) {
       return
@@ -470,12 +481,24 @@ const Quotations = () => {
         days: parseInt(responseFormData.deliveryTime) || 0,
         notes: responseFormData.notes || '',
         comments: responseFormData.notes || '', // Include alternative field name
-        status: 'SUBMITTED',
+        status: action === 'accept' ? 'SUBMITTED' : 'REJECTED',
         respondDate: new Date().toISOString()
       }
 
+      // For rejection, update payload with minimal required data
+      if (action === 'reject') {
+        responsePayload.totalAmount = 0
+        responsePayload.deliveryTime = 0
+        responsePayload.deliveryDays = 0
+        responsePayload.days = 0
+        responsePayload.notes = responseFormData.notes || 'Quotation rejected'
+        responsePayload.comments = responseFormData.notes || 'Quotation rejected'
+      }
+      
       console.log('Submitting comprehensive response payload:', responsePayload)
       console.log('Form data being processed:', {
+        action: action,
+        newStatus: action === 'accept' ? 'SUBMITTED' : 'REJECTED',
         deliveryTime: {
           originalValue: responseFormData.deliveryTime,
           parsedValue: parseInt(responseFormData.deliveryTime) || 0,
@@ -506,12 +529,27 @@ const Quotations = () => {
       
       if (response.ok) {
         const actionText = action === 'accept' ? 'submitted' : 'rejected'
-        alert(`Quotation ${actionText} successfully! The database has been updated.`)
+        const newStatus = action === 'accept' ? 'SUBMITTED' : 'REJECTED'
+        
+        // Update the selected quotation status immediately for UI feedback
+        setSelectedQuotation(prev => prev ? { ...prev, status: newStatus } : null)
+        
+        // Update the quotations list immediately
+        setQuotations(prev => 
+          prev.map(q => 
+            q.id === selectedQuotation.id 
+              ? { ...q, status: newStatus }
+              : q
+          )
+        )
+        
+        alert(`Quotation ${actionText} successfully! The status has been updated.`)
         setIsResponseModalOpen(false)
         setResponseFormData({ totalAmount: '', deliveryTime: '', notes: '' })
         setSelectedQuotation(null)
         setSelectedQuotationDetails(null)
-        // Refresh quotations list to show updated status
+        
+        // Refresh quotations list to get latest data from backend
         await fetchQuotations()
       } else {
         throw new Error(result.error || result.message || `Failed to ${action} quotation`)
@@ -555,6 +593,7 @@ const Quotations = () => {
       case "PENDING":
         return "pending"
       case "ACCEPTED":
+        return "accepted"
       case "RESPONDED":
       case "SUBMITTED":
         return "responded"
@@ -800,8 +839,8 @@ const Quotations = () => {
 
       {/* Response Modal for Pending/Responded quotations */}
       <Dialog open={isResponseModalOpen} onOpenChange={setIsResponseModalOpen}>
-        <DialogContent className="sm:max-w-[600px] shadow-2xl">
-          <DialogHeader className="pb-4 border-b border-gray-100">
+        <DialogContent className="sm:max-w-[450px] shadow-2xl">
+          <DialogHeader className="pb-2 border-b border-gray-100">
             <DialogTitle className="text-xl font-bold text-gray-900">
               Quotation Details
             </DialogTitle>
@@ -810,37 +849,32 @@ const Quotations = () => {
               - View complete quotation details and respond
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-6 py-6">
+          <div className="grid gap-3 py-3">
             {/* Quotation Overview */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
                 <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-blue-600" />
                   Quotation ID
                 </Label>
-                <div className="p-3 border border-gray-200 rounded-md">
-                  <span className="text-sm font-bold text-gray-700">#{selectedQuotation?.id}</span>
-                </div>
+                <span className="text-sm font-bold text-gray-700">#{selectedQuotation?.id}</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-green-600" />
                   Status
                 </Label>
-                <div className="p-3 border border-gray-200 rounded-md">
-                  <Badge variant={getStatusVariant(selectedQuotation?.status)} className="font-medium">
-                    {getStatusIcon(selectedQuotation?.status)}
-                    {getStatusText(selectedQuotation?.status)}
-                  </Badge>
-                </div>
+                <Badge variant={getStatusVariant(selectedQuotation?.status)} className="font-medium">
+                  {getStatusIcon(selectedQuotation?.status)}
+                  {getStatusText(selectedQuotation?.status)}
+                </Badge>
               </div>
             </div>
 
             {/* Project Information */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700">Project Information</Label>
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <div className="grid grid-cols-2 gap-4 mb-3">
+              <div className="grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-xs text-gray-600 font-medium">Request Date</span>
                     <p className="text-sm font-semibold text-gray-800">{selectedQuotation?.date || 'Not specified'}</p>
@@ -850,19 +884,16 @@ const Quotations = () => {
                     <p className="text-sm font-semibold text-gray-800">{selectedQuotation?.deadline || 'Not specified'}</p>
                   </div>
                 </div>
-                {selectedQuotation?.description && (
-                  <div>
-                    <span className="text-xs text-gray-600 font-medium">Description</span>
-                    <p className="text-sm text-gray-700">{selectedQuotation.description}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Requested Items */}
-            <div className="space-y-3">
+              {selectedQuotation?.description && (
+                <div className="mt-2">
+                  <span className="text-xs text-gray-600 font-medium">Description</span>
+                  <p className="text-sm text-gray-700">{selectedQuotation.description}</p>
+                </div>
+              )}
+            </div>            {/* Requested Items */}
+            <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700">Requested Items</Label>
-              <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200 max-h-40 overflow-y-auto">
+              <div className="p-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200 max-h-28 overflow-y-auto">
                 {selectedQuotation?.requestedItems?.length > 0 ? (
                   selectedQuotation.requestedItems.map((item, index) => (
                     <div key={`modal-${selectedQuotation.id}-item-${index}`} className="text-sm text-gray-700 py-2 flex items-center border-b border-gray-200 last:border-b-0">
@@ -878,28 +909,70 @@ const Quotations = () => {
             
             {selectedQuotationDetails?.response ? (
               // Show response details for already responded quotations
-              <div className="space-y-4">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-3">Response Already Submitted</h4>
-                  <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div>
-                      <span className="text-xs text-green-600 font-medium">Total Amount</span>
-                      <p className="text-lg font-bold text-green-700">Rs.{selectedQuotationDetails.response.totalAmount?.toLocaleString()}</p>
+              <div className="space-y-3">
+                <div className={`p-2 rounded-lg border ${
+                  selectedQuotation?.status?.toUpperCase() === 'REJECTED'
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-green-50 border-green-200'
+                }`}>
+                  <h4 className={`font-semibold mb-2 ${
+                    selectedQuotation?.status?.toUpperCase() === 'REJECTED'
+                      ? 'text-red-800'
+                      : 'text-green-800'
+                  }`}>
+                    {(() => {
+                      const status = selectedQuotation?.status?.toUpperCase()
+                      if (status === 'REJECTED') return 'Quotation Rejected'
+                      if (status === 'ACCEPTED') return 'Quotation Accepted'
+                      if (status === 'SUBMITTED') return 'Response Already Submitted'
+                      if (status === 'RESPONDED') return 'Response Already Submitted'
+                      return 'Response Already Submitted'
+                    })()}
+                  </h4>
+                  {(['ACCEPTED', 'SUBMITTED', 'RESPONDED'].includes(selectedQuotation?.status?.toUpperCase())) && (
+                    <div className="grid grid-cols-2 gap-3 mb-2">
+                      <div>
+                        <span className="text-xs text-green-600 font-medium">Total Amount</span>
+                        <p className="text-lg font-bold text-green-700">Rs.{selectedQuotationDetails.response.totalAmount?.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-green-600 font-medium">Delivery Time</span>
+                        <p className="text-lg font-bold text-green-700">
+                          {selectedQuotationDetails.response.deliveryTime ? 
+                            `${selectedQuotationDetails.response.deliveryTime} days` : 
+                            'Not specified'
+                          }
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-xs text-green-600 font-medium">Delivery Time</span>
-                      <p className="text-lg font-bold text-green-700">
-                        {selectedQuotationDetails.response.deliveryTime ? 
-                          `${selectedQuotationDetails.response.deliveryTime} days` : 
-                          'Not specified'
-                        }
-                      </p>
+                  )}
+                  {selectedQuotation?.status?.toUpperCase() === 'REJECTED' && (
+                    <div className="text-center py-3">
+                      <p className="text-lg font-bold text-red-700">This quotation was rejected</p>
+                      <p className="text-sm text-red-600">No amount or delivery details available</p>
                     </div>
-                  </div>
+                  )}
                   {selectedQuotationDetails.response.notes && (
                     <div>
-                      <span className="text-xs text-green-600 font-medium">Notes</span>
-                      <p className="text-sm text-green-700 bg-green-50 p-2 rounded border border-green-200">
+                      <span className={`text-xs font-medium ${
+                        selectedQuotation?.status?.toUpperCase() === 'REJECTED'
+                          ? 'text-red-600'
+                          : 'text-green-600'
+                      }`}>
+                        {(() => {
+                          const status = selectedQuotation?.status?.toUpperCase()
+                          if (status === 'REJECTED') return 'Rejection Reason'
+                          if (status === 'ACCEPTED') return 'Response Notes'
+                          if (status === 'SUBMITTED') return 'Submission Notes'
+                          if (status === 'RESPONDED') return 'Response Notes'
+                          return 'Notes'
+                        })()}
+                      </span>
+                      <p className={`text-sm p-2 rounded border ${
+                        selectedQuotation?.status?.toUpperCase() === 'REJECTED'
+                          ? 'text-red-700 bg-red-50 border-red-200'
+                          : 'text-green-700 bg-green-50 border-green-200'
+                      }`}>
                         {selectedQuotationDetails.response.notes}
                       </p>
                     </div>
@@ -909,10 +982,10 @@ const Quotations = () => {
             ) : (
               // Show input fields for quotation response
               <div className="space-y-4">
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-3">Quotation Response</h4>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="space-y-2">
+                <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-blue-800 mb-2">Quotation Response</h4>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div className="space-y-1">
                       <Label htmlFor="total-amount" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-green-600" />
                         Total Amount (Rs.)
@@ -926,7 +999,7 @@ const Quotations = () => {
                         className="focus:border-[#FAAD00] focus:ring-[#FAAD00] border-gray-300"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <Label htmlFor="delivery-time" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                         <Truck className="h-4 w-4 text-blue-600" />
                         Delivery Days
@@ -941,7 +1014,7 @@ const Quotations = () => {
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Label htmlFor="notes" className="text-sm font-semibold text-gray-700">
                       Additional Notes
                     </Label>
@@ -950,14 +1023,14 @@ const Quotations = () => {
                       placeholder="Any additional information or terms..."
                       value={responseFormData.notes}
                       onChange={(e) => handleFormChange('notes', e.target.value)}
-                      className="min-h-[80px] focus:border-[#FAAD00] focus:ring-[#FAAD00] border-gray-300 resize-none"
+                      className="min-h-[60px] focus:border-[#FAAD00] focus:ring-[#FAAD00] border-gray-300 resize-none"
                     />
                   </div>
                 </div>
               </div>
             )}
           </div>
-          <DialogFooter className="pt-4 border-t border-gray-100 gap-3">
+          <DialogFooter className="pt-2 border-t border-gray-100 gap-2">
             <Button 
               variant="outline" 
               onClick={() => setIsResponseModalOpen(false)}
@@ -992,7 +1065,7 @@ const Quotations = () => {
                 </Button>
                 <Button
                   onClick={() => submitQuotationResponse('accept')}
-                  disabled={isSubmitting || (!responseFormData.totalAmount && !responseFormData.notes)}
+                  disabled={isSubmitting || !responseFormData.totalAmount}
                   className="bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-200 font-medium disabled:opacity-50"
                 >
                   {isSubmitting ? "Processing..." : (
@@ -1010,7 +1083,7 @@ const Quotations = () => {
 
       {/* Rejection Details Modal */}
       <Dialog open={isRejectionDetailsModalOpen} onOpenChange={setIsRejectionDetailsModalOpen}>
-        <DialogContent className="sm:max-w-[600px] shadow-2xl">
+        <DialogContent className="sm:max-w-[450px] shadow-2xl">
           <DialogHeader className="pb-4 border-b border-red-100">
             <DialogTitle className="text-xl font-bold text-red-800 flex items-center gap-2">
               <XCircle className="h-6 w-6 text-red-600" />

@@ -205,13 +205,25 @@ const Quotations = () => {
   // Get supplier ID from localStorage, sessionStorage, or context
   const getSupplierId = () => {
     // Try to get from localStorage first
-    const storedSupplierId = localStorage.getItem('supplierId') || sessionStorage.getItem('supplierId')
-    if (storedSupplierId) {
-      return parseInt(storedSupplierId)
+    let storedSupplierId = localStorage.getItem('supplierId') || sessionStorage.getItem('supplierId')
+    
+    // Also try common alternative key names
+    if (!storedSupplierId) {
+      storedSupplierId = localStorage.getItem('userId') || sessionStorage.getItem('userId') ||
+                       localStorage.getItem('user_id') || sessionStorage.getItem('user_id')
+    }
+    
+    if (storedSupplierId && storedSupplierId !== 'undefined' && storedSupplierId !== 'null') {
+      const parsedId = parseInt(storedSupplierId)
+      if (!isNaN(parsedId) && parsedId > 0) {
+        console.log(`Found supplier ID: ${parsedId}`)
+        return parsedId
+      }
     }
     
     // Fallback to default for development
     console.warn('No supplier ID found in storage, using default ID: 1')
+    console.log('Checked storage keys: supplierId, userId, user_id in both localStorage and sessionStorage')
     return 1
   }
 
@@ -251,7 +263,6 @@ const Quotations = () => {
       
       const data = await response.json()
       console.log('Successfully fetched supplier-specific data:', data)
-      await processQuotationsData(data)
       await processQuotationsData(data)
     } catch (err) {
       setError(err.message)
@@ -302,9 +313,14 @@ const Quotations = () => {
       priority: quotation.priority || 'MEDIUM'
     }))
     
-    // Fetch items for each quotation
+    // Fetch items for each quotation that has a valid ID
     for (const quotation of transformedQuotations) {
-      await fetchQuotationItems(quotation.id, quotation)
+      if (quotation.id && quotation.id !== undefined && quotation.id !== null) {
+        await fetchQuotationItems(quotation.id, quotation)
+      } else {
+        console.warn('Skipping quotation items fetch for invalid ID:', quotation)
+        quotation.requestedItems = ['ID not available - items cannot be loaded']
+      }
     }
     
     setQuotations(transformedQuotations)
@@ -313,6 +329,13 @@ const Quotations = () => {
 
   // Fetch quotation items using the correct endpoint
   const fetchQuotationItems = async (quotationId, quotationObj) => {
+    // Validate quotationId before making the API call
+    if (!quotationId || quotationId === undefined || quotationId === null || quotationId === 'undefined') {
+      console.warn('Invalid quotation ID provided to fetchQuotationItems:', quotationId)
+      quotationObj.requestedItems = ['Invalid quotation ID - items cannot be loaded']
+      return
+    }
+
     try {
       // Use the correct endpoint from SupplierQuotationController
       const response = await fetch(`${API_BASE_URL}/supplier/quotations/${quotationId}/items`)
@@ -320,15 +343,21 @@ const Quotations = () => {
       if (response.ok) {
         const items = await response.json()
         const itemsArray = Array.isArray(items) ? items : (items.items || items.data || [])
-        quotationObj.requestedItems = itemsArray.map(item => 
-          `${item.name || item.itemName} (${item.quantity} units - Rs.${item.amount || item.price})`
-        )
+        
+        if (itemsArray.length > 0) {
+          quotationObj.requestedItems = itemsArray.map(item => 
+            `${item.name || item.itemName || 'Unknown Item'} (${item.quantity || 0} units - Rs.${item.amount || item.price || 0})`
+          )
+        } else {
+          quotationObj.requestedItems = ['No items found for this quotation']
+        }
       } else {
-        quotationObj.requestedItems = ['Items not available']
+        console.warn(`Failed to fetch items for quotation ${quotationId}:`, response.status, response.statusText)
+        quotationObj.requestedItems = [`Items not available (${response.status})`]
       }
     } catch (err) {
-      console.error('Error fetching quotation items:', err)
-      quotationObj.requestedItems = ['Items not available']
+      console.error(`Error fetching quotation items for ID ${quotationId}:`, err)
+      quotationObj.requestedItems = ['Items not available - network error']
     }
   }
 
@@ -340,7 +369,59 @@ const Quotations = () => {
       
       if (response.ok) {
         const responseData = await response.json()
-        return responseData
+        console.log('Raw backend response:', responseData)
+        
+        // Comprehensive field mapping for delivery time/days
+        const deliveryTimeFields = [
+          'deliveryTime', 'delivery_time', 'deliveryDays', 'delivery_days',
+          'DeliveryTime', 'DeliveryDays', 'days', 'Days', 
+          'deliveryPeriod', 'delivery_period', 'timeframe'
+        ]
+        
+        // Find delivery time value from any possible field name
+        let deliveryTimeValue = null
+        for (const field of deliveryTimeFields) {
+          if (responseData[field] !== undefined && responseData[field] !== null) {
+            deliveryTimeValue = responseData[field]
+            console.log(`Found delivery time in field '${field}':`, deliveryTimeValue)
+            break
+          }
+        }
+        
+        // Comprehensive field mapping for notes
+        const notesFields = [
+          'notes', 'Notes', 'note', 'Note', 'comments', 'Comments',
+          'description', 'Description', 'remarks', 'Remarks',
+          'additionalInfo', 'additional_info', 'details', 'Details'
+        ]
+        
+        // Find notes value from any possible field name
+        let notesValue = null
+        for (const field of notesFields) {
+          if (responseData[field] !== undefined && responseData[field] !== null && responseData[field] !== '') {
+            notesValue = responseData[field]
+            console.log(`Found notes in field '${field}':`, notesValue)
+            break
+          }
+        }
+        
+        // Create normalized response object
+        const normalizedResponse = {
+          ...responseData,
+          deliveryTime: deliveryTimeValue,
+          notes: notesValue,
+          totalAmount: responseData.totalAmount || responseData.total_amount || responseData.amount || 0
+        }
+        
+        console.log('Normalized response object:', normalizedResponse)
+        console.log('Field mapping results:', {
+          deliveryTime: deliveryTimeValue,
+          notes: notesValue,
+          totalAmount: normalizedResponse.totalAmount,
+          allAvailableFields: Object.keys(responseData)
+        })
+        
+        return normalizedResponse
       }
       return null
     } catch (err) {
@@ -361,23 +442,55 @@ const Quotations = () => {
       return
     }
 
-    if (action === 'accept' && !responseFormData.totalAmount) {
-      alert('Please fill in all required fields for acceptance')
+    // Validation for different actions
+    if (action === 'accept') {
+      if (!responseFormData.totalAmount || parseFloat(responseFormData.totalAmount) <= 0) {
+        alert('Please enter a valid total amount for submission')
+        return
+      }
+    }
+
+    // Confirm action with user
+    const confirmMessage = action === 'accept' 
+      ? `Are you sure you want to submit this quotation response with amount Rs.${responseFormData.totalAmount}?`
+      : 'Are you sure you want to reject this quotation?'
+    
+    if (!window.confirm(confirmMessage)) {
       return
     }
 
     setIsSubmitting(true)
     try {
       const responsePayload = {
-        qId: selectedQuotation.id,
+        quotationId: selectedQuotation.id,
         supplierId: supplierId,
-        totalAmount: action === 'accept' ? parseFloat(responseFormData.totalAmount) : 0,
-        deliveryTime: action === 'accept' ? parseInt(responseFormData.deliveryTime) || 7 : 0,
-        notes: responseFormData.notes || (action === 'reject' ? 'Quotation rejected by supplier' : ''),
-        status: action === 'accept' ? 'ACCEPTED' : 'REJECTED'
+        totalAmount: parseFloat(responseFormData.totalAmount) || 0,
+        deliveryTime: parseInt(responseFormData.deliveryTime) || 0,
+        deliveryDays: parseInt(responseFormData.deliveryTime) || 0, // Include both field names
+        days: parseInt(responseFormData.deliveryTime) || 0,
+        notes: responseFormData.notes || '',
+        comments: responseFormData.notes || '', // Include alternative field name
+        status: 'SUBMITTED',
+        respondDate: new Date().toISOString()
       }
 
-      console.log('Submitting response payload:', responsePayload)
+      console.log('Submitting comprehensive response payload:', responsePayload)
+      console.log('Form data being processed:', {
+        deliveryTime: {
+          originalValue: responseFormData.deliveryTime,
+          parsedValue: parseInt(responseFormData.deliveryTime) || 0,
+          type: typeof (parseInt(responseFormData.deliveryTime) || 0)
+        },
+        notes: {
+          originalValue: responseFormData.notes,
+          length: responseFormData.notes?.length || 0,
+          hasContent: !!responseFormData.notes
+        },
+        totalAmount: {
+          originalValue: responseFormData.totalAmount,
+          parsedValue: parseFloat(responseFormData.totalAmount) || 0
+        }
+      })
 
       // Use the correct endpoint from SupplierQuotationController
       const response = await fetch(`${API_BASE_URL}/supplier/quotations/respond`, {
@@ -389,21 +502,23 @@ const Quotations = () => {
       })
 
       const result = await response.json()
+      console.log('Backend response after submission:', result)
       
       if (response.ok) {
-        alert(`Quotation ${action}ed successfully!`)
+        const actionText = action === 'accept' ? 'submitted' : 'rejected'
+        alert(`Quotation ${actionText} successfully! The database has been updated.`)
         setIsResponseModalOpen(false)
         setResponseFormData({ totalAmount: '', deliveryTime: '', notes: '' })
         setSelectedQuotation(null)
         setSelectedQuotationDetails(null)
-        // Refresh quotations list
-        fetchQuotations()
+        // Refresh quotations list to show updated status
+        await fetchQuotations()
       } else {
         throw new Error(result.error || result.message || `Failed to ${action} quotation`)
       }
     } catch (err) {
       console.error(`Error ${action}ing quotation:`, err)
-      alert(`Error ${action}ing quotation: ` + err.message)
+      alert(`Error ${action}ing quotation: ${err.message}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -474,40 +589,23 @@ const Quotations = () => {
     }
   }
 
-  const handleRespond = async (quotation) => {
-    if (!supplierId) {
-      alert('Supplier ID not found. Please log in again.')
-      return
-    }
-
+  const handleViewQuotation = async (quotation) => {
+    console.log('Opening quotation details for:', quotation)
     setSelectedQuotation(quotation)
     
     try {
-      // Check if supplier can respond to this quotation
-      const canRespondResponse = await fetch(`${API_BASE_URL}/supplier/quotations/can-respond/${quotation.id}/${supplierId}`)
-      
-      if (canRespondResponse.ok) {
-        const canRespondData = await canRespondResponse.json()
-        if (!canRespondData.canRespond) {
-          alert('You cannot respond to this quotation at this time.')
-          return
-        }
-      }
-
       // Check if there's already a response
       const existingResponse = await fetchExistingResponse(quotation.id)
       if (existingResponse) {
+        console.log('Existing response data:', existingResponse)
         setSelectedQuotationDetails({ response: existingResponse })
-        // Update local quotation status if response exists
-        quotation.status = 'RESPONDED'
       } else {
         setSelectedQuotationDetails(null)
       }
       
       setIsResponseModalOpen(true)
     } catch (err) {
-      console.error('Error checking response eligibility:', err)
-      // Still allow the modal to open for now
+      console.error('Error fetching quotation details:', err)
       setSelectedQuotationDetails(null)
       setIsResponseModalOpen(true)
     }
@@ -661,7 +759,7 @@ const Quotations = () => {
                       <div className="space-y-1">
                         {quotation.requestedItems?.length > 0 ? (
                           quotation.requestedItems.map((item, index) => (
-                            <div key={index} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
+                            <div key={`${quotation.id}-item-${index}`} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
                               {item}
                             </div>
                           ))
@@ -685,15 +783,11 @@ const Quotations = () => {
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => handleRespond(quotation)}
-                        disabled={quotation.status?.toUpperCase() === "EXPIRED" || quotation.status?.toUpperCase() === "CLOSED"}
-                        className={cn(
-                          "bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white shadow-md hover:shadow-lg transition-all duration-200 font-medium",
-                          (quotation.status?.toUpperCase() === "EXPIRED" || quotation.status?.toUpperCase() === "CLOSED") && "bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed opacity-60"
-                        )}
+                        onClick={() => handleViewQuotation(quotation)}
+                        className="bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white shadow-md hover:shadow-lg transition-all duration-200 font-medium"
                       >
                         <FileText className="h-4 w-4 mr-2" />
-                        Response
+                        View
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -709,92 +803,138 @@ const Quotations = () => {
         <DialogContent className="sm:max-w-[600px] shadow-2xl">
           <DialogHeader className="pb-4 border-b border-gray-100">
             <DialogTitle className="text-xl font-bold text-gray-900">
-              {selectedQuotation?.status?.toUpperCase() === "PENDING" ? "Quotation Response" : "View Response Details"}
+              Quotation Details
             </DialogTitle>
             <DialogDescription className="text-gray-600">
               <span className="font-medium text-[#FAAD00]">{selectedQuotation?.projectName}</span> 
-              {selectedQuotation?.status?.toUpperCase() === "PENDING" ? " - Accept or reject this quotation request" : " - Response details"}
+              - View complete quotation details and respond
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-6 py-6">
+            {/* Quotation Overview */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                  Quotation ID
+                </Label>
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <span className="text-sm font-bold text-blue-700">#{selectedQuotation?.id}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-green-600" />
+                  Status
+                </Label>
+                <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                  <Badge variant={getStatusVariant(selectedQuotation?.status)} className="font-medium">
+                    {getStatusIcon(selectedQuotation?.status)}
+                    {getStatusText(selectedQuotation?.status)}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Information */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700">Project Information</Label>
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <span className="text-xs text-blue-600 font-medium">Request Date</span>
+                    <p className="text-sm font-semibold text-blue-800">{selectedQuotation?.date || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-blue-600 font-medium">Deadline</span>
+                    <p className="text-sm font-semibold text-blue-800">{selectedQuotation?.deadline || 'Not specified'}</p>
+                  </div>
+                </div>
+                {selectedQuotation?.description && (
+                  <div>
+                    <span className="text-xs text-blue-600 font-medium">Description</span>
+                    <p className="text-sm text-blue-700">{selectedQuotation.description}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Requested Items */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-gray-700">Requested Items</Label>
-              <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+              <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200 max-h-40 overflow-y-auto">
                 {selectedQuotation?.requestedItems?.length > 0 ? (
                   selectedQuotation.requestedItems.map((item, index) => (
-                    <div key={index} className="text-sm text-gray-700 py-1 flex items-center">
-                      <div className="w-2 h-2 bg-[#FAAD00] rounded-full mr-3"></div>
-                      {item}
+                    <div key={`modal-${selectedQuotation.id}-item-${index}`} className="text-sm text-gray-700 py-2 flex items-center border-b border-gray-200 last:border-b-0">
+                      <div className="w-2 h-2 bg-[#FAAD00] rounded-full mr-3 flex-shrink-0"></div>
+                      <span className="flex-1">{item}</span>
                     </div>
                   ))
                 ) : (
-                  <div className="text-sm text-gray-500">No items available</div>
+                  <div className="text-sm text-gray-500 text-center py-4">No items available</div>
                 )}
               </div>
             </div>
             
             {selectedQuotationDetails?.response ? (
-              // Show response details for responded quotations
+              // Show response details for already responded quotations
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-green-600" />
-                      Total Amount
-                    </Label>
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                      <span className="text-lg font-bold text-green-700">Rs.{selectedQuotationDetails.response.totalAmount?.toLocaleString()}</span>
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-semibold text-green-800 mb-3">Response Already Submitted</h4>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <span className="text-xs text-green-600 font-medium">Total Amount</span>
+                      <p className="text-lg font-bold text-green-700">Rs.{selectedQuotationDetails.response.totalAmount?.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-green-600 font-medium">Delivery Time</span>
+                      <p className="text-lg font-bold text-green-700">
+                        {selectedQuotationDetails.response.deliveryTime ? 
+                          `${selectedQuotationDetails.response.deliveryTime} days` : 
+                          'Not specified'
+                        }
+                      </p>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <Truck className="h-4 w-4 text-blue-600" />
-                      Delivery Time
-                    </Label>
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                      <span className="text-lg font-bold text-blue-700">{selectedQuotationDetails.response.deliveryTime || 'N/A'} days</span>
+                  {selectedQuotationDetails.response.notes && (
+                    <div>
+                      <span className="text-xs text-green-600 font-medium">Notes</span>
+                      <p className="text-sm text-green-700 bg-green-50 p-2 rounded border border-green-200">
+                        {selectedQuotationDetails.response.notes}
+                      </p>
                     </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-gray-700">Response Notes</Label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
-                    <p className="text-gray-700">{selectedQuotationDetails.response.notes || 'No notes provided'}</p>
-                  </div>
-                </div>
-                <div className="text-sm text-gray-500 flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Submitted on: {selectedQuotationDetails.response.respondDate || 'Date not available'}
+                  )}
                 </div>
               </div>
             ) : (
-              // Show input fields for pending quotations
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+              // Show input fields for quotation response
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-blue-800 mb-3">Quotation Response</h4>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
-                      <Label htmlFor="total-amount" className="text-sm font-semibold text-gray-700">
-                        Total Amount (Rs.) *
-                        <span className="text-xs text-gray-500 ml-1">(Required for acceptance)</span>
+                      <Label htmlFor="total-amount" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        Total Amount (Rs.)
                       </Label>
                       <Input
                         id="total-amount"
                         type="number"
-                        placeholder="0.00"
+                        placeholder="Enter total amount"
                         value={responseFormData.totalAmount}
                         onChange={(e) => handleFormChange('totalAmount', e.target.value)}
                         className="focus:border-[#FAAD00] focus:ring-[#FAAD00] border-gray-300"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="delivery-time" className="text-sm font-semibold text-gray-700">
-                        Delivery Time (days)
-                        <span className="text-xs text-gray-500 ml-1">(Optional)</span>
+                      <Label htmlFor="delivery-time" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Truck className="h-4 w-4 text-blue-600" />
+                        Delivery Days
                       </Label>
                       <Input
                         id="delivery-time"
                         type="number"
-                        placeholder="7"
+                        placeholder="Enter delivery days"
                         value={responseFormData.deliveryTime}
                         onChange={(e) => handleFormChange('deliveryTime', e.target.value)}
                         className="focus:border-[#FAAD00] focus:ring-[#FAAD00] border-gray-300"
@@ -804,14 +944,13 @@ const Quotations = () => {
                   <div className="space-y-2">
                     <Label htmlFor="notes" className="text-sm font-semibold text-gray-700">
                       Additional Notes
-                      <span className="text-xs text-gray-500 ml-1">(Optional - will be included in your response)</span>
                     </Label>
                     <Textarea
                       id="notes"
-                      placeholder="Any additional information, terms, or reasons for rejection..."
+                      placeholder="Any additional information or terms..."
                       value={responseFormData.notes}
                       onChange={(e) => handleFormChange('notes', e.target.value)}
-                      className="min-h-[100px] focus:border-[#FAAD00] focus:ring-[#FAAD00] border-gray-300 resize-none"
+                      className="min-h-[80px] focus:border-[#FAAD00] focus:ring-[#FAAD00] border-gray-300 resize-none"
                     />
                   </div>
                 </div>
@@ -826,7 +965,18 @@ const Quotations = () => {
             >
               Cancel
             </Button>
-            {selectedQuotation?.status === "pending" && !selectedQuotationDetails?.response && (
+            
+            {selectedQuotationDetails?.response ? (
+              // For already responded quotations - show only Close button
+              <Button 
+                variant="outline" 
+                onClick={() => setIsResponseModalOpen(false)}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Close
+              </Button>
+            ) : (
+              // For new quotations - show Reject and Submit buttons
               <>
                 <Button
                   onClick={() => submitQuotationResponse('reject')}
@@ -842,26 +992,17 @@ const Quotations = () => {
                 </Button>
                 <Button
                   onClick={() => submitQuotationResponse('accept')}
-                  disabled={isSubmitting || !responseFormData.totalAmount}
+                  disabled={isSubmitting || (!responseFormData.totalAmount && !responseFormData.notes)}
                   className="bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-200 font-medium disabled:opacity-50"
                 >
                   {isSubmitting ? "Processing..." : (
                     <>
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Accept & Submit
+                      Submit
                     </>
                   )}
                 </Button>
               </>
-            )}
-            {(selectedQuotation?.status !== "pending" || selectedQuotationDetails?.response) && (
-              <Button 
-                variant="outline" 
-                onClick={() => setIsResponseModalOpen(false)}
-                className="border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                Close
-              </Button>
             )}
           </DialogFooter>
         </DialogContent>
@@ -886,7 +1027,7 @@ const Quotations = () => {
               <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border border-red-200">
                 {selectedQuotation?.requestedItems?.length > 0 ? (
                   selectedQuotation.requestedItems.map((item, index) => (
-                    <div key={index} className="text-sm text-red-700 py-1 flex items-center">
+                    <div key={`rejection-${selectedQuotation.id}-item-${index}`} className="text-sm text-red-700 py-1 flex items-center">
                       <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
                       {item}
                     </div>

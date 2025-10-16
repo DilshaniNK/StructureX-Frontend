@@ -14,6 +14,8 @@ import Designer from './Pages/Designer/Designer'
 import Director from './Pages/Director/Director';
 import DirectorCont from './Pages/Director/DirectorCont';
 
+import ForgotPassword from './Components/Employee/ForgotPassword'
+import ResetPassword from './Components/Employee/ResetPassword'
 
 import QS from './Pages/QS/QS'
 import SQS from './Pages/SQS/SQS'
@@ -80,6 +82,8 @@ const App = () => {
 
             <Route path='/director/:employeeId/*' element={<Director />} />
             <Route path='/directorcont/:employeeId/*' element={<DirectorCont />} />
+            <Route path='/forgot-password' element={<ForgotPassword />} />
+            <Route path='/reset-password' element={<ResetPassword />} />
 
 
           </Route>

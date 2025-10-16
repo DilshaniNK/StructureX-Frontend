@@ -157,30 +157,34 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
   };
 
   return (
-    <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-      <div className="bg-white border-2 border-amber-400 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Upload Legal Document</h2>
+    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+      <div className="bg-white border-2 border-amber-400 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out animate-scaleIn">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center">
+            <span className="inline-block w-1.5 h-6 bg-amber-400 rounded-full mr-3"></span>
+            Upload Legal Document
+          </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+            aria-label="Close modal"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {successMessage && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+            <div className="bg-green-50 border-l-4 border-green-400 rounded-lg p-4 flex items-start">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
               <span className="text-green-700">{successMessage}</span>
             </div>
           )}
 
           {errors.submit && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <span className="text-red-700">{errors.submit}</span>
+            <div className="bg-red-50 border-l-4 border-red-400 rounded-lg p-4 flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
+              <span className="text-red-700 text-sm">{errors.submit}</span>
             </div>
           )}
 
@@ -193,34 +197,45 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
               id="project_id"
               value={projectId}
               disabled
-              className="w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-lg cursor-not-allowed"
+              className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg cursor-not-allowed shadow-sm"
             />
           </div>
 
           <div>
             <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
-              Date *
+              Date <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
               id="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.date ? 'border-red-300' : 'border-gray-300'
-                }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 ${errors.date ? 'border-red-300 bg-red-50' : 'border-gray-300'} shadow-sm`}
             />
-            {errors.date && <p className="text-red-600 text-xs mt-1">{errors.date}</p>}
+            {errors.date && (
+              <p className="text-red-600 text-xs mt-1 flex items-center">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                {errors.date}
+              </p>
+            )}
           </div>
 
           <div>
             <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
-              Document Type *
+              Document Type <span className="text-red-500">*</span>
             </label>
             <select
               id="type"
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 ${errors.type ? 'border-red-300 bg-red-50' : 'border-gray-300'} appearance-none bg-white shadow-sm`}
+              style={{
+                backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                backgroundPosition: "right 0.5rem center",
+                backgroundRepeat: "no-repeat",
+                backgroundSize: "1.5em 1.5em",
+                paddingRight: "2.5rem"
+              }}
             >
               <option value="contract">Contract</option>
               <option value="agreement">Agreement</option>
@@ -229,34 +244,44 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
               <option value="compliance">Compliance</option>
               <option value="other">Other</option>
             </select>
+            {errors.type && (
+              <p className="text-red-600 text-xs mt-1 flex items-center">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                {errors.type}
+              </p>
+            )}
           </div>
 
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              Description *
+              Description <span className="text-red-500">*</span>
             </label>
             <textarea
               id="description"
               rows={3}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.description ? 'border-red-300' : 'border-gray-300'
-                }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 ${errors.description ? 'border-red-300 bg-red-50' : 'border-gray-300'} placeholder-gray-400 shadow-sm`}
               placeholder="Brief description of the document and its purpose"
             />
-            {errors.description && <p className="text-red-600 text-xs mt-1">{errors.description}</p>}
+            {errors.description && (
+              <p className="text-red-600 text-xs mt-1 flex items-center">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                {errors.description}
+              </p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Document/Image *
+              Upload Document/Image <span className="text-red-500">*</span>
             </label>
             <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
-                ? 'border-blue-400 bg-blue-50'
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${dragActive
+                ? 'border-amber-400 bg-amber-50'
                 : errors.file
                   ? 'border-red-300 bg-red-50'
-                  : 'border-gray-300 hover:border-gray-400'
+                  : 'border-gray-300 hover:border-amber-300 hover:bg-amber-50'
                 }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -264,35 +289,38 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
               onDrop={handleDrop}
             >
               {file ? (
-                <div className="flex items-center justify-center space-x-3">
+                <div className="flex items-center justify-center space-x-4">
                   {file.type.startsWith('image/') ? (
                     <img
                       src={URL.createObjectURL(file)}
                       alt="Preview"
-                      className="h-20 w-20 object-cover rounded-lg"
+                      className="h-24 w-24 object-cover rounded-lg border border-gray-200 shadow-sm"
                     />
                   ) : (
-                    <FileText className="h-8 w-8 text-blue-500" />
+                    <div className="h-24 w-24 flex items-center justify-center rounded-lg bg-amber-50 border border-amber-100">
+                      <FileText className="h-10 w-10 text-amber-500" />
+                    </div>
                   )}
                   <div className="text-left">
                     <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                    <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                    <p className="text-xs text-gray-500 mt-1">{formatFileSize(file.size)}</p>
+                    <button
+                      type="button"
+                      onClick={() => setFile(null)}
+                      className="mt-2 inline-flex items-center text-sm text-red-500 hover:text-red-700 transition-colors duration-200"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Remove file
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setFile(null)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
                 </div>
               ) : (
                 <div>
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <div className="mt-2">
+                  <Upload className="mx-auto h-12 w-12 text-amber-400" />
+                  <div className="mt-3">
                     <label htmlFor="file-upload" className="cursor-pointer">
                       <span className="mt-2 block text-sm font-medium text-gray-900">
-                        Drop files here or click to upload
+                        Drop files here or <span className="text-amber-600">browse</span>
                       </span>
                       <span className="mt-1 block text-xs text-gray-500">
                         PDF, DOC, DOCX, JPG, PNG, GIF up to 10MB
@@ -309,32 +337,37 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
                 </div>
               )}
             </div>
-            {errors.file && <p className="text-red-600 text-xs mt-1">{errors.file}</p>}
+            {errors.file && (
+              <p className="text-red-600 text-xs mt-1 flex items-center">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                {errors.file}
+              </p>
+            )}
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={uploading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+              className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
             >
               {uploading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-t-2 border-white mr-3"></div>
                   Uploading...
-                </>
+                </div>
               ) : (
-                <>
+                <div className="flex items-center justify-center">
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Document
-                </>
+                </div>
               )}
             </button>
           </div>

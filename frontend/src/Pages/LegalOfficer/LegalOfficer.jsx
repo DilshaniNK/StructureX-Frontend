@@ -7,6 +7,7 @@ import Main from './Dashboard';
 import Notification from '../../Components/Employee/Notification'
 import Chat from './Chat';
 import ProjectDetails from './ProjectDetails';
+import ProjectList from './ProjectList';
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -24,9 +25,11 @@ export default function Home() {
   // Determine active item based on current path
   const getActiveItem = () => {
     const path = location.pathname;
+
     if (path.includes('/dashboard') || path === '/') return 'dashboard';
     if (path.includes('/chat')) return 'chat';
     if (path.includes('/notifications')) return 'notifications';
+
     return 'home'; // default
   };
 
@@ -52,9 +55,13 @@ export default function Home() {
         <div className="p-6">
           <Routes>
             <Route path="/" element={<Main />} />
-            <Route path="/dashboard" element={<Main />} >
-              <Route path='projectdetails' element={<ProjectDetails />} />
-            </Route>
+            <Route path="/home" element={<Main />} />
+            <Route path='/action' element={<ProjectList />} />
+            <Route path='/action/:projectId' element={<ProjectDetails 
+              projectId={location.pathname.split('/').pop()} 
+              user={{ name: userName, role: userRole }}
+              onBack={() => navigate('/legalofficer/action')}
+            />} />
             <Route path='/chat' element={<Chat />} />
             <Route path="/notifications" element={<Notification />} />
           </Routes>

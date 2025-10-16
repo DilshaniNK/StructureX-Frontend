@@ -1,60 +1,66 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import { cn } from '../../Utils/cn'
 
-// Mock data for orders
-const mockOrders = [
-  {
-    id: "ORD-001",
-    project: "Downtown Office Complex",
-    items: ["Portland Cement (50 bags)", "Steel Rebar 12mm (2 tons)"],
-    orderDate: "2024-01-16",
-    isUnread: true,
-    customerEmail: "project.manager@downtown-office.com",
-    totalValue: 2150.0,
-  },
-  {
-    id: "ORD-002",
-    project: "Residential Tower Phase 2",
-    items: ["Concrete Blocks (300 pieces)", "Sand (15 cubic meters)"],
-    orderDate: "2024-01-15",
-    isUnread: true,
-    customerEmail: "construction@restower.com",
-    totalValue: 1500.0,
-  },
-  {
-    id: "ORD-003",
-    project: "Highway Bridge Construction",
-    items: ["Steel Rebar 16mm (8 tons)", "Portland Cement (150 bags)"],
-    orderDate: "2024-01-14",
-    isUnread: false,
-    customerEmail: "procurement@highway-bridge.gov",
-    totalValue: 8750.0,
-  },
-  {
-    id: "ORD-004",
-    project: "Shopping Mall Extension",
-    items: ["Concrete Blocks (200 pieces)", "Portland Cement (75 bags)"],
-    orderDate: "2024-01-13",
-    isUnread: true,
-    customerEmail: "orders@mallextension.com",
-    totalValue: 1875.0,
-  },
-  {
-    id: "ORD-005",
-    project: "School Building Renovation",
-    items: ["Sand (10 cubic meters)", "Concrete Blocks (150 pieces)"],
-    orderDate: "2024-01-12",
-    isUnread: false,
-    customerEmail: "facilities@schooldistrict.edu",
-    totalValue: 862.5,
-  },
-]
-
 const Orders = () => {
-  const [orders, setOrders] = useState(mockOrders)
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showDialog, setShowDialog] = useState(false)
   const [showUnreadOnly, setShowUnreadOnly] = useState(false)
+
+  // Fetch orders from backend
+  useEffect(() => {
+    fetchOrders()
+  }, [])
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Option 1: Fetch all orders
+      // const response = await axios.get('http://localhost:8086/api/v1/api/supplier/orders')
+      
+      // Option 2: Fetch orders by supplier ID (if you have supplier ID stored)
+      // const supplierId = localStorage.getItem('supplierId')
+      // const response = await axios.get(`http://localhost:8086/api/v1/api/supplier/orders/supplier/${supplierId}`)
+      
+      // Option 3: Fetch orders by project ID (using your working endpoint)
+      const projectId = 'PRJ_001' // You can get this from props, localStorage, or state
+      const response = await axios.get(`http://localhost:8086/api/v1/api/supplier/orders/project/${projectId}`)
+      
+      // Debug: Log the response to see the actual structure
+      console.log('API Response:', response.data)
+      
+      // Transform backend data to match frontend structure
+      // Check if response.data is an array or if the orders are nested
+      const ordersData = Array.isArray(response.data) ? response.data : response.data.orders || []
+      
+      const transformedOrders = ordersData.map(order => {
+        console.log('Order item:', order) // Debug each order
+        return {
+          id: order.orderId?.toString() || order.id?.toString() || 'N/A',
+          project: order.projectName || order.projectId || order.project || 'N/A',
+          items: order.items || order.orderItems || [],
+          orderDate: order.orderDate || order.createdDate || new Date().toISOString().split('T')[0],
+          isUnread: order.status === 'PENDING' || order.isUnread === true || false,
+          customerEmail: order.customerEmail || order.email || order.supplierEmail || 'N/A',
+          totalValue: order.totalAmount || order.totalValue || order.amount || 0,
+        }
+      })
+      
+      console.log('Transformed Orders:', transformedOrders) // Debug transformed data
+      setOrders(transformedOrders)
+    } catch (err) {
+      console.error('Error fetching orders:', err)
+      console.error('Error details:', err.response) // More detailed error logging
+      setError(err.response?.data?.message || err.message || 'Failed to fetch orders')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const markAsRead = (orderId) => {
     setOrders(orders.map((order) => (order.id === orderId ? { ...order, isUnread: false } : order)))
@@ -79,6 +85,38 @@ const Orders = () => {
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+            <p className="text-gray-600">Loading orders...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+          <svg className="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="flex-1">
+            <h3 className="text-red-800 font-medium">Error Loading Orders</h3>
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+          <button
+            onClick={fetchOrders}
+            className="px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Main Content - Only show if not loading */}
+      {!loading && (
+        <>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -166,7 +204,7 @@ const Orders = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-l-green-500">
+        {/* <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-l-green-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Value</p>
@@ -178,7 +216,7 @@ const Orders = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
             </svg>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Orders Table */}
@@ -212,7 +250,7 @@ const Orders = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th> */}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -230,7 +268,7 @@ const Orders = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.project}</td>
-                    <td className="px-6 py-4">
+                    {/* <td className="px-6 py-4">
                       <div className="space-y-1">
                         {order.items.slice(0, 2).map((item, index) => (
                           <div key={index} className="text-sm text-gray-600">
@@ -241,7 +279,7 @@ const Orders = () => {
                           <div className="text-sm text-gray-500">+{order.items.length - 2} more items</div>
                         )}
                       </div>
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.orderDate}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       Rs.{order.totalValue.toLocaleString()}
@@ -365,10 +403,10 @@ const Orders = () => {
                       <span className="font-medium text-gray-700">Project:</span> 
                       <span className="text-gray-600 ml-1">{selectedOrder.project}</span>
                     </p>
-                    <p className="text-sm">
+                    {/* <p className="text-sm">
                       <span className="font-medium text-gray-700">Email:</span> 
                       <span className="text-gray-600 ml-1">{selectedOrder.customerEmail}</span>
-                    </p>
+                    </p> */}
                     <p className="text-sm">
                       <span className="font-medium text-gray-700">Date:</span> 
                       <span className="text-gray-600 ml-1">{selectedOrder.orderDate}</span>
@@ -446,6 +484,8 @@ const Orders = () => {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   )

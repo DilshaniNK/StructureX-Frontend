@@ -1,8 +1,57 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Calendar, Flag, Search, Filter, CheckCircle, Circle, AlertTriangle, Clock, Edit3, Trash2 } from 'lucide-react';
 import axios from 'axios';
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
 
 const TodoList = () => {
+  // Custom CSS animations
+  const customStyles = `
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    .animate-scaleIn {
+      animation: scaleIn 0.3s ease-out forwards;
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.6s ease-out forwards;
+      opacity: 0;
+    }
+  `;
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -26,6 +75,12 @@ const TodoList = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [deleteTargetTitle, setDeleteTargetTitle] = useState('');
+
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   // helper to map server TodoDTO -> UI todo shape used in this component
   const mapTodoFromServer = (t) => ({
@@ -58,6 +113,8 @@ const TodoList = () => {
         })
         .catch((error) => {
           console.error("❌ Error fetching todos:", error);
+          setErrorMessage('Failed to fetch todo list');
+          setShowErrorAlert(true);
         });
     }
   }, [userid]);
@@ -120,6 +177,9 @@ const TodoList = () => {
 
   return (
     <div className="space-y-8">
+      {/* Inject custom CSS animations */}
+      <style>{customStyles}</style>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <button
           onClick={() => setShowAddForm(true)}
@@ -299,40 +359,85 @@ const TodoList = () => {
       </div>
 
       {showAddForm && (
-        <div className="fixed inset-0  backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Task</h3>
-            <form className="space-y-4">
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border-2 border-amber-400 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out animate-scaleIn">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <span className="inline-block w-1.5 h-6 bg-amber-400 rounded-full mr-3"></span>
+                Add New Task
+              </h2>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                aria-label="Close modal"
+              >
+                <Plus className="h-5 w-5 rotate-45" />
+              </button>
+            </div>
+
+            <form className="p-6 space-y-6">
+              {/* Description Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Task Description <span className="text-red-500">*</span>
+                </label>
                 <textarea
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Enter task description"
+                  id="description"
+                  rows={4}
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input
-                  type="date"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
+                  placeholder="Enter detailed task description..."
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 placeholder-gray-400 shadow-sm"
                 />
               </div>
 
+              {/* Date Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500" value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+                <label htmlFor="due_date" className="block text-sm font-medium text-gray-700 mb-2">
+                  Due Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="due_date"
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 shadow-sm"
+                />
+              </div>
+
+              {/* Status Field */}
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="status"
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem"
+                  }}
+                >
                   <option value="Pending">Pending</option>
                   <option value="Completed">Completed</option>
                   <option value="in_progress">In Progress</option>
                 </select>
               </div>
-              <div className="flex space-x-3 pt-4">
+
+              {/* Buttons */}
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   onClick={async (e) => {
@@ -356,21 +461,19 @@ const TodoList = () => {
                       setNewDate('');
                       setNewStatus('Pending');
                       setShowAddForm(false);
+                      // Show success alert
+                      setSuccessMessage('Task added successfully!');
+                      setShowSuccessAlert(true);
                     } catch (err) {
                       console.error('❌ Error creating todo:', err);
-                      // optionally show UI feedback here
+                      setErrorMessage('Failed to add task. Please try again.');
+                      setShowErrorAlert(true);
                     }
                   }}
-                  className="flex-1 bg-primary-500 bg-amber-400 text-black rounded-lg py-2 hover:bg-primary-600 transition-colors"
+                  className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 shadow-md font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 flex items-center justify-center"
                 >
+                  <Plus className="h-4 w-4 mr-2" />
                   Add Task
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
                 </button>
               </div>
             </form>
@@ -379,41 +482,85 @@ const TodoList = () => {
       )}
 
       {showEditForm && (
-        <div className="fixed inset-0  backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Task</h3>
-            <form className="space-y-4">
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border-2 border-amber-400 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out animate-scaleIn">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <span className="inline-block w-1.5 h-6 bg-amber-400 rounded-full mr-3"></span>
+                Edit Task
+              </h2>
+              <button
+                onClick={() => setShowEditForm(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                aria-label="Close modal"
+              >
+                <Plus className="h-5 w-5 rotate-45" />
+              </button>
+            </div>
+
+            <form className="p-6 space-y-6">
+              {/* Description Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label htmlFor="edit_description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Task Description <span className="text-red-500">*</span>
+                </label>
                 <textarea
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Enter task description"
+                  id="edit_description"
+                  rows={4}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input
-                  type="date"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  value={editDate}
-                  onChange={(e) => setEditDate(e.target.value)}
+                  placeholder="Enter detailed task description..."
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 placeholder-gray-400 shadow-sm"
                 />
               </div>
 
+              {/* Date Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500" value={editStatus} onChange={(e) => setEditStatus(e.target.value)}>
+                <label htmlFor="edit_due_date" className="block text-sm font-medium text-gray-700 mb-2">
+                  Due Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="edit_due_date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 shadow-sm"
+                />
+              </div>
+
+              {/* Status Field */}
+              <div>
+                <label htmlFor="edit_status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="edit_status"
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem"
+                  }}
+                >
                   <option value="Pending">Pending</option>
                   <option value="Completed">Completed</option>
                   <option value="in_progress">In Progress</option>
                 </select>
               </div>
 
-              <div className="flex space-x-3 pt-4">
+              {/* Buttons */}
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
+                <button
+                  type="button"
+                  onClick={() => setShowEditForm(false)}
+                  className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   onClick={async (e) => {
@@ -438,23 +585,24 @@ const TodoList = () => {
                         setShowEditForm(false);
                         setEditTodoId(null);
                         console.log('✅ Todo updated');
+                        // Show success alert
+                        setSuccessMessage('Task updated successfully!');
+                        setShowSuccessAlert(true);
                       } else {
                         console.warn('Unexpected update response', res);
+                        setErrorMessage('Failed to update task. Please try again.');
+                        setShowErrorAlert(true);
                       }
                     } catch (err) {
                       console.error('❌ Error updating todo:', err);
+                      setErrorMessage('An error occurred while updating the task.');
+                      setShowErrorAlert(true);
                     }
                   }}
-                  className="flex-1 bg-primary-500 bg-amber-400 text-black rounded-lg py-2 hover:bg-primary-600 transition-colors"
+                  className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 shadow-md font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 flex items-center justify-center"
                 >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowEditForm(false)}
-                  className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -486,11 +634,18 @@ const TodoList = () => {
                     if (res.status === 200) {
                       setTodos(prev => prev.filter(t => !(t.serverId === deleteTargetId || t.id === deleteTargetId)));
                       console.log('✅ Todo deleted');
+                      // Show success alert
+                      setSuccessMessage('Task deleted successfully!');
+                      setShowSuccessAlert(true);
                     } else {
                       console.warn('Unexpected delete response', res);
+                      setErrorMessage('Failed to delete task. Please try again.');
+                      setShowErrorAlert(true);
                     }
                   } catch (err) {
                     console.error('❌ Error deleting todo:', err);
+                    setErrorMessage('An error occurred while deleting the task.');
+                    setShowErrorAlert(true);
                   } finally {
                     setShowDeleteConfirm(false);
                     setDeleteTargetId(null);
@@ -505,6 +660,22 @@ const TodoList = () => {
           </div>
         </div>
       )}
+
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </div>
   );
 };

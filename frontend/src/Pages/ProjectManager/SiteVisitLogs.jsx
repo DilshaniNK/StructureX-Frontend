@@ -17,7 +17,8 @@ import {
   User,
   Edit,
   X,
-  Save
+  Save,
+  AlertCircle
 } from 'lucide-react';
 
 const SiteVisitLogs = ({ setShowAddForm }) => {
@@ -184,7 +185,7 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
         if (response.data && response.data.length > 0) {
           console.log('First request object structure:', response.data[0]);
           console.log('Available keys in first request:', Object.keys(response.data[0]));
-          
+
           // Log all unique status values in the response
           const statuses = response.data.map(req => req.status).filter(Boolean);
           const uniqueStatuses = [...new Set(statuses)];
@@ -227,14 +228,14 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
   const filteredVisitRequests = visitRequests.filter(request => {
     const status = request.status?.toLowerCase();
     console.log('Filtering request with status:', status, 'for request:', request);
-    
+
     // Show requests that are pending, have no status, or are in a 'new' state
-    const shouldShow = status === 'pending' || 
-                      status === 'new' || 
-                      status === 'submitted' ||
-                      !status || 
-                      status === '';
-    
+    const shouldShow = status === 'pending' ||
+      status === 'new' ||
+      status === 'submitted' ||
+      !status ||
+      status === '';
+
     console.log(`Request ${request.id || request._id || 'unknown'} - Status: "${status}" - Should show: ${shouldShow}`);
     return shouldShow;
   });
@@ -359,16 +360,16 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
         console.log('Request accepted successfully:', response.data);
         setSuccessMessage('Visit request accepted and marked as completed!');
         setShowSuccessAlert(true);
-        
+
         // Immediately update local state to remove the request from pending list
-        setVisitRequests(prevRequests => 
+        setVisitRequests(prevRequests =>
           prevRequests.map(req => {
-            const reqId = req.id || req._id || req.requestId || req.visitRequestId || 
-                         req.request_id || req.visitId || req.visit_id || req.siteVisitId || req.site_visit_id;
+            const reqId = req.id || req._id || req.requestId || req.visitRequestId ||
+              req.request_id || req.visitId || req.visit_id || req.siteVisitId || req.site_visit_id;
             return reqId === requestId ? { ...req, status: 'accepted' } : req;
           })
         );
-        
+
         // Also refresh from server
         fetchVisitRequests();
       } else {
@@ -406,16 +407,16 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
         console.log('Request rejected successfully:', response.data);
         setSuccessMessage('Visit request rejected and marked as cancelled!');
         setShowSuccessAlert(true);
-        
+
         // Immediately update local state to remove the request from pending list
-        setVisitRequests(prevRequests => 
+        setVisitRequests(prevRequests =>
           prevRequests.map(req => {
-            const reqId = req.id || req._id || req.requestId || req.visitRequestId || 
-                         req.request_id || req.visitId || req.visit_id || req.siteVisitId || req.site_visit_id;
+            const reqId = req.id || req._id || req.requestId || req.visitRequestId ||
+              req.request_id || req.visitId || req.visit_id || req.siteVisitId || req.site_visit_id;
             return reqId === requestId ? { ...req, status: 'rejected' } : req;
           })
         );
-        
+
         // Also refresh from server
         fetchVisitRequests();
       } else {
@@ -634,26 +635,26 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                   // Enhanced logging to debug the request object
                   console.log(`Request ${index}:`, request);
                   console.log('Available keys:', Object.keys(request));
-                  
+
                   // Try to get the ID from various possible field names
                   // Add more possible field names based on your API response
-                  const requestId = request.id || 
-                                   request._id || 
-                                   request.requestId || 
-                                   request.visitRequestId || 
-                                   request.request_id ||
-                                   request.visitId ||
-                                   request.visit_id ||
-                                   request.siteVisitId ||
-                                   request.site_visit_id;
-                  
+                  const requestId = request.id ||
+                    request._id ||
+                    request.requestId ||
+                    request.visitRequestId ||
+                    request.request_id ||
+                    request.visitId ||
+                    request.visit_id ||
+                    request.siteVisitId ||
+                    request.site_visit_id;
+
                   console.log(`Request ${index} ID:`, requestId);
-                  
+
                   // If still no ID found, warn about it
                   if (!requestId) {
                     console.warn(`No valid ID found for request ${index}:`, request);
                   }
-                  
+
                   return (
                     <tr key={requestId || index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -720,9 +721,9 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                           </div>
                         ) : (
                           <span className="text-gray-500 text-sm">
-                            {request.status === 'completed' ? 'Completed' : 
-                             request.status === 'cancelled' ? 'Cancelled' : 
-                             request.status === 'accepted' ? 'Accepted' : 'Rejected'}
+                            {request.status === 'completed' ? 'Completed' :
+                              request.status === 'cancelled' ? 'Cancelled' :
+                                request.status === 'accepted' ? 'Accepted' : 'Rejected'}
                           </span>
                         )}
                       </td>
@@ -829,63 +830,111 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
 
       {/* Add Visit Form Modal */}
       {showAddForme && (
-        <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Log New Site Visit</h3>
-            <form className="space-y-4" onSubmit={handleSubmit}>
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border-2 border-amber-400 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out animate-scaleIn">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <span className="inline-block w-1.5 h-6 bg-amber-400 rounded-full mr-3"></span>
+                Log New Site Visit
+              </h2>
+              <button
+                onClick={() => setShowAddForme(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                aria-label="Close modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
               {/* Project ID Field */}
               <div>
-                <label className="block text-sm font-medium mb-1">Project ID</label>
-                <select
+                <label htmlFor="project_id" className="block text-sm font-medium text-gray-700 mb-2">
+                  Project ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type='text'
+                  id="project_id"
                   name="project_id"
                   value={formData.project_id}
                   onChange={handleChange}
                   required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                />
+                {/* <select
+                  id="project_id"
+                  name="project_id"
+                  value={formData.project_id}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem"
+                  }}
                 >
                   <option value="">Select Project</option>
-                  <option value="PJT001">PJT001</option>
+                  <option value="PRJ_001">PRJ_001</option>
                   <option value="PJT002">PJT002</option>
                   <option value="PJT003">PJT003</option>
                   <option value="PJT004">PJT004</option>
                   <option value="PJT005">PJT005</option>
-                </select>
+                </select> */}
               </div>
 
               {/* Date Field */}
               <div>
-                <label className="block text-sm font-medium mb-1">Date</label>
+                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+                  Visit Date <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
+                  id="date"
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
                   required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 shadow-sm"
                 />
               </div>
 
               {/* Description Field */}
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
                 <textarea
+                  id="description"
                   name="description"
                   rows={4}
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="Detailed observations..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                ></textarea>
+                  placeholder="Detailed observations and findings..."
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 placeholder-gray-400 shadow-sm"
+                />
               </div>
 
               {/* Status Field */}
               <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status <span className="text-red-500">*</span>
+                </label>
                 <select
+                  id="status"
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem"
+                  }}
                 >
                   <option>Completed</option>
                   <option>Follow-up Required</option>
@@ -894,19 +943,20 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
               </div>
 
               {/* Buttons */}
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-amber-400 text-gray-900 rounded-lg py-2 hover:bg-amber-500"
-                >
-                  Log Visit
-                </button>
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
                 <button
                   type="button"
                   onClick={() => setShowAddForme(false)}
-                  className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 hover:bg-gray-50"
+                  className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 shadow-md font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 flex items-center justify-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Log Visit
                 </button>
               </div>
             </form>
@@ -916,55 +966,80 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
 
       {/* Edit Visit Form Modal */}
       {showEditForm && editingVisit && (
-        <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Edit Site Visit</h3>
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border-2 border-amber-400 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out animate-scaleIn">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <span className="inline-block w-1.5 h-6 bg-amber-400 rounded-full mr-3"></span>
+                Edit Site Visit
+              </h2>
               <button
                 onClick={() => setShowEditForm(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                aria-label="Close modal"
               >
-                <X size={20} className="text-gray-600" />
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <form className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <form className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
+                  <label htmlFor="edit_project_id" className="block text-sm font-medium text-gray-700 mb-2">
+                    Project ID <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
+                    id="edit_project_id"
                     value={editingVisit.project_id}
                     onChange={(e) => setEditingVisit({ ...editingVisit, project_id: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <label htmlFor="edit_date" className="block text-sm font-medium text-gray-700 mb-2">
+                    Visit Date <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="date"
+                    id="edit_date"
                     value={editingVisit.date}
                     onChange={(e) => setEditingVisit({ ...editingVisit, date: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 shadow-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label htmlFor="edit_description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
                 <textarea
+                  id="edit_description"
                   rows={4}
                   value={editingVisit.description}
                   onChange={(e) => setEditingVisit({ ...editingVisit, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                ></textarea>
+                  placeholder="Detailed observations and findings..."
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 placeholder-gray-400 shadow-sm"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label htmlFor="edit_status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status <span className="text-red-500">*</span>
+                </label>
                 <select
+                  id="edit_status"
                   value={editingVisit.status}
                   onChange={(e) => setEditingVisit({ ...editingVisit, status: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem"
+                  }}
                 >
                   <option>Completed</option>
                   <option>Follow-up Required</option>
@@ -972,21 +1047,21 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                 </select>
               </div>
 
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={handleSaveEdit}
-                  className="flex-1 bg-primary-500 text-gray-900 bg-amber-400 rounded-lg py-2 hover:bg-primary-600 transition-colors flex items-center justify-center"
-                >
-                  <Save size={20} className="mr-2" />
-                  Save Changes
-                </button>
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
                 <button
                   type="button"
                   onClick={() => setShowEditForm(false)}
-                  className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 hover:bg-gray-50 transition-colors"
+                  className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 shadow-md font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 flex items-center justify-center"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
                 </button>
               </div>
             </form>

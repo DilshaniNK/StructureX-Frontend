@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../../Components/Employee/Navbar'
 import Sidebar from '../../Components/Employee/Sidebar'
 import Dashboard from './Dashboard';
@@ -19,6 +19,8 @@ const Director = () => {
   const userName = 'John Doe'; // Get this from your user context/state
   const navigate = useNavigate();
   const location = useLocation();
+
+  const {employeeId}= useParams()
   
 
 
@@ -28,11 +30,11 @@ const Director = () => {
 
   const getActiveItem =() =>{
     const path = location.pathname;
-    if(path.includes('/director/home') || path==='/') return 'home';
-    if(path.includes('/director/projects')) return 'projects';
-    if(path.includes('/director/teammanagment')) return 'teammanagment';
-    if(path.includes('director/sitevisit')) return 'sitevisit';
-    if(path.includes('director/inventory')) return 'inventory';
+    if(path.includes('/home') || path==='/') return 'home';
+    if(path.includes('/projects')) return 'projects';
+    if(path.includes('/teammanagment')) return 'teammanagment';
+    if(path.includes('/sitevisit')) return 'sitevisit';
+    if(path.includes('/inventory')) return 'inventory';
    
     return 'home';
   }

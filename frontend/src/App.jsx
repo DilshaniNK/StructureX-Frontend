@@ -70,7 +70,11 @@ const App = () => {
               </ProtectedRoute>
             } />
 
-            <Route path='/director/*' element={<Director />} />
+            <Route path='/director/:employeeId/*' element={
+              <ProtectedRoute allowedRoles={['Director']}>
+                  <Director />
+              </ProtectedRoute>
+              } />
             <Route path='/directorcont/*' element={<DirectorCont />} />
 
 

@@ -1,83 +1,8 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { History, Filter, Calendar, Package, Search, Eye, X, Download } from "lucide-react"
 import { cn } from '../../Utils/cn'
 import jsPDF from 'jspdf'
 // import 'jspdf-autotable'
-
-const mockSupplyHistory = [
-  {
-    id: "SUP-001",
-    orderId: "ORD-001",
-    project: "Downtown Office Complex",
-    items: ["Portland Cement (50 bags)", "Steel Rebar 12mm (2 tons)"],
-    supplyDate: "2024-01-16",
-    amount: 2150.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-002",
-    orderId: "ORD-002",
-    project: "Residential Tower Phase 2",
-    items: ["Concrete Blocks (300 pieces)", "Sand (15 cubic meters)"],
-    supplyDate: "2024-01-15",
-    amount: 1500.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-003",
-    orderId: "ORD-003",
-    project: "Highway Bridge Construction",
-    items: ["Steel Rebar 16mm (8 tons)", "Portland Cement (150 bags)"],
-    supplyDate: "2024-01-14",
-    amount: 8750.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-004",
-    orderId: "ORD-004",
-    project: "Shopping Mall Extension",
-    items: ["Concrete Blocks (200 pieces)", "Portland Cement (75 bags)"],
-    supplyDate: "2024-01-13",
-    amount: 1875.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-005",
-    orderId: "ORD-005",
-    project: "School Building Renovation",
-    items: ["Sand (10 cubic meters)", "Concrete Blocks (150 pieces)"],
-    supplyDate: "2024-01-12",
-    amount: 862.5,
-    status: "completed",
-  },
-  {
-    id: "SUP-006",
-    orderId: "ORD-006",
-    project: "Medical Center Expansion",
-    items: ["Portland Cement (100 bags)", "Steel Rebar 14mm (3 tons)"],
-    supplyDate: "2024-01-11",
-    amount: 3200.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-007",
-    orderId: "ORD-007",
-    project: "Apartment Complex Phase 1",
-    items: ["Concrete Blocks (400 pieces)", "Sand (25 cubic meters)"],
-    supplyDate: "2024-01-10",
-    amount: 2100.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-008",
-    orderId: "ORD-008",
-    project: "Industrial Warehouse",
-    items: ["Steel Rebar 20mm (12 tons)", "Portland Cement (200 bags)"],
-    supplyDate: "2024-01-09",
-    amount: 12500.0,
-    status: "completed",
-  },
-]
 
 // Custom Button Component
 const Button = ({ children, variant = "default", size = "default", className, disabled, onClick, ...props }) => {
@@ -311,12 +236,49 @@ const Label = ({ children, className, htmlFor, ...props }) => (
 )
 
 const Shistory = () => {
-  const [supplies, setSupplies] = useState(mockSupplyHistory)
+  const [supplies, setSupplies] = useState([])
   const [projectFilter, setProjectFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSupply, setSelectedSupply] = useState(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Fetch supply history from backend
+  useEffect(() => {
+    const fetchSupplyHistory = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await fetch('http://localhost:8086/api/v1/api/supplier/history')
+        if (!response.ok) {
+          throw new Error('Failed to fetch supply history')
+        }
+        const data = await response.json()
+
+        // Map backend data to frontend format
+        const mappedSupplies = data.map(supply => ({
+          id: supply.historyId || supply.supplyId || supply.id,
+          orderId: supply.orderId || "N/A",
+          project: supply.projectName || supply.project || "Unknown Project",
+          items: supply.items || supply.itemsList || [],
+          supplyDate: supply.supplyDate || supply.deliveryDate || new Date().toISOString().split('T')[0],
+          amount: supply.amount || supply.totalAmount || 0,
+          status: supply.status || "completed",
+        }))
+
+        setSupplies(mappedSupplies)
+      } catch (err) {
+        setError(err.message)
+        console.error('Error fetching supply history:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSupplyHistory()
+  }, [])
 
   const uniqueProjects = Array.from(new Set(supplies.map((s) => s.project)))
 
@@ -367,38 +329,38 @@ getFullYear() === now.getFullYear()
   // PDF Export Function
   const exportSupplyDetailsToPDF = (supply) => {
     const doc = new jsPDF()
-    
+
     // Set up colors
     const primaryColor = [250, 173, 0] // #FAAD00
     const darkGray = [64, 64, 64]
     const lightGray = [128, 128, 128]
     const white = [255, 255, 255]
-    
+
     // Header with gradient effect
     doc.setFillColor(...primaryColor)
     doc.rect(0, 0, 210, 30, 'F')
-    
+
     // Company Logo/Title
     doc.setTextColor(...white)
     doc.setFontSize(24)
     doc.setFont('helvetica', 'bold')
     doc.text('StructureX', 20, 20)
-    
+
     // Subtitle
     doc.setFontSize(12)
     doc.setFont('helvetica', 'normal')
     doc.text('Construction Supply Management', 20, 26)
-    
+
     // Document Title
     doc.setTextColor(...darkGray)
     doc.setFontSize(18)
     doc.setFont('helvetica', 'bold')
     doc.text('Supply Details Report', 20, 45)
-    
+
     // Supply ID highlight
     doc.setFontSize(14)
     doc.setTextColor(...primaryColor)
-    doc.text(`Supply ID: Rs.{supply.id}`, 20, 55)
+    doc.text(`Supply ID: ${supply.id}`, 20, 55)
     
     // Generated Date
     doc.setFontSize(10)
@@ -616,6 +578,43 @@ getFullYear() === now.getFullYear()
     // Save the PDF with enhanced filename
     const fileName = `StructureX_Supply_Details_${supply.id}_${supply.project.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
     doc.save(fileName)
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#FAAD00]"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading supply history...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Data</h3>
+              <p className="text-red-700">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

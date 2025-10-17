@@ -1,56 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import { Truck, Clock, CheckCircle, Package } from 'lucide-react'
 import { cn } from '../../Utils/cn'
 
-const mockDeliveries = [
-  {
-    id: "ORD-001",
-    project: "Downtown Office Complex",
-    items: ["Portland Cement (50 bags)", "Steel Rebar 12mm (2 tons)"],
-    orderDate: "2024-01-16",
-    status: "pending",
-    estimatedDelivery: "2024-01-18",
-    totalValue: 2150.0,
-  },
-  {
-    id: "ORD-002",
-    project: "Residential Tower Phase 2",
-    items: ["Concrete Blocks (300 pieces)", "Sand (15 cubic meters)"],
-    orderDate: "2024-01-15",
-    status: "in-transit",
-    estimatedDelivery: "2024-01-17",
-    totalValue: 1500.0,
-  },
-  {
-    id: "ORD-003",
-    project: "Highway Bridge Construction",
-    items: ["Steel Rebar 16mm (8 tons)", "Portland Cement (150 bags)"],
-    orderDate: "2024-01-14",
-    status: "delivered",
-    estimatedDelivery: "2024-01-16",
-    deliveredDate: "2024-01-16",
-    totalValue: 8750.0,
-  },
-  {
-    id: "ORD-004",
-    project: "Shopping Mall Extension",
-    items: ["Concrete Blocks (200 pieces)", "Portland Cement (75 bags)"],
-    orderDate: "2024-01-13",
-    status: "in-transit",
-    estimatedDelivery: "2024-01-17",
-    totalValue: 1875.0,
-  },
-  {
-    id: "ORD-005",
-    project: "School Building Renovation",
-    items: ["Sand (10 cubic meters)", "Concrete Blocks (150 pieces)"],
-    orderDate: "2024-01-12",
-    status: "delivered",
-    estimatedDelivery: "2024-01-15",
-    deliveredDate: "2024-01-15",
-    totalValue: 862.5,
-  },
-]
+// API Base URL
+const API_BASE_URL = 'http://localhost:8086/api/v1'
 
 // Custom Button Component
 const Button = ({ children, variant = "default", size = "default", className, disabled, onClick, ...props }) => {
@@ -164,76 +118,67 @@ const Badge = ({ children, variant = "default", className, ...props }) => {
   )
 }
 
-// Custom Dialog Components
-const Dialog = ({ children, open, onOpenChange }) => {
-  if (!open) return null
-  
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => onOpenChange(false)} />
-      <div className="relative z-50 animate-in fade-in-0 zoom-in-95 duration-300">
-        {children}
-      </div>
-    </div>
-  )
-}
-
-const DialogContent = ({ children, className, ...props }) => (
-  <div className={cn("fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-6 shadow-xl duration-200 sm:rounded-lg", className)} {...props}>
-    {children}
-  </div>
-)
-
-const DialogHeader = ({ children, className, ...props }) => (
-  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props}>
-    {children}
-  </div>
-)
-
-const DialogTitle = ({ children, className, ...props }) => (
-  <h2 className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props}>
-    {children}
-  </h2>
-)
-
-const DialogDescription = ({ children, className, ...props }) => (
-  <p className={cn("text-sm text-gray-600", className)} {...props}>
-    {children}
-  </p>
-)
-
-const DialogFooter = ({ children, className, ...props }) => (
-  <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props}>
-    {children}
-  </div>
-)
-
-// Custom Form Components
-const Label = ({ children, className, htmlFor, ...props }) => (
-  <label className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", className)} htmlFor={htmlFor} {...props}>
-    {children}
-  </label>
-)
-
-const Input = ({ className, type = "text", ...props }) => (
-  <input
-    type={type}
-    className={cn("flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FAAD00] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200", className)}
-    {...props}
-  />
-)
-
-const Textarea = ({ className, ...props }) => (
-  <textarea
-    className={cn("flex min-h-[80px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FAAD00] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200", className)}
-    {...props}
-  />
-)
-
 const Delivery = () => {
-  const [deliveries, setDeliveries] = useState(mockDeliveries)
-  const [selectedDelivery, setSelectedDelivery] = useState(null)
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
+  const [deliveries, setDeliveries] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Fetch deliveries from backend
+  useEffect(() => {
+    fetchDeliveries()
+  }, [])
+
+  const fetchDeliveries = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Fetch orders by project ID
+      const projectId = localStorage.getItem('projectId') || 'PRJ_001' // Get from localStorage or use default
+      const response = await axios.get(`${API_BASE_URL}/api/supplier/orders/project/${projectId}`)
+      
+      console.log('API Response:', response.data)
+      
+      // Transform backend data to match frontend structure
+      const ordersData = Array.isArray(response.data.orders) ? response.data.orders : [];
+      const projectName = response.data.project?.name || 'N/A';
+
+      const transformedDeliveries = ordersData.map((order) => {
+        // Map numeric status values from backend
+        // 0 = PENDING, 1 = IN_TRANSIT, 2 = DELIVERED
+        let deliveryStatus = 'pending';
+
+        if (order.orderStatus === 2) {
+          deliveryStatus = 'delivered';
+        } else if (order.orderStatus === 1) {
+          deliveryStatus = 'in-transit';
+        } else {
+          deliveryStatus = 'pending'; // orderStatus = 0 or any other value
+        }
+
+        return {
+          id: order.orderId?.toString() || order.id?.toString() || 'N/A',
+          projectName: projectName, // Use project name from response
+          projectId: order.projectId || 'N/A',
+          orderDate: order.orderDate || new Date().toISOString().split('T')[0],
+          estimatedDelivery: order.expectedDeliveryDate || order.estimatedDelivery || new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          status: deliveryStatus,
+          deliveredDate: order.deliveredDate || (deliveryStatus === 'delivered' ? order.orderDate : null),
+          items: order.items || order.orderItems || [],
+          totalValue: order.totalAmount || order.totalValue || 0,
+        };
+      });
+
+      console.log('Transformed Deliveries:', transformedDeliveries);
+      setDeliveries(transformedDeliveries);
+    } catch (err) {
+      console.error('Error fetching deliveries:', err)
+      console.error('Error details:', err.response)
+      setError(err.response?.data?.message || err.message || 'Failed to fetch deliveries')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -274,20 +219,37 @@ const Delivery = () => {
     }
   }
 
-  const confirmDelivery = (orderId) => {
-    setDeliveries(
-      deliveries.map((delivery) =>
-        delivery.id === orderId
-          ? { ...delivery, status: "delivered", deliveredDate: new Date().toISOString().split("T")[0] }
-          : delivery,
-      ),
-    )
-    setIsConfirmModalOpen(false)
-  }
+  const handleConfirmDelivery = async (delivery) => {
+    // Show confirmation popup
+    const confirmed = window.confirm(`Are you sure you want to confirm delivery for Order ${delivery.id}?`)
+    
+    if (!confirmed) {
+      return // User cancelled
+    }
 
-  const handleConfirmDelivery = (delivery) => {
-    setSelectedDelivery(delivery)
-    setIsConfirmModalOpen(true)
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Update delivery status in the database
+      // Send orderStatus as 2 (DELIVERED) based on the backend enum
+      await axios.put(`${API_BASE_URL}/api/supplier/orders/${delivery.id}/status`, {
+        orderStatus: 2 // 2 = DELIVERED (0=PENDING, 1=IN_TRANSIT, 2=DELIVERED)
+      })
+      
+      // Refetch data from backend to get updated status
+      await fetchDeliveries()
+      
+      // Show success message
+      alert('Delivery confirmed successfully!')
+      console.log('Delivery confirmed successfully for order:', delivery.id)
+    } catch (err) {
+      console.error('Error confirming delivery:', err)
+      console.error('Error details:', err.response)
+      setError(err.response?.data?.message || err.message || 'Failed to confirm delivery. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const pendingCount = deliveries.filter((d) => d.status === "pending").length
@@ -301,7 +263,40 @@ const Delivery = () => {
           <h2 className="text-3xl font-bold tracking-tight text-gray-900">Delivery Confirmation</h2>
           <p className="text-gray-600 mt-1">Track and confirm material deliveries</p>
         </div>
+        <Button
+          onClick={fetchDeliveries}
+          variant="outline"
+          size="sm"
+          disabled={loading}
+          className="flex items-center gap-2"
+        >
+          <Package className="h-4 w-4" />
+          {loading ? 'Loading...' : 'Refresh'}
+        </Button>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+            <span className="font-medium">{error}</span>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-600 hover:text-red-800"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FAAD00]"></div>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-4">
         <Card className="border-l-4 border-l-amber-500 hover:border-l-amber-600 transition-colors">
@@ -364,43 +359,64 @@ const Delivery = () => {
         </Card>
       </div>
 
-      <Card className="shadow-lg border border-gray-200">
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b border-gray-200">
-          <CardTitle className="text-gray-800">Delivery Status</CardTitle>
-          <CardDescription className="text-gray-600">Track the delivery status of all orders and confirm deliveries</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="font-semibold">Order ID</TableHead>
-                <TableHead className="font-semibold">Project</TableHead>
-                <TableHead className="font-semibold">Items</TableHead>
-                <TableHead className="font-semibold">Order Date</TableHead>
-                <TableHead className="font-semibold">Est. Delivery</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="text-right font-semibold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {deliveries.map((delivery) => (
+      {!loading && (
+        <Card className="shadow-lg border border-gray-200">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b border-gray-200">
+            <CardTitle className="text-gray-800">Delivery Status</CardTitle>
+            <CardDescription className="text-gray-600">Track the delivery status of all orders and confirm deliveries</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {deliveries.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                <Package className="h-16 w-16 mb-4 text-gray-300" />
+                <p className="text-lg font-medium">No deliveries found</p>
+                <p className="text-sm">Orders will appear here when available</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="font-semibold">Order ID</TableHead>
+                    <TableHead className="font-semibold">Project Name</TableHead>
+                    {/* <TableHead className="font-semibold">Items</TableHead> */}
+                    <TableHead className="font-semibold">Order Date</TableHead>
+                    <TableHead className="font-semibold">Est. Delivery</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="text-right font-semibold">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {deliveries.map((delivery) => (
                 <TableRow key={delivery.id} className="hover:bg-gray-50/80 transition-colors">
                   <TableCell className="font-medium text-gray-900">{delivery.id}</TableCell>
-                  <TableCell className="font-medium text-gray-900">{delivery.project}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium text-gray-900">{delivery.projectName}</TableCell>
+                  {/* <TableCell>
                     <div className="space-y-1">
-                      {delivery.items.slice(0, 2).map((item, index) => (
-                        <div key={index} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
-                          {item}
-                        </div>
-                      ))}
-                      {delivery.items.length > 2 && (
-                        <div className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
-                          +{delivery.items.length - 2} more
-                        </div>
+                      {delivery.items && delivery.items.length > 0 ? (
+                        <>
+                          {delivery.items.slice(0, 2).map((item, index) => {
+                            // Handle both string items and object items
+                            const itemText = typeof item === 'string' 
+                              ? item 
+                              : `${item.materialName || item.name || 'Item'} (${item.quantity || 0} ${item.unit || 'units'})`
+                            
+                            return (
+                              <div key={index} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
+                                {itemText}
+                              </div>
+                            )
+                          })}
+                          {delivery.items.length > 2 && (
+                            <div className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
+                              +{delivery.items.length - 2} more
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-400 italic">No items</div>
                       )}
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell className="text-gray-700">{delivery.orderDate}</TableCell>
                   <TableCell className="text-gray-700">
                     {delivery.status === "delivered" ? delivery.deliveredDate : delivery.estimatedDelivery}
@@ -415,7 +431,7 @@ const Delivery = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {delivery.status === "in-transit" && (
+                    {delivery.status !== "delivered" ? (
                       <Button
                         variant="default"
                         size="sm"
@@ -427,8 +443,7 @@ const Delivery = () => {
                       >
                         Confirm Delivery
                       </Button>
-                    )}
-                    {delivery.status === "delivered" && (
+                    ) : (
                       <Badge 
                         variant="outline" 
                         className="bg-yellow-50 text-yellow-900 border-yellow-300 hover:bg-yellow-100"
@@ -436,87 +451,15 @@ const Delivery = () => {
                         Completed
                       </Badge>
                     )}
-                    {delivery.status === "pending" && (
-                      <Badge 
-                        variant="secondary"
-                        className="bg-gray-50 text-gray-700 border-gray-200"
-                      >
-                        Preparing
-                      </Badge>
-                    )}
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Delivery Confirmation Modal */}
-      <Dialog open={isConfirmModalOpen} onOpenChange={setIsConfirmModalOpen}>
-        <DialogContent className="sm:max-w-[600px] shadow-2xl">
-          <DialogHeader className="pb-4 border-b border-gray-100">
-            <DialogTitle className="text-xl font-bold text-gray-900">
-              Confirm Delivery
-            </DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Confirm that the materials have been delivered to{" "}
-              <span className="font-medium text-[#FAAD00]">{selectedDelivery?.project}</span>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-6 py-6">
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold text-gray-700">Order Details</Label>
-              <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200">
-                <p className="font-medium text-gray-900">{selectedDelivery?.id}</p>
-                <p className="text-sm text-gray-600 mt-1">{selectedDelivery?.project}</p>
-                <div className="mt-3 space-y-2">
-                  {selectedDelivery?.items.map((item, index) => (
-                    <div key={index} className="text-sm text-gray-700 py-1 flex items-center">
-                      <div className="w-2 h-2 bg-[#FAAD00] rounded-full mr-3"></div>
-                      {item}
-                    </div>
                   ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="delivery-date" className="text-sm font-semibold text-gray-700">Delivery Date</Label>
-              <Input
-                id="delivery-date"
-                type="date"
-                defaultValue={new Date().toISOString().split("T")[0]}
-                className="focus:border-[#FAAD00] focus:ring-[#FAAD00] border-gray-300"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="delivery-notes" className="text-sm font-semibold text-gray-700">Delivery Notes (Optional)</Label>
-              <Textarea
-                id="delivery-notes"
-                placeholder="Any notes about the delivery..."
-                className="min-h-[100px] focus:border-[#FAAD00] focus:ring-[#FAAD00] border-gray-300 resize-none"
-              />
-            </div>
-          </div>
-          <DialogFooter className="pt-4 border-t border-gray-100 gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsConfirmModalOpen(false)}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => confirmDelivery(selectedDelivery?.id)}
-              className="bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white shadow-md hover:shadow-lg transition-all duration-200 font-medium"
-            >
-              Confirm Delivery
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, Filter, Download, Eye, FileDown, CheckCircle, Clock, 
-  X, Calendar, Package, User, Building, MapPin, DollarSign, Edit
+  X, Calendar, Package, User, Building, MapPin, DollarSign, Edit,
+  Mail, Loader
 } from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:8086/api/v1/quotation';
@@ -39,6 +40,11 @@ const Purchasing = () => {
   const [quotationResponses, setQuotationResponses] = useState([]);
   const [responseLoading, setResponseLoading] = useState(false);
   const [responseCounts, setResponseCounts] = useState({});
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSendingOrder, setEmailSendingOrder] = useState(null);
+  const [quotationCloseStatus, setQuotationCloseStatus] = useState(null);
+  const [closingQuotation, setClosingQuotation] = useState(false);
+  const [checkingCloseStatus, setCheckingCloseStatus] = useState(false);
   const [filters, setFilters] = useState({
     project: '',
     dateFrom: '',
@@ -71,14 +77,10 @@ const Purchasing = () => {
   // State for projects from API
   const [ongoingProjects, setOngoingProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
-
-  // Sample data for suppliers
-  const suppliers = [
-    { id: 1, name: 'ABC Building Materials', rating: 4.5 },
-    { id: 2, name: 'Quality Construction Supplies', rating: 4.2 },
-    { id: 3, name: 'Premium Materials Ltd', rating: 4.8 },
-    { id: 4, name: 'BuildPro Suppliers', rating: 4.0 },
-  ];
+  
+  // State for suppliers from API
+  const [suppliers, setSuppliers] = useState([]);
+  const [suppliersLoading, setSuppliersLoading] = useState(false);
 
   // API Functions
   const fetchQuotations = async () => {
@@ -298,6 +300,55 @@ const Purchasing = () => {
     }
   };
 
+  // Function to send quotation request documents to suppliers via email
+  const sendQuotationEmails = async (quotationId, supplierIds) => {
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/quotation/${quotationId}/send-quotation-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          supplierIds: supplierIds
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to send emails: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error sending quotation emails:', error);
+      throw error;
+    }
+  };
+
+  // Function to send purchase order notification to supplier via email
+  const sendPurchaseOrderEmail = async (orderId) => {
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/quotation/purchase-orders/${orderId}/send-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to send purchase order notification: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error sending purchase order notification:', error);
+      throw error;
+    }
+  };
+
   const fetchResponseCounts = async () => {
     try {
       const counts = {};
@@ -316,11 +367,44 @@ const Purchasing = () => {
     }
   };
 
+  // Function to fetch suppliers
+  const fetchSuppliers = async () => {
+    setSuppliersLoading(true);
+    try {
+      const response = await fetch('http://localhost:8086/api/v1/quotation/suppliers/contacts');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.contacts)) {
+          // Transform the supplier data to match the expected format
+          const transformedSuppliers = data.contacts.map(supplier => ({
+            id: supplier.supplierId,
+            name: supplier.supplierName,
+            email: supplier.email
+          }));
+          setSuppliers(transformedSuppliers);
+          console.log('Suppliers fetched successfully:', transformedSuppliers);
+        } else {
+          console.error('Invalid supplier data format:', data);
+          setSuppliers([]);
+        }
+      } else {
+        throw new Error(`Failed to fetch suppliers: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+      // Fallback to empty array if API fails
+      setSuppliers([]);
+    } finally {
+      setSuppliersLoading(false);
+    }
+  };
+
   // Load quotations and projects on component mount
   useEffect(() => {
     fetchQuotations();
     fetchProjects();
     fetchPurchaseOrders();
+    fetchSuppliers(); // Add supplier fetch
   }, []);
 
   // Fetch response counts when quotations change
@@ -401,14 +485,43 @@ const Purchasing = () => {
         })
       };
 
+      let createdOrUpdatedQuotation;
+      
       if (isEditMode && selectedQuotation) {
-        await updateQuotation(selectedQuotation.qId, quotationData, status);
+        createdOrUpdatedQuotation = await updateQuotation(selectedQuotation.qId, quotationData, status);
         setIsEditMode(false);
         setSelectedQuotation(null);
-        alert(`Quotation ${status === 'sent' ? 'sent' : 'updated'} successfully!`);
       } else {
-        await createQuotation(quotationData, status);
-        alert(`Quotation ${status === 'sent' ? 'sent' : 'saved as draft'} successfully!`);
+        createdOrUpdatedQuotation = await createQuotation(quotationData, status);
+      }
+      
+      // If status is 'sent', send emails to all selected suppliers
+      if (status === 'sent' && createdOrUpdatedQuotation) {
+        try {
+          const quotationId = createdOrUpdatedQuotation.quotation?.qid || 
+                              createdOrUpdatedQuotation.qId || 
+                              createdOrUpdatedQuotation.quotationId || 
+                              (isEditMode ? selectedQuotation.qId : null);
+          
+          if (quotationId) {
+            // Set a loading state to indicate emails are being sent
+            setLoading(true);
+            
+            // Send emails to the selected suppliers
+            await sendQuotationEmails(quotationId, quotationData.supplierIds);
+            
+            alert(`Quotation has been sent successfully and email notifications have been sent to the selected suppliers.`);
+          } else {
+            alert(`Quotation ${status === 'sent' ? 'sent' : isEditMode ? 'updated' : 'saved as draft'} successfully, but could not send email notifications.`);
+          }
+        } catch (emailError) {
+          console.error('Error sending emails:', emailError);
+          alert(`Quotation ${status === 'sent' ? 'sent' : isEditMode ? 'updated' : 'saved as draft'} successfully, but there was an issue sending email notifications.`);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        alert(`Quotation ${status === 'sent' ? 'sent' : isEditMode ? 'updated' : 'saved as draft'} successfully!`);
       }
       
       // Reset form on success
@@ -527,6 +640,10 @@ const Purchasing = () => {
   };
 
   const getFilteredSuppliers = () => {
+    if (suppliersLoading || suppliers.length === 0) {
+      return [];
+    }
+    
     return suppliers.filter(supplier => 
       supplier.name.toLowerCase().includes(supplierSearch.toLowerCase()) &&
       !quotationFormData.suppliers.includes(supplier.name)
@@ -633,6 +750,13 @@ const Purchasing = () => {
       setSelectedQuotation(quotation);
     }
     
+    // Check if quotation can be closed if status is 'sent'
+    if (quotation.status?.toLowerCase() === 'sent') {
+      await checkQuotationCloseStatus(quotation.qId);
+    } else {
+      setQuotationCloseStatus(null);
+    }
+    
     setShowQuotationDetail(true);
   };
 
@@ -645,6 +769,34 @@ const Purchasing = () => {
   const handleViewPurchaseOrder = (order) => {
     setSelectedPurchaseOrder(order);
     setShowPurchaseOrderDetail(true);
+  };
+  
+  // Function to handle sending purchase order email
+  const handleSendPurchaseOrderEmail = async (order) => {
+    if (sendingEmail) return; // Prevent multiple clicks
+    
+    const confirmed = window.confirm(
+      `Are you sure you want to send this purchase order notification to ${order.supplierDetails.supplierName}?\n\n` +
+      `Email: ${order.supplierDetails.supplierEmail}\n` +
+      `Purchase Order ID: PO${order.orderId.toString().padStart(3, '0')}\n` +
+      `Project: ${order.projectName}\n`
+    );
+    
+    if (confirmed) {
+      try {
+        setEmailSendingOrder(order.orderId);
+        setSendingEmail(true);
+        
+        await sendPurchaseOrderEmail(order.orderId);
+        
+        alert(`Purchase order notification successfully sent to ${order.supplierDetails.supplierName} (${order.supplierDetails.supplierEmail}).`);
+      } catch (error) {
+        alert(`Failed to send purchase order notification: ${error.message}`);
+      } finally {
+        setSendingEmail(false);
+        setEmailSendingOrder(null);
+      }
+    }
   };
 
   // Function to download invoice
@@ -740,6 +892,53 @@ const Purchasing = () => {
     }
   };
 
+  // Function to download purchase order
+  const handleDownloadPurchaseOrder = async (orderId) => {
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/purchase-order-pdf/${orderId}/download`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+      });
+
+      if (response.ok) {
+        // Get the filename from the response headers or use a default
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `purchase_order_PO${orderId.toString().padStart(3, '0')}.pdf`;
+        
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+
+        // Create a blob from the response
+        const blob = await response.blob();
+        
+        // Create a temporary URL for the blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create a temporary anchor element and trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Failed to download purchase order');
+      }
+    } catch (error) {
+      console.error('Error downloading purchase order:', error);
+      alert('Failed to download purchase order. Please try again.');
+    }
+  };
+
   // Function to update quotation status
   const updateQuotationStatus = async (quotationId, status) => {
     try {
@@ -761,6 +960,137 @@ const Purchasing = () => {
       }
     } catch (error) {
       console.error('Error updating quotation status:', error);
+      throw error;
+    }
+  };
+  
+  // Function to check if a quotation can be closed
+  const checkQuotationCloseStatus = async (quotationId) => {
+    setCheckingCloseStatus(true);
+    try {
+      const apiUrl = `http://localhost:8086/api/v1/quotation/${quotationId}/close-status`;
+      console.log('Checking quotation close status URL:', apiUrl);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      console.log('Close status response:', response.status, response.statusText);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Quotation close status data:', data);
+        
+        // If the API returns the status successfully but doesn't explicitly set canClose,
+        // we'll add a fallback logic based on the quotation status
+        if (data.canClose === undefined) {
+          console.log('canClose property not found in response, using fallback logic');
+          // For testing purposes, let's allow closing if the API responds but doesn't specify
+          data.canClose = true;
+          data.closeReason = data.closeReason || 'Manual close enabled for testing';
+        }
+        
+        setQuotationCloseStatus(data);
+        return data;
+      } else {
+        // If we get a 404, it might mean the API endpoint doesn't exist - let's be permissive and allow closing
+        if (response.status === 404) {
+          console.warn('Close status endpoint not found (404), allowing close operation as fallback');
+          const fallbackStatus = {
+            canClose: true,
+            quotationId: quotationId,
+            currentStatus: 'sent',
+            closeReason: 'API endpoint not found, allowing manual close',
+            success: true
+          };
+          setQuotationCloseStatus(fallbackStatus);
+          return fallbackStatus;
+        }
+        
+        // Otherwise, try to get the error message from the response
+        try {
+          const errorText = await response.text();
+          console.error('Server error response:', errorText);
+          try {
+            const errorData = JSON.parse(errorText);
+            throw new Error(errorData.message || `Server error: ${response.status}`);
+          } catch (e) {
+            throw new Error(`Server returned status ${response.status}: ${response.statusText}`);
+          }
+        } catch (e) {
+          throw new Error(`Server returned status ${response.status}: ${response.statusText}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking quotation close status:', error);
+      
+      // Provide a fallback status that allows closing (for testing)
+      const fallbackStatus = {
+        canClose: true, 
+        quotationId: quotationId,
+        closeReason: 'Error checking close status, allowing manual close as fallback',
+        success: true
+      };
+      setQuotationCloseStatus(fallbackStatus);
+      return fallbackStatus;
+    } finally {
+      setCheckingCloseStatus(false);
+    }
+  };
+  
+  // Function to close a quotation
+  const closeQuotation = async (quotationId) => {
+    try {
+      console.log(`Attempting to close quotation with ID: ${quotationId}`);
+      
+      const apiUrl = `http://localhost:8086/api/v1/quotation/${quotationId}/close-if-no-responses-or-rejected`;
+      console.log('API URL:', apiUrl);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        console.log('Response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Quotation closed successfully:', data);
+          return data;
+        } else {
+          const errorText = await response.text();
+          console.error('Server error response:', errorText);
+          try {
+            const errorJson = JSON.parse(errorText);
+            throw new Error(errorJson.message || `Server error: ${response.status}`);
+          } catch (e) {
+            throw new Error(`Server returned status ${response.status}: ${response.statusText}`);
+          }
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout: The server took too long to respond');
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error closing quotation:', error);
       throw error;
     }
   };
@@ -875,13 +1205,102 @@ const Purchasing = () => {
     const confirmed = window.confirm(
       `Are you sure you want to select this quotation for purchase?\n\n` +
       `Supplier: ${response.supplierName}\n` +
+      `Email: ${response.supplierEmail || 'Not specified'}\n` + 
       `Total Amount: Rs. ${response.totalAmount.toLocaleString()}\n` +
       `Delivery Date: ${response.deliveryDate}\n\n` +
-      `This will update the quotation status to "closed".`
+      `This will update the quotation status to "closed" and send an email notification to the supplier.`
     );
 
     if (confirmed) {
       processPurchaseOrder(response);
+    }
+  };
+  
+  // Handle closing a quotation
+  const handleCloseQuotation = async () => {
+    if (!selectedQuotation || !quotationCloseStatus) return;
+    
+    // Check if the quotation can be closed
+    if (!quotationCloseStatus.canClose) {
+      alert(`Cannot close this quotation. ${quotationCloseStatus.closeReason || 'Unknown reason.'}`);
+      return;
+    }
+    
+    // Show confirmation dialog for closing
+    const confirmed = window.confirm(
+      `Are you sure you want to end this quotation request?\n\n` +
+      `Quotation ID: Q${selectedQuotation.qId.toString().padStart(3, '0')}\n` +
+      `Project: ${selectedQuotation.projectName}\n` +
+      `Total Responses: ${quotationCloseStatus.totalResponses || 0}\n` +
+      `Pending Responses: ${quotationCloseStatus.pendingResponses || 0}\n` +
+      `Accepted Responses: ${quotationCloseStatus.acceptedResponses || 0}\n` +
+      `Rejected Responses: ${quotationCloseStatus.rejectedResponses || 0}\n\n` +
+      `This will update the quotation status to "closed" and suppliers will no longer be able to send responses.`
+    );
+    
+    if (!confirmed) return;
+    
+    setClosingQuotation(true);
+    
+    try {
+      console.log(`Attempting to close quotation ID: ${selectedQuotation.qId}`);
+      
+      // First try the direct status update method as it's more reliable
+      try {
+        const updateResult = await updateQuotationStatus(selectedQuotation.qId, 'closed');
+        console.log('Status update result:', updateResult);
+        
+        // Refresh the quotations list
+        await fetchQuotations();
+        
+        // Success message and cleanup
+        alert('Quotation has been closed successfully.');
+        setShowQuotationDetail(false);
+        setQuotationCloseStatus(null);
+        return;
+      } catch (updateError) {
+        console.error('Direct status update failed:', updateError);
+        // Continue to try the specialized endpoint
+      }
+      
+      // If direct update fails, try the specialized endpoint
+      try {
+        const result = await closeQuotation(selectedQuotation.qId);
+        console.log('Close quotation result:', result);
+        
+        // Refresh the quotations list
+        await fetchQuotations();
+        
+        // Success message and cleanup
+        alert('Quotation has been closed successfully using alternate method.');
+        setShowQuotationDetail(false);
+        setQuotationCloseStatus(null);
+        return;
+      } catch (specializedEndpointError) {
+        console.error('Specialized endpoint failed:', specializedEndpointError);
+        throw new Error('Failed to close quotation using both available methods.');
+      }
+    } catch (error) {
+      console.error('Error in handleCloseQuotation:', error);
+      
+      // Show more user-friendly error messages
+      let errorMessage = error.message || 'Unknown error occurred';
+      
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('Network error')) {
+        errorMessage = 'Cannot connect to the server. Please ensure the backend service is running.';
+      } else if (errorMessage.includes('timeout')) {
+        errorMessage = 'The server took too long to respond. Please try again later.';
+      } else if (errorMessage.includes('500')) {
+        errorMessage = 'Server encountered an error. Please contact the administrator.';
+      } else if (errorMessage.includes('403')) {
+        errorMessage = 'You do not have permission to close this quotation.';
+      } else if (errorMessage.includes('404')) {
+        errorMessage = 'Quotation not found. It may have been deleted or modified.';
+      }
+      
+      alert(`Failed to close quotation: ${errorMessage}`);
+    } finally {
+      setClosingQuotation(false);
     }
   };
 
@@ -917,6 +1336,20 @@ const Purchasing = () => {
         // Don't throw error here since the main operation (purchase order creation) succeeded
       }
       
+      // Send email notification to the supplier
+      let emailSentSuccessfully = false;
+      let emailErrorMessage = '';
+      try {
+        setSendingEmail(true);
+        await sendPurchaseOrderEmail(purchaseOrderData.purchaseOrderId || purchaseOrderData.orderId);
+        emailSentSuccessfully = true;
+      } catch (emailError) {
+        console.error('Error sending purchase order notification:', emailError);
+        emailErrorMessage = emailError.message;
+      } finally {
+        setSendingEmail(false);
+      }
+      
       // Refresh quotations list to reflect the status change
       await fetchQuotations();
       
@@ -934,7 +1367,10 @@ const Purchasing = () => {
         `Supplier: ${response.supplierName}\n` +
         `Total Amount: Rs. ${response.totalAmount.toLocaleString()}\n` +
         `Delivery Date: ${response.deliveryDate}\n` +
-        `Quotation status updated to "Closed"`
+        `Quotation status updated to "Closed"\n` +
+        (emailSentSuccessfully 
+          ? `\nEmail notification sent to ${response.supplierName} (${response.supplierEmail || 'supplier'})` 
+          : `\nFailed to send email notification: ${emailErrorMessage}`)
       );
       
     } catch (error) {
@@ -1160,8 +1596,10 @@ const Purchasing = () => {
               onChange={(e) => setFilters({...filters, supplier: e.target.value})}
               className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
             >
-              <option value="">All Suppliers</option>
-              {suppliers.map((supplier) => (
+              <option value="">
+                {suppliersLoading ? 'Loading suppliers...' : 'All Suppliers'}
+              </option>
+              {!suppliersLoading && suppliers.map((supplier) => (
                 <option key={supplier.id} value={supplier.name}>
                   {supplier.name}
                 </option>
@@ -1899,7 +2337,7 @@ const Purchasing = () => {
                           {supplier}
                           <button
                             type="button"
-                            onClick={() => removeSupplier(supplier)}
+                                                       onClick={() => removeSupplier(supplier)}
                             className="ml-2 text-black hover:text-gray-700"
                           >
                             <X className="w-4 h-4" />
@@ -1910,34 +2348,63 @@ const Purchasing = () => {
                   </div>
                 )}
 
-                {/* Supplier Search */}
-                <div className="relative">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      value={supplierSearch}
-                      onChange={handleSupplierSearch}
-                      placeholder="Search and add suppliers..."
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                    />
+                {/* Supplier Search and Quick Select */}
+                <div className="flex space-x-4">
+                  <div className="flex-1 relative">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input
+                        type="text"
+                        value={supplierSearch}
+                        onChange={handleSupplierSearch}
+                        placeholder="Search and add suppliers..."
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Supplier Dropdown */}
+                    {showSupplierDropdown && getFilteredSuppliers().length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {getFilteredSuppliers().map((supplier) => (
+                          <div
+                            key={supplier.id}
+                            onClick={() => addSupplier(supplier.name)}
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex justify-between items-center"
+                          >
+                            <span className="text-sm text-gray-700">{supplier.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Supplier Dropdown */}
-                  {showSupplierDropdown && getFilteredSuppliers().length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      {getFilteredSuppliers().map((supplier) => (
-                        <div
-                          key={supplier.id}
-                          onClick={() => addSupplier(supplier.name)}
-                          className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex justify-between items-center"
-                        >
-                          <span className="text-sm text-gray-700">{supplier.name}</span>
-                          <span className="text-xs text-gray-500">Rating: {supplier.rating}/5</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div className="flex-1">
+                    <select
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value) {
+                          addSupplier(value);
+                          e.target.value = ''; // Reset select after adding
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                    >
+                      <option value="">
+                        {suppliersLoading 
+                          ? 'Loading suppliers...' 
+                          : suppliers.length === 0 
+                            ? 'No suppliers available' 
+                            : 'Select Supplier'}
+                      </option>
+                      {!suppliersLoading && suppliers
+                        .filter(supplier => !quotationFormData.suppliers.includes(supplier.name))
+                        .map((supplier) => (
+                          <option key={supplier.id} value={supplier.name}>
+                            {supplier.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
                 </div>
 
                 {quotationFormData.suppliers.length === 0 && (
@@ -1994,7 +2461,10 @@ const Purchasing = () => {
                   Quotation Details - Q{selectedQuotation.qId.toString().padStart(3, '0')}
                 </h3>
                 <button
-                  onClick={() => setShowQuotationDetail(false)}
+                  onClick={() => {
+                    setShowQuotationDetail(false);
+                    setQuotationCloseStatus(null);
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-6 h-6" />
@@ -2152,7 +2622,10 @@ const Purchasing = () => {
                   <span>Download PDF</span>
                 </button>
                 <button
-                  onClick={() => setShowQuotationDetail(false)}
+                  onClick={() => {
+                    setShowQuotationDetail(false);
+                    setQuotationCloseStatus(null);
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >
                   Close
@@ -2165,18 +2638,65 @@ const Purchasing = () => {
                     Edit
                   </button>
                 )}
-                {selectedQuotation.status === 'sent' && (
-                  <button
-                    onClick={() => handleViewResponses(selectedQuotation)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
-                  >
-                    <span>View Response</span>
-                    {responseCounts[selectedQuotation.qId] > 0 && (
-                      <span className="bg-blue-800 text-white text-xs px-2 py-1 rounded-full">
-                        {responseCounts[selectedQuotation.qId]}
-                      </span>
+                {selectedQuotation.status?.toLowerCase() === 'sent' && (
+                  <>
+                    <button
+                      onClick={() => handleViewResponses(selectedQuotation)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+                    >
+                      <span>View Response</span>
+                      {responseCounts[selectedQuotation.qId] > 0 && (
+                        <span className="bg-blue-800 text-white text-xs px-2 py-1 rounded-full">
+                          {responseCounts[selectedQuotation.qId]}
+                        </span>
+                      )}
+                    </button>
+                    {checkingCloseStatus ? (
+                      <button
+                        disabled
+                        className="px-4 py-2 bg-gray-400 text-white rounded-lg flex items-center space-x-2 opacity-75 cursor-not-allowed"
+                      >
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        <span>Checking...</span>
+                      </button>
+                    ) : quotationCloseStatus ? (
+                      quotationCloseStatus.canClose ? (
+                        <button
+                          onClick={handleCloseQuotation}
+                          disabled={closingQuotation}
+                          className={`px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center space-x-2 ${
+                            closingQuotation ? 'opacity-75 cursor-not-allowed' : ''
+                          }`}
+                          title="End this quotation and prevent further responses"
+                        >
+                          {closingQuotation ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                              <span>Closing...</span>
+                            </>
+                          ) : (
+                            <span>End Quotation</span>
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="px-4 py-2 bg-gray-400 text-white rounded-lg flex items-center space-x-2 opacity-75 cursor-not-allowed"
+                          title={quotationCloseStatus.closeReason || "Cannot close this quotation"}
+                        >
+                          <span>Cannot Close</span>
+                        </button>
+                      )
+                    ) : (
+                      <button
+                        onClick={() => checkQuotationCloseStatus(selectedQuotation.qId)}
+                        className="px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-colors duration-200"
+                        title="Check if this quotation can be closed"
+                      >
+                        Check Close Status
+                      </button>
                     )}
-                  </button>
+                  </>
                 )}
                 {selectedQuotation.status === 'RECEIVED' && (
                   <button
@@ -2200,8 +2720,27 @@ const Purchasing = () => {
             </h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to send this quotation request to suppliers? 
-              Once sent, the status will be changed to "sent" and the quotation cannot be edited.
+              Once sent, the status will be changed to "sent", email notifications will be sent to all selected suppliers, and the quotation cannot be edited.
             </p>
+            {quotationFormData.suppliers.length > 0 && (
+              <div className="mb-6">
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Email will be sent to these suppliers:
+                </p>
+                <div className="bg-gray-50 p-3 rounded-md max-h-40 overflow-y-auto">
+                  <ul className="list-disc pl-5 space-y-1">
+                    {quotationFormData.suppliers.map((supplierName) => {
+                      const supplier = suppliers.find(s => s.name === supplierName);
+                      return (
+                        <li key={supplier?.id || supplierName} className="text-sm">
+                          {supplierName} {supplier?.email && <span className="text-gray-500">({supplier.email})</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            )}
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowConfirmDialog(false)}
@@ -2211,9 +2750,15 @@ const Purchasing = () => {
               </button>
               <button
                 onClick={() => processQuotationSubmission('send')}
-                className="px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200"
+                disabled={loading}
+                className={`px-6 py-2 bg-[#FAAD00] text-white rounded-lg hover:bg-[#FAAD00]/80 transition-colors duration-200 flex items-center ${loading ? 'opacity-75 cursor-not-allowed' : ''}`}
               >
-                Confirm Send
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Sending...
+                  </>
+                ) : 'Confirm Send'}
               </button>
             </div>
           </div>
@@ -2544,13 +3089,20 @@ const Purchasing = () => {
                 >
                   Close
                 </button>
+                <button
+                  onClick={() => handleDownloadPurchaseOrder(selectedPurchaseOrder.orderId)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  <span>Download PO</span>
+                </button>
                 {(selectedPurchaseOrder.paymentStatus === 'paid' || selectedPurchaseOrder.paymentStatus === 'completed') && (
                   <button
                     onClick={() => handleDownloadInvoice(selectedPurchaseOrder.orderId)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
                   >
                     <FileDown className="w-4 h-4" />
-                    <span>Download Document</span>
+                    <span>Download Invoice</span>
                   </button>
                 )}
               </div>

@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Truck, CheckCircle, Clock, AlertCircle, Package, DollarSign, TrendingUp, Plus, X } from 'lucide-react';
 
 // Utility function for class names
@@ -130,36 +130,16 @@ const DialogFooter = ({ children, className, ...props }) => (
 );
 
 const Materials = () => {
+  // State Management
   const [showSiteVisitModal, setShowSiteVisitModal] = useState(false);
-  const [siteVisits, setSiteVisits] = useState([
-    {
-      id: 1,
-      type: "Site Inspection",
-      date: "2024-01-25",
-      time: "10:00 AM",
-      status: "Approved",
-      requestedBy: "John Doe",
-      purpose: "Initial site inspection"
-    },
-    { 
-      id: 2, 
-      type: "Progress Review", 
-      date: "2024-01-30", 
-      time: "2:00 PM", 
-      status: "Pending", 
-      requestedBy: "John Doe",
-      purpose: "Monthly progress review"
-    },
-    {
-      id: 3,
-      type: "Quality Check",
-      date: "2024-02-05",
-      time: "11:00 AM",
-      status: "Requested",
-      requestedBy: "John Doe",
-      purpose: "Quality assurance check"
-    },
-  ]);
+  const [siteVisits, setSiteVisits] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [materialSummary, setMaterialSummary] = useState(null);
+
+  // Loading and Error States
+  const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
+  const [isLoadingSiteVisits, setIsLoadingSiteVisits] = useState(true);
+  const [error, setError] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -175,48 +155,66 @@ const Materials = () => {
   // Form submission loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const materials = [
-    {
-      name: "Cement",
-      brand: "UltraTech",
-      quantity: "500 bags",
-      status: "Delivered",
-      deliveryDate: "2024-01-10",
-      cost: "Rs.2,500",
-    },
-    {
-      name: "Steel Rods",
-      brand: "Tata Steel",
-      quantity: "2 tons",
-      status: "In Transit",
-      deliveryDate: "2024-01-20",
-      cost: "Rs.3,200",
-    },
-    {
-      name: "Bricks",
-      brand: "Local Supplier",
-      quantity: "10,000 pieces",
-      status: "Delivered",
-      deliveryDate: "2024-01-05",
-      cost: "Rs.1,800",
-    },
-    {
-      name: "Sand",
-      brand: "River Sand Co.",
-      quantity: "50 cubic meters",
-      status: "Ordered",
-      deliveryDate: "2024-01-25",
-      cost: "Rs.1,200",
-    },
-    {
-      name: "Tiles",
-      brand: "Kajaria",
-      quantity: "200 sq ft",
-      status: "Pending",
-      deliveryDate: "2024-02-01",
-      cost: "Rs.2,800",
-    },
-  ];
+  // Get projectId from localStorage
+  const projectId = localStorage.getItem('projectId') || 'PRJ_001';
+  const API_BASE_URL = 'http://localhost:8086/api/project-owner/materials';
+
+  // API Functions
+  const fetchMaterials = async () => {
+    try {
+      setIsLoadingMaterials(true);
+      setError(null);
+      const response = await fetch(`${API_BASE_URL}/${projectId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setMaterials(data.materials || []);
+      } else {
+        setError(data.message || 'Failed to fetch materials');
+      }
+    } catch (error) {
+      console.error('Error fetching materials:', error);
+      setError('Error connecting to server. Please try again later.');
+    } finally {
+      setIsLoadingMaterials(false);
+    }
+  };
+
+  const fetchMaterialSummary = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/${projectId}/summary`);
+      const data = await response.json();
+
+      if (data.success) {
+        setMaterialSummary(data.summary);
+      }
+    } catch (error) {
+      console.error('Error fetching material summary:', error);
+    }
+  };
+
+  const fetchSiteVisits = async () => {
+    try {
+      setIsLoadingSiteVisits(true);
+      const response = await fetch(`${API_BASE_URL}/site-visits/${projectId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setSiteVisits(data.siteVisits || []);
+      }
+    } catch (error) {
+      console.error('Error fetching site visits:', error);
+    } finally {
+      setIsLoadingSiteVisits(false);
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchMaterials();
+    fetchMaterialSummary();
+    fetchSiteVisits();
+  }, [projectId]);
 
   // Validation function
   const validateForm = () => {
@@ -270,7 +268,7 @@ const Materials = () => {
   // Handle form submission
   const handleSubmitSiteVisit = async () => {
     const errors = validateForm();
-    
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -279,40 +277,50 @@ const Materials = () => {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Create new site visit
-      const newSiteVisit = {
-        id: siteVisits.length + 1,
-        type: getVisitTypeLabel(formData.visitType),
-        date: formData.date,
-        time: getTimeSlotLabel(formData.timeSlot),
-        status: "Requested",
-        requestedBy: "John Doe", // This would come from user context
-        purpose: formData.purpose.trim()
+      // Prepare site visit data for backend
+      const siteVisitData = {
+        projectId: projectId,
+        visitType: getVisitTypeLabel(formData.visitType),
+        visitDate: formData.date,
+        visitTime: getTimeSlotLabel(formData.timeSlot),
+        purpose: formData.purpose.trim(),
+        status: "Requested"
       };
 
-      // Add to site visits list
-      setSiteVisits(prev => [...prev, newSiteVisit]);
-
-      // Reset form
-      setFormData({
-        visitType: '',
-        date: '',
-        timeSlot: '',
-        purpose: ''
+      const response = await fetch(`${API_BASE_URL}/site-visits`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(siteVisitData)
       });
 
-      // Close modal
-      setShowSiteVisitModal(false);
+      const data = await response.json();
 
-      // Show success message (you can implement a toast notification here)
-      alert('Site visit request submitted successfully!');
+      if (data.success) {
+        // Refresh site visits list
+        await fetchSiteVisits();
+
+        // Reset form
+        setFormData({
+          visitType: '',
+          date: '',
+          timeSlot: '',
+          purpose: ''
+        });
+
+        // Close modal
+        setShowSiteVisitModal(false);
+
+        // Show success message
+        alert(data.message || 'Site visit request submitted successfully!');
+      } else {
+        alert(data.message || 'Error submitting request. Please try again.');
+      }
 
     } catch (error) {
       console.error('Error submitting site visit request:', error);
-      alert('Error submitting request. Please try again.');
+      alert('Error connecting to server. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -393,6 +401,14 @@ const Materials = () => {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center">
+            <AlertCircle className="h-5 w-5 mr-2" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-4">
           <Card className="border-l-4 border-l-green-500 hover:border-l-green-600 transition-colors">
@@ -404,7 +420,7 @@ const Materials = () => {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold text-green-600">
-                {materials.filter((m) => m.status === "Delivered").length}
+                {isLoadingMaterials ? '...' : (materialSummary?.deliveredCount || materials.filter((m) => m.status === "Delivered").length)}
               </div>
               <p className="text-xs text-gray-600 mt-1">Materials received</p>
             </CardContent>
@@ -419,7 +435,7 @@ const Materials = () => {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold text-blue-600">
-                {materials.filter((m) => m.status === "In Transit").length}
+                {isLoadingMaterials ? '...' : (materialSummary?.inTransitCount || materials.filter((m) => m.status === "In Transit").length)}
               </div>
               <p className="text-xs text-gray-600 mt-1">On the way</p>
             </CardContent>
@@ -434,7 +450,7 @@ const Materials = () => {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold text-amber-600">
-                {materials.filter((m) => m.status === "Pending" || m.status === "Ordered").length}
+                {isLoadingMaterials ? '...' : (materialSummary?.pendingCount || materials.filter((m) => m.status === "Pending" || m.status === "Ordered").length)}
               </div>
               <p className="text-xs text-gray-600 mt-1">Awaiting delivery</p>
             </CardContent>
@@ -448,7 +464,9 @@ const Materials = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-[#FAAD00]">Rs.11,500</div>
+              <div className="text-xl font-bold text-[#FAAD00]">
+                {isLoadingMaterials ? '...' : `Rs.${materialSummary?.totalCost || '0'}`}
+              </div>
               <p className="text-xs text-gray-600 mt-1">Material expenses</p>
             </CardContent>
           </Card>
@@ -464,31 +482,43 @@ const Materials = () => {
             <CardDescription className="text-gray-600 text-xs">Track all materials used in your construction project</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 pt-3">
-            {materials.map((material, index) => (
-              <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50/30 hover:shadow-sm transition-shadow">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 ${getStatusColor(material.status)} rounded-full flex items-center justify-center shadow-sm`}>
-                    {getStatusIcon(material.status)}
+            {isLoadingMaterials ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FAAD00] mx-auto"></div>
+                <p className="text-gray-600 mt-2">Loading materials...</p>
+              </div>
+            ) : materials.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600">No materials found for this project</p>
+              </div>
+            ) : (
+              materials.map((material, index) => (
+                <div key={material.materialId || index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50/30 hover:shadow-sm transition-shadow">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-10 h-10 ${getStatusColor(material.status)} rounded-full flex items-center justify-center shadow-sm`}>
+                      {getStatusIcon(material.status)}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">{material.materialName || material.name}</p>
+                      <p className="text-xs text-gray-600">Brand: {material.brand}</p>
+                      <p className="text-xs text-gray-600">Quantity: {material.quantity} {material.unit || ''}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">{material.name}</p>
-                    <p className="text-xs text-gray-600">Brand: {material.brand}</p>
-                    <p className="text-xs text-gray-600">Quantity: {material.quantity}</p>
+                  <div className="text-right">
+                    <Badge variant={
+                      material.status === "Delivered" ? "success" :
+                      material.status === "In Transit" ? "default" :
+                      material.status === "Ordered" ? "warning" : "secondary"
+                    }>
+                      {material.status}
+                    </Badge>
+                    <p className="text-xs text-gray-600 mt-1">{material.deliveryDate}</p>
+                    <p className="text-sm font-semibold text-[#FAAD00] mt-1">Rs.{material.cost || material.totalCost}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <Badge variant={
-                    material.status === "Delivered" ? "success" :
-                    material.status === "In Transit" ? "default" :
-                    material.status === "Ordered" ? "warning" : "secondary"
-                  }>
-                    {material.status}
-                  </Badge>
-                  <p className="text-xs text-gray-600 mt-1">{material.deliveryDate}</p>
-                  <p className="text-sm font-semibold text-[#FAAD00] mt-1">{material.cost}</p>
-                </div>
-              </div> 
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -539,18 +569,27 @@ const Materials = () => {
               <CardDescription className="text-gray-600 text-xs">Cost breakdown by category</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 pt-3">
-              <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50/30">
-                <span className="font-semibold text-gray-800">Raw Materials</span>
-                <span className="font-bold text-gray-900">Rs.8,700</span>
-              </div>
-              <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50/30">
-                <span className="font-semibold text-gray-800">Finishing Materials</span>
-                <span className="font-bold text-gray-900">Rs.2,800</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[#FAAD00]/10 to-[#FAAD00]/5 rounded-lg border border-[#FAAD00]/30">
-                <span className="font-semibold text-gray-800">Total Material Cost</span>
-                <span className="font-bold text-[#FAAD00] text-lg">Rs.11,500</span>
-              </div>
+              {isLoadingMaterials ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FAAD00] mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Loading cost data...</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50/30">
+                    <span className="font-semibold text-gray-800">Raw Materials</span>
+                    <span className="font-bold text-gray-900">Rs.{materialSummary?.rawMaterialsCost || '0'}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50/30">
+                    <span className="font-semibold text-gray-800">Finishing Materials</span>
+                    <span className="font-bold text-gray-900">Rs.{materialSummary?.finishingMaterialsCost || '0'}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[#FAAD00]/10 to-[#FAAD00]/5 rounded-lg border border-[#FAAD00]/30">
+                    <span className="font-semibold text-gray-800">Total Material Cost</span>
+                    <span className="font-bold text-[#FAAD00] text-lg">Rs.{materialSummary?.totalCost || '0'}</span>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -560,43 +599,59 @@ const Materials = () => {
           <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b border-gray-200 p-3">
             <CardTitle className="text-gray-800 text-lg flex items-center">
               <Calendar className="w-4 h-4 mr-2 text-[#FAAD00]" />
-              Site Visit Requests ({siteVisits.length})
+              Site Visit Requests ({isLoadingSiteVisits ? '...' : siteVisits.length})
             </CardTitle>
             <CardDescription className="text-gray-600 text-xs">Schedule and track your site visits</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 pt-3">
-            <Button 
+            <Button
               className="w-full font-semibold shadow-md hover:shadow-lg transition-all duration-300"
               onClick={() => setShowSiteVisitModal(true)}
+              disabled={isLoadingSiteVisits}
             >
               <Plus className="mr-2 h-4 w-4" />
               Request New Site Visit
             </Button>
             <div className="space-y-2">
-              {siteVisits.map((visit) => (
-                <div key={visit.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50/30 hover:shadow-sm transition-shadow">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shadow-sm">
-                      <Calendar className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm">{visit.type}</p>
-                      <p className="text-xs text-gray-600">
-                        {visit.date} at {visit.time}
-                      </p>
-                      <p className="text-xs text-gray-500">Requested by {visit.requestedBy}</p>
-                      {visit.purpose && (
-                        <p className="text-xs text-gray-500 mt-1 max-w-xs truncate">
-                          Purpose: {visit.purpose}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Badge variant={getStatusBadgeVariant(visit.status)}>
-                    {visit.status}
-                  </Badge>
+              {isLoadingSiteVisits ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FAAD00] mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Loading site visits...</p>
                 </div>
-              ))}
+              ) : siteVisits.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600">No site visits scheduled yet</p>
+                  <p className="text-xs text-gray-500 mt-1">Click the button above to request a new site visit</p>
+                </div>
+              ) : (
+                siteVisits.map((visit) => (
+                  <div key={visit.visitId || visit.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gradient-to-r from-white to-gray-50/30 hover:shadow-sm transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shadow-sm">
+                        <Calendar className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm">{visit.visitType || visit.type}</p>
+                        <p className="text-xs text-gray-600">
+                          {visit.visitDate || visit.date} at {visit.visitTime || visit.time}
+                        </p>
+                        {visit.requestedBy && (
+                          <p className="text-xs text-gray-500">Requested by {visit.requestedBy}</p>
+                        )}
+                        {visit.purpose && (
+                          <p className="text-xs text-gray-500 mt-1 max-w-xs truncate">
+                            Purpose: {visit.purpose}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <Badge variant={getStatusBadgeVariant(visit.status)}>
+                      {visit.status}
+                    </Badge>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

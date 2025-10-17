@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { CircleCheckBig, CircleMinus, Check } from 'lucide-react'
 import axios from 'axios';
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
 
 export default function Materials() {
   const [update, setUpdate] = useState([]);
@@ -8,6 +10,12 @@ export default function Materials() {
   const [loading, setLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const userid = "EMP_001";
 
@@ -19,11 +27,15 @@ export default function Materials() {
       const response = await axios.put(`http://localhost:8086/api/v1/project_manager/requestSiteResources/${requestId}/accept`);
       console.log("✅ Request accepted:", response.data);
       setError(null); // Clear any previous errors
+      setSuccessMessage('Material request accepted successfully!');
+      setShowSuccessAlert(true);
       // Refresh the data after successful acceptance
       fetchMaterialRequests();
     } catch (error) {
       console.error("❌ Error accepting request:", error);
       setError(`Failed to accept request: ${error.response?.data || error.message}`);
+      setErrorMessage('Failed to accept material request. Please try again.');
+      setShowErrorAlert(true);
     } finally {
       setLoading(false);
     }
@@ -37,11 +49,15 @@ export default function Materials() {
       const response = await axios.put(`http://localhost:8086/api/v1/project_manager/requestSiteResources/${requestId}/reject`);
       console.log("✅ Request rejected:", response.data);
       setError(null); // Clear any previous errors
+      setSuccessMessage('Material request rejected successfully!');
+      setShowSuccessAlert(true);
       // Refresh the data after successful rejection
       fetchMaterialRequests();
     } catch (error) {
       console.error("❌ Error rejecting request:", error);
       setError(`Failed to reject request: ${error.response?.data || error.message}`);
+      setErrorMessage('Failed to reject material request. Please try again.');
+      setShowErrorAlert(true);
     } finally {
       setLoading(false);
     }
@@ -56,13 +72,19 @@ export default function Materials() {
           const data = response.data;
           if (data && typeof data === "object") {
             setUpdate(data);
+            setSuccessMessage('Material requests loaded successfully!');
+            setShowSuccessAlert(true);
           } else {
             setError("Invalid data format received from server");
+            setErrorMessage("Invalid data format received from server");
+            setShowErrorAlert(true);
           }
         })
         .catch((error) => {
           console.error("❌ Error fetching updates:", error);
           setError("Failed to fetch material requests. Please try again later.");
+          setErrorMessage("Failed to fetch material requests. Please try again later.");
+          setShowErrorAlert(true);
         });
     }
   };
@@ -92,13 +114,17 @@ export default function Materials() {
                   onClick={() => {
                     handleReject(selectedRequestId);
                     setShowConfirmModal(false);
+                    setSelectedRequestId(null);
                   }}
                   className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-32 shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300 mr-2"
                 >
                   Yes, Reject
                 </button>
                 <button
-                  onClick={() => setShowConfirmModal(false)}
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setSelectedRequestId(null);
+                  }}
                   className="mt-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md w-32 shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
@@ -187,6 +213,22 @@ export default function Materials() {
           </table>
         </div>
       </div>
+
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </>
   )
 }

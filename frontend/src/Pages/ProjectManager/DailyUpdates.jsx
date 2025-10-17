@@ -22,13 +22,14 @@ export default function DailyUpdates() {
   const [errorMessage, setErrorMessage] = useState('');
 
   // Hardcoded user for now (can later come from login / route)
-  const userid = "EMP_001";
+  const { employeeId } = useParams();
+  console.log("UserID from params:", employeeId);
 
   useEffect(() => {
-    if (userid) {
+    if (employeeId) {
       axios
         .get(
-          `http://localhost:8086/api/v1/project_manager/daily-updates/${userid}`
+          `http://localhost:8086/api/v1/project_manager/daily-updates/${employeeId}`
         )
         .then((response) => {
           console.log("✅ Data from backend:", response.data);
@@ -56,7 +57,7 @@ export default function DailyUpdates() {
     } else {
       console.warn("⚠️ No user ID provided, skipping fetch.");
     }
-  }, [userid]);
+  }, [employeeId]);
 
   // Filter updates by selected date
   const filteredUpdates = selectedDate

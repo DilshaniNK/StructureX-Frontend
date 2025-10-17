@@ -3,6 +3,7 @@ import { CircleCheckBig, CircleMinus, Check } from 'lucide-react'
 import axios from 'axios';
 import SuccessAlert from '../../Components/Employee/SuccessAlert';
 import ErrorAlert from '../../Components/Employee/ErrorAlert';
+import { useParams } from 'react-router-dom';
 
 export default function Materials() {
   const [update, setUpdate] = useState([]);
@@ -17,7 +18,8 @@ export default function Materials() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const userid = "EMP_001";
+  const { employeeId } = useParams();
+  console.log("UserID from params:", employeeId);
 
   const handleAccept = async (requestId) => {
     try {
@@ -64,9 +66,9 @@ export default function Materials() {
   };
 
   const fetchMaterialRequests = () => {
-    if (userid) {
+    if (employeeId) {
       axios
-        .get(`http://localhost:8086/api/v1/project_manager/pending-resources/${userid}`)
+        .get(`http://localhost:8086/api/v1/project_manager/pending-resources/${employeeId}`)
         .then((response) => {
           console.log("✅ Data from backend:", response.data);
           const data = response.data;
@@ -91,7 +93,7 @@ export default function Materials() {
 
   useEffect(() => {
     fetchMaterialRequests();
-  }, [userid])
+  }, [employeeId])
 
   return (
     <>

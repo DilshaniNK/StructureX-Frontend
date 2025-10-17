@@ -3,6 +3,7 @@ import { Plus, Calendar, Flag, Search, Filter, CheckCircle, Circle, AlertTriangl
 import axios from 'axios';
 import SuccessAlert from '../../Components/Employee/SuccessAlert';
 import ErrorAlert from '../../Components/Employee/ErrorAlert';
+import { useParams } from 'react-router-dom';
 
 const TodoList = () => {
   // Custom CSS animations
@@ -96,12 +97,13 @@ const TodoList = () => {
     assignee: t.assignee ?? ''
   });
 
-  const userid = "EMP_001"; // Hardcoded user ID for demonstration
+  const { employeeId } = useParams();
+  console.log("UserID from params:", employeeId);
 
   useEffect(() => {
-    if (userid) {
+    if (employeeId) {
       axios
-        .get(`http://localhost:8086/api/v1/project_manager/todo/${userid}`)
+        .get(`http://localhost:8086/api/v1/project_manager/todo/${employeeId}`)
         .then((response) => {
           console.log("✅ Data from backend:", response.data);
           setGetTodo(response.data);
@@ -117,7 +119,7 @@ const TodoList = () => {
           setShowErrorAlert(true);
         });
     }
-  }, [userid]);
+  }, [employeeId]);
 
 
   const toggleTodo = (id) => {
@@ -445,13 +447,13 @@ const TodoList = () => {
                     // Build payload expected by your controller/DAO
                     const payload = {
                       // controller sets employeeId from path variable, but include for clarity
-                      employeeId: userid,
+                      employeeId: employeeId,
                       status: newStatus,
                       description: newDescription,
                       date: newDate
                     };
                     try {
-                      const res = await axios.post(`http://localhost:8086/api/v1/project_manager/todo/${userid}`, payload);
+                      const res = await axios.post(`http://localhost:8086/api/v1/project_manager/todo/${employeeId}`, payload);
                       console.log('✅ Created todo:', res.data);
                       // map returned DTO into the UI shape and prepend to list
                       const created = mapTodoFromServer(res.data);

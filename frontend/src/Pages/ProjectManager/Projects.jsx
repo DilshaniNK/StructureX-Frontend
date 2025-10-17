@@ -1,5 +1,6 @@
 import axios from 'axios'
 import React, { use, useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 
 function Projects() {
   const [activeTab, setActiveTab] = useState('ongoing')
@@ -31,8 +32,8 @@ function Projects() {
   const [projectMaterials, setProjectMaterials] = useState([])
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false)
   
-  const userid = "EMP_001";
-
+  const { employeeId } = useParams();
+  console.log("🚀 ProjectManager Projects - UserID from params:", employeeId);
 
   // Function to copy design link to clipboard
   const copyDesignLink = async (link) => {
@@ -230,15 +231,15 @@ const fetchProjectMaterials = async (projectId) =>{
 
   // Function to refresh project data
   const refreshProjectData = async () => {
-    if (!userid) return;
+    if (!employeeId) return;
 
     setIsLoadingProjects(true);
 
     try {
       // Fetch both ongoing and completed projects
       const [ongoingResponse, completedResponse] = await Promise.all([
-        axios.get(`http://localhost:8086/api/v1/project_manager/projects/${userid}/ongoing`),
-        axios.get(`http://localhost:8086/api/v1/project_manager/projects/${userid}/completed`)
+        axios.get(`http://localhost:8086/api/v1/project_manager/projects/${employeeId}/ongoing`),
+        axios.get(`http://localhost:8086/api/v1/project_manager/projects/${employeeId}/completed`)
       ]);
 
       // Process ongoing projects
@@ -275,15 +276,15 @@ const fetchProjectMaterials = async (projectId) =>{
 
   useEffect(() => {
     refreshProjectData();
-  }, [userid]);
+  }, [employeeId]);
 
   useEffect(() => {
-    if (userid) {
+    if (employeeId) {
       setIsLoadingInitiatedProjects(true)
       setInitiatedProjectsError(null)
       axios
         .get(
-          `http://localhost:8086/api/v1/project_manager/null-location-projects/${userid}`
+          `http://localhost:8086/api/v1/project_manager/null-location-projects/${employeeId}`
         )
         .then((response) => {
           console.log("✅ Data from backend:", response.data);
@@ -311,7 +312,7 @@ const fetchProjectMaterials = async (projectId) =>{
     } else {
       console.warn("⚠️ No user ID provided, skipping fetch.");
     }
-  }, [userid]);
+  }, [employeeId]);
 
 
   // Sample data - replace with actual API calls
@@ -374,9 +375,9 @@ const fetchProjectMaterials = async (projectId) =>{
           alert('Project updated successfully and sent to materials system!')
 
           // Refresh the projects list to get updated data
-          if (userid) {
+          if (employeeId) {
             const response = await axios.get(
-              `http://localhost:8086/api/v1/project_manager/null-location-projects/${userid}`
+              `http://localhost:8086/api/v1/project_manager/null-location-projects/${employeeId}`
             )
             const data = response.data;
             let arr = [];

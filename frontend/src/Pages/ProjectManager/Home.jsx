@@ -10,68 +10,85 @@ import {
   Clock,
   FileText
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
  
 const Home = () => {
 
-  const [project , setProject] = useState([]);
+  const [ongoingProjects, setOngoingProjects] = useState([]);
+  const [completedProjects, setCompletedProjects] = useState([]);
+  const { employeeId } = useParams();
 
-  const userId = 'EMP_001'; // Example user ID
+  console.log("UserID from params:", employeeId);
 
-  useEffect(() =>{
-    if(userId){
-      axios.get(`http://localhost:8086/api/v1/project_manager/projects/${userId}/ongoing`)
-      .then((response) => {
-          console.log("✅ Data from backend:", response.data);
-          // Normalize the response into an array so callers can safely use array methods
-          const data = response.data;
-          let arr = [];
-          if (Array.isArray(data)) {
-            arr = data;
-          } else if (data && typeof data === "object" && Array.isArray(data.updates)) {
-            // some APIs wrap results in an `updates` field
-            arr = data.updates;
-          } else if (data && typeof data === "object") {
-            // single object -> wrap in array
-            arr = [data];
-          }
-          setProject(arr);
-        })
-        .catch((error) => {
-          console.error("❌ Error fetching updates:", error);
-        });
+  useEffect(() => {
+    if(employeeId){
+      // Fetch both completed and ongoing projects
+      Promise.all([
+        axios.get(`http://localhost:8086/api/v1/project_manager/projects/${employeeId}/completed`),
+        axios.get(`http://localhost:8086/api/v1/project_manager/projects/${employeeId}/ongoing`)
+      ])
+      .then(([completedResponse, ongoingResponse]) => {
+        console.log("✅ Completed projects from backend:", completedResponse.data);
+        console.log("✅ Ongoing projects from backend:", ongoingResponse.data);
+        
+        // Process completed projects
+        const completedData = completedResponse.data;
+        let completedArr = [];
+        if (Array.isArray(completedData)) {
+          completedArr = completedData;
+        } else if (completedData && typeof completedData === "object" && Array.isArray(completedData.updates)) {
+          completedArr = completedData.updates;
+        } else if (completedData && typeof completedData === "object") {
+          completedArr = [completedData];
+        }
+        setCompletedProjects(completedArr);
+
+        // Process ongoing projects
+        const ongoingData = ongoingResponse.data;
+        let ongoingArr = [];
+        if (Array.isArray(ongoingData)) {
+          ongoingArr = ongoingData;
+        } else if (ongoingData && typeof ongoingData === "object" && Array.isArray(ongoingData.updates)) {
+          ongoingArr = ongoingData.updates;
+        } else if (ongoingData && typeof ongoingData === "object") {
+          ongoingArr = [ongoingData];
+        }
+        setOngoingProjects(ongoingArr);
+      })
+      .catch((error) => {
+        console.error("❌ Error fetching projects:", error);
+      });
     } else {
       console.warn("⚠️ No user ID provided, skipping fetch.");
     }
-  }, [userId]);
+  }, [employeeId]);
 
   const navigate = useNavigate();
 
   const handleViewClick = () => {
-    navigate(`/projectmanager/projects`);
+    navigate(`/projectmanager/${employeeId}/projects`);
     };
     const handlerequest = () =>{
-      navigate('/projectmanager/materials');
+      navigate(`/projectmanager/${employeeId}/materials`);
     };
     const handletodolist = () =>{
-      navigate('/projectmanager/todolist');
+      navigate(`/projectmanager/${employeeId}/todolist`);
     };
     const handleSiteUpdate = () =>{
-      navigate('/projectmanager/dailyupdates');
+      navigate(`/projectmanager/${employeeId}/dailyupdates`);
     };
     
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100">
-          {/* <pre>{JSON.stringify(project, null, 2)}</pre> */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Budget</p>
               <p className="text-2xl font-bold text-gray-900">
-                {project && project.length > 0 
-                  ? `$${project.reduce((total, proj) => total + (proj.budget || 0), 0).toLocaleString()}`
+                {[...ongoingProjects, ...completedProjects].length > 0 
+                  ? `$${[...ongoingProjects, ...completedProjects].reduce((total, proj) => total + (proj.budget || 0), 0).toLocaleString()}`
                   : '$0'
                 }
               </p>
@@ -86,7 +103,7 @@ const Home = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{project ? project.length : 0}</p>
+              <p className="text-2xl font-bold text-gray-900">{ongoingProjects.length}</p>
             </div>
             <div className="w-12 h-12 bg-amber-400 rounded-lg flex items-center justify-center">
               <TrendingUp className="text-secondary-600" size={24} />
@@ -97,8 +114,8 @@ const Home = () => {
         <div className="bg-yellow-50 p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Materials</p>
-              <p className="text-2xl font-bold text-gray-900">12</p>
+              <p className="text-sm text-gray-600">Complete Project</p>
+              <p className="text-2xl font-bold text-gray-900">{completedProjects.length}</p>
             </div>
             <div className="w-12 h-12 bg-amber-400 rounded-lg flex items-center justify-center">
               <Package className="text-black" size={24} />
@@ -149,8 +166,8 @@ const Home = () => {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Active Projects</h2>
           <div className="space-y-4">
-            {project && project.length > 0 ? (
-              project.map((proj, index) => (
+            {ongoingProjects && ongoingProjects.length > 0 ? (
+              ongoingProjects.map((proj, index) => (
                 <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

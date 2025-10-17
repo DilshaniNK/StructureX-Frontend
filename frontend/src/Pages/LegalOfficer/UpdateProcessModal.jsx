@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
 import { X, Save } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
 
@@ -14,6 +16,12 @@ export default function UpdateProcessModal({ processId, projectId: projectIdProp
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
+
+    // Alert states
+    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+    const [showErrorAlert, setShowErrorAlert] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
 
     // Fetch the current process data when the modal opens
     useEffect(() => {
@@ -49,7 +57,10 @@ export default function UpdateProcessModal({ processId, projectId: projectIdProp
 
                 if (!projectId) {
                     console.error('Warning: No project ID found in process data or props', processData);
-                    setErrors({ fetch: 'Could not determine project ID. Please try again.' });
+                    const errorMsg = 'Could not determine project ID. Please try again.';
+                    setErrors({ fetch: errorMsg });
+                    setErrorMessage(errorMsg);
+                    setShowErrorAlert(true);
                     return;
                 }
 
@@ -63,6 +74,10 @@ export default function UpdateProcessModal({ processId, projectId: projectIdProp
                 });
             } catch (error) {
                 console.error('Error fetching process data:', error);
+                const errorMsg = 'Failed to fetch process data. Please try again.';
+                setErrors({ fetch: errorMsg });
+                setErrorMessage(errorMsg);
+                setShowErrorAlert(true);
             } finally {
                 setInitialLoading(false);
             }
@@ -97,10 +112,13 @@ export default function UpdateProcessModal({ processId, projectId: projectIdProp
 
         // Extra validation for project_id
         if (!formData.projectId) {
+            const errorMsg = 'Project ID is missing. Cannot update without a valid project ID.';
             setErrors({
                 ...errors,
-                submit: 'Project ID is missing. Cannot update without a valid project ID.'
+                submit: errorMsg
             });
+            setErrorMessage(errorMsg);
+            setShowErrorAlert(true);
             return;
         }
 
@@ -130,6 +148,10 @@ export default function UpdateProcessModal({ processId, projectId: projectIdProp
                 headers: { 'Content-Type': 'application/json' },
             });
 
+            // Show success message
+            setSuccessMessage('Legal process updated successfully!');
+            setShowSuccessAlert(true);
+
             // Fetch updated list of legal processes for this project and notify parent
             try {
                 // Use the stored project ID directly from formData
@@ -145,6 +167,8 @@ export default function UpdateProcessModal({ processId, projectId: projectIdProp
             } catch (fetchErr) {
                 // Non-fatal: log and continue to close modal. Parent can optionally re-fetch later.
                 console.warn('Failed to fetch updated legal processes after update:', fetchErr);
+                setErrorMessage('Process updated but failed to refresh list. Please refresh the page.');
+                setShowErrorAlert(true);
             }
 
             // finally close modal (if parent provided onClose)
@@ -153,7 +177,10 @@ export default function UpdateProcessModal({ processId, projectId: projectIdProp
         } catch (error) {
             // surface server error message if available
             console.error('Update legal process error:', error);
-            const serverMessage = error?.response?.data || error?.message || 'Failed to update process. Please try again.';
+            const serverMessage = error?.response?.data?.message || error?.response?.data || error?.message || 'Failed to update process. Please try again.';
+            const errorMsg = typeof serverMessage === 'string' ? serverMessage : 'An error occurred while updating the legal process';
+            setErrorMessage(errorMsg);
+            setShowErrorAlert(true);
             setErrors({ submit: typeof serverMessage === 'string' ? serverMessage : JSON.stringify(serverMessage) });
         } finally {
             setLoading(false);
@@ -301,6 +328,22 @@ export default function UpdateProcessModal({ processId, projectId: projectIdProp
                         </button>
                     </div>
                 </form>
+
+                {/* Success Alert */}
+                <SuccessAlert
+                    show={showSuccessAlert}
+                    onClose={() => setShowSuccessAlert(false)}
+                    title="Success!"
+                    message={successMessage}
+                />
+
+                {/* Error Alert */}
+                <ErrorAlert
+                    show={showErrorAlert}
+                    onClose={() => setShowErrorAlert(false)}
+                    title="Error!"
+                    message={errorMessage}
+                />
             </div>
         </div>
     );

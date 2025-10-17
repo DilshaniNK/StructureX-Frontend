@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import Navbar from '../../Components/Employee/Navbar';
 import Sidebar from '../../Components/Employee/Sidebar';
 import Main from './Dashboard';
@@ -11,7 +11,7 @@ import ProjectList from './ProjectList';
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const userRole = 'LegalOfficer';
+  const userRole = 'Legal_Officer';
   const userName = 'Ramesh Peshala';
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,13 +20,16 @@ export default function Home() {
     navigate(path);
   };
 
+  const {employeeId} = useParams()
+
   // Determine active item based on current path
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path.includes('/legalofficer/home') || path === '/') return 'home';
-    if (path.includes('/legalofficer/action')) return 'action';
-    if (path.includes('/legalofficer/chat')) return 'chat';
-    if (path.includes('/legalofficer/notifications')) return 'notifications';
+
+    if (path.includes('/dashboard') || path === '/') return 'dashboard';
+    if (path.includes('/chat')) return 'chat';
+    if (path.includes('/notifications')) return 'notifications';
+
     return 'home'; // default
   };
 

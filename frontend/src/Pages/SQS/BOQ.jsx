@@ -41,13 +41,26 @@ function BOQ() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('http://localhost:8086/api/v1/sqs/boqs');
+      console.log('[SQS BOQ] Starting fetch...');
+      
+      // Add timeout to the fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch('http://localhost:8086/api/v1/sqs/boqs', {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorMessage = `Failed to fetch BOQs: ${response.status} ${response.statusText}`;
+        console.error('[SQS BOQ] HTTP Error:', errorMessage);
+        throw new Error(errorMessage);
       }
       
       const data = await response.json();
+      console.log('[SQS BOQ] Data received:', data);
       
       // Process the BOQ data according to the new API format
       const processedBOQs = data.map(boqData => {
@@ -96,20 +109,28 @@ function BOQ() {
       setBOQs(finalBOQs);
       setApprovedBOQs(approvedBOQs);
       setUnderReviewBOQs(underReviewBOQs);
+      console.log('[SQS BOQ] Data processed successfully');
     } catch (err) {
-      console.error('Error fetching BOQs:', err);
-      setError('Failed to fetch BOQ data. Please try again.');
-      // Fallback to sample data if API fails - only show approved BOQs for SQS
-      const finalSampleBOQs = existingBOQs.filter(boq => boq.status === 'Approved');
-      const approvedSampleBOQs = finalSampleBOQs.filter(boq => boq.status === 'Approved');
-      const underReviewSampleBOQs = []; // No sample data for under review
-      setBOQs(finalSampleBOQs);
+      console.error('[SQS BOQ] Error fetching BOQs:', err);
+      let errorMessage = 'Failed to fetch BOQ data. Please try again.';
+      
+      if (err.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      
+      // Don't set fallback data if there's an error - let user see the error
+      setBOQs([]);
       setProjectsWithoutBOQ([]);
-      setProjectsWithBOQ(finalSampleBOQs);
-      setApprovedBOQs(approvedSampleBOQs);
-      setUnderReviewBOQs(underReviewSampleBOQs);
+      setProjectsWithBOQ([]);
+      setApprovedBOQs([]);
+      setUnderReviewBOQs([]);
     } finally {
       setLoading(false);
+      console.log('[SQS BOQ] Fetch completed');
     }
   };
 

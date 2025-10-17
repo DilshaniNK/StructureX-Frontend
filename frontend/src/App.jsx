@@ -32,8 +32,16 @@ const App = () => {
       <Router>
         <Routes>
           <Route>
-            <Route path="/projectmanager/*" element={<ProjectManager/>}/>
-            <Route path="/legalofficer/*" element={<LegalOfficer/>} />
+            <Route path="/projectmanager/:employeeId/*" element={
+              <ProtectedRoute allowedRoles={['Project_Manager']}>
+                <ProjectManager />
+              </ProtectedRoute>
+            } />
+            <Route path="/legalofficer/:employeeId/*" element={
+              <ProtectedRoute allowedRoles={['Legal_Officer']}>
+                <LegalOfficer />
+              </ProtectedRoute>
+            } />
             <Route path="/example/*" element={<Example />} />
             <Route path="/qs/*" element={<QS />} />
             <Route path="/sqs/*" element={<SQS />} />

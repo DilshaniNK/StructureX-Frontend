@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
 
 export default function DocumentUpload({ projectId, onClose, user, onDocumentUploaded }) {
   const [formData, setFormData] = useState({
@@ -13,7 +15,12 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -55,17 +62,21 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
     const maxSize = 10 * 1024 * 1024; // 10MB
 
     if (!allowedTypes.includes(selectedFile.type)) {
-      setErrors({ file: 'Only PDF, Word documents, and images (JPEG, PNG, GIF) are allowed' });
+      setErrorMessage('Only PDF, Word documents, and images (JPEG, PNG, GIF) are allowed');
+      setShowErrorAlert(true);
       return;
     }
 
     if (selectedFile.size > maxSize) {
-      setErrors({ file: 'File size must be less than 10MB' });
+      setErrorMessage('File size must be less than 10MB');
+      setShowErrorAlert(true);
       return;
     }
 
     setFile(selectedFile);
     setErrors({ ...errors, file: '' });
+    setSuccessMessage(`File "${selectedFile.name}" selected successfully!`);
+    setShowSuccessAlert(true);
   };
 
   const validateForm = () => {
@@ -91,6 +102,8 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
     e.preventDefault();
 
     if (!validateForm()) {
+      setErrorMessage('Please fill in all required fields correctly');
+      setShowErrorAlert(true);
       return;
     }
 
@@ -126,6 +139,7 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
 
       // Show success message and close modal
       setSuccessMessage('Document uploaded successfully!');
+      setShowSuccessAlert(true);
       setTimeout(() => {
         onClose();
       }, 1500); // Close after 1.5 seconds to show success message
@@ -142,7 +156,8 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
         errorMessage = 'Network error. Please check your connection.';
       }
 
-      setErrors({ submit: errorMessage });
+      setErrorMessage(errorMessage);
+      setShowErrorAlert(true);
     } finally {
       setUploading(false);
     }
@@ -174,20 +189,6 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {successMessage && (
-            <div className="bg-green-50 border-l-4 border-green-400 rounded-lg p-4 flex items-start">
-              <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
-              <span className="text-green-700">{successMessage}</span>
-            </div>
-          )}
-
-          {errors.submit && (
-            <div className="bg-red-50 border-l-4 border-red-400 rounded-lg p-4 flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
-              <span className="text-red-700 text-sm">{errors.submit}</span>
-            </div>
-          )}
-
           <div>
             <label htmlFor="project_id" className="block text-sm font-medium text-gray-700 mb-2">
               Project ID
@@ -306,7 +307,11 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
                     <p className="text-xs text-gray-500 mt-1">{formatFileSize(file.size)}</p>
                     <button
                       type="button"
-                      onClick={() => setFile(null)}
+                      onClick={() => {
+                        setFile(null);
+                        setSuccessMessage('File removed successfully!');
+                        setShowSuccessAlert(true);
+                      }}
                       className="mt-2 inline-flex items-center text-sm text-red-500 hover:text-red-700 transition-colors duration-200"
                     >
                       <X className="h-4 w-4 mr-1" />
@@ -373,6 +378,22 @@ export default function DocumentUpload({ projectId, onClose, user, onDocumentUpl
           </div>
         </form>
       </div>
+
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </div>
   );
 }

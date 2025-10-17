@@ -20,6 +20,7 @@ import {
   Save,
   AlertCircle
 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 const SiteVisitLogs = ({ setShowAddForm }) => {
   // Custom CSS animations
@@ -142,14 +143,14 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
     status: '',
   });
 
-  const pmId = 'EMP_001'; // Example PM ID
-
+  const { employeeId } = useParams();
+  console.log('Project Manager ID from params:', employeeId);
 
   // Fetch visits data from database
   const fetchVisits = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:8086/api/v1/project_manager/site-visits/${pmId}`, {
+      const response = await axios.get(`http://localhost:8086/api/v1/project_manager/site-visits/${employeeId}`, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -173,7 +174,7 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
   const fetchVisitRequests = async () => {
     try {
       setRequestsLoading(true);
-      const response = await axios.get(`http://localhost:8086/api/v1/project_manager/request/${pmId}`, {
+      const response = await axios.get(`http://localhost:8086/api/v1/project_manager/request/${employeeId}`, {
         headers: {
           'Content-Type': 'application/json',
         },

@@ -117,7 +117,7 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
           navigate(`/project_owner/${clientId}`);
           break;
         case "Project_Manager":
-          navigate(`/designer/${employeeId}`);
+          navigate(`/projectmanager/${employeeId}`);
           break;
         case "QS_Officer":
           navigate(`/designer/${employeeId}`);

@@ -10,6 +10,7 @@ export default function PaymentPlanCreator() {
   const [totalAmount, setTotalAmount] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [paymentPlanId, setPaymentPlanId] = useState(null);
   const [numberOfInstallments, setNumberOfInstallments] = useState(1);
   const [isSaved, setIsSaved] = useState(false);
   const [isEditing, setIsEditing] = useState(true);
@@ -80,6 +81,11 @@ export default function PaymentPlanCreator() {
       return updated;
     });
   };
+  const fetchPaymentPlan = async () => {
+  const { data } = await axios.get(`/api/v1/financial_officer/payment_plan/full/${projectId}`);
+  setPaymentPlanId(data.paymentPlanId);
+};
+
 
   const handleDownload = () => {
     const doc = new jsPDF();
@@ -142,7 +148,7 @@ export default function PaymentPlanCreator() {
       .post('http://localhost:8086/api/v1/financial_officer', {
         projectId,
         totalAmount: Number(totalAmount),
-        createdDate:new Date().toISOString(),
+        createdDate: new Date().toISOString(),
         numberOfInstallments: Number(numberOfInstallments),
         startDate: startDate ? new Date(startDate).toISOString() : null,
         endDate: endDate ? new Date(endDate).toISOString() : null,
@@ -163,6 +169,7 @@ export default function PaymentPlanCreator() {
 
     axios
       .put('http://localhost:8086/api/v1/financial_officer/payment_plan/full', {
+        paymentPlanId,
         projectId,
         totalAmount: Number(totalAmount),
         numberOfInstallments: Number(numberOfInstallments),
@@ -173,6 +180,7 @@ export default function PaymentPlanCreator() {
       .then(() => {
         setIsSaved(true);
         setIsEditing(false);
+        console.log('paymentpalan id :', paymentPlanId);
         alert('Plan updated successfully!');
       })
       .catch((err) => {

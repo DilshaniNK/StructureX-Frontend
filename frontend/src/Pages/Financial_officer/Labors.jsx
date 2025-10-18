@@ -136,11 +136,14 @@ export default function LaborCharges() {
             attendanceId: w.id,
             laborRate: w.rate,
             projectId: w.project_id,
+            cost: (w.count || 0) * (w.rate || 0)
           }));
 
         if (updatePayload.length > 0) {
           await axios.put('http://localhost:8086/api/v1/financial_officer/labor_salary', updatePayload);
+          
         }
+        
       }
 
       // Batch create
@@ -149,9 +152,11 @@ export default function LaborCharges() {
           attendanceId: w.id,
           laborRate: w.rate,
           projectId: w.project_id,
+          cost:(w.count || 0) * (w.rate || 0)
         }));
 
         await axios.post('http://localhost:8086/api/v1/financial_officer/labor_salary', createPayload);
+        console.log('Update payload:', createPayload);
       }
 
       // Update state to mark saved rates

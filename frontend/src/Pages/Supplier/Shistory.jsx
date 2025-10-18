@@ -1,83 +1,8 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { History, Filter, Calendar, Package, Search, Eye, X, Download } from "lucide-react"
 import { cn } from '../../Utils/cn'
 import jsPDF from 'jspdf'
 // import 'jspdf-autotable'
-
-const mockSupplyHistory = [
-  {
-    id: "SUP-001",
-    orderId: "ORD-001",
-    project: "Downtown Office Complex",
-    items: ["Portland Cement (50 bags)", "Steel Rebar 12mm (2 tons)"],
-    supplyDate: "2024-01-16",
-    amount: 2150.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-002",
-    orderId: "ORD-002",
-    project: "Residential Tower Phase 2",
-    items: ["Concrete Blocks (300 pieces)", "Sand (15 cubic meters)"],
-    supplyDate: "2024-01-15",
-    amount: 1500.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-003",
-    orderId: "ORD-003",
-    project: "Highway Bridge Construction",
-    items: ["Steel Rebar 16mm (8 tons)", "Portland Cement (150 bags)"],
-    supplyDate: "2024-01-14",
-    amount: 8750.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-004",
-    orderId: "ORD-004",
-    project: "Shopping Mall Extension",
-    items: ["Concrete Blocks (200 pieces)", "Portland Cement (75 bags)"],
-    supplyDate: "2024-01-13",
-    amount: 1875.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-005",
-    orderId: "ORD-005",
-    project: "School Building Renovation",
-    items: ["Sand (10 cubic meters)", "Concrete Blocks (150 pieces)"],
-    supplyDate: "2024-01-12",
-    amount: 862.5,
-    status: "completed",
-  },
-  {
-    id: "SUP-006",
-    orderId: "ORD-006",
-    project: "Medical Center Expansion",
-    items: ["Portland Cement (100 bags)", "Steel Rebar 14mm (3 tons)"],
-    supplyDate: "2024-01-11",
-    amount: 3200.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-007",
-    orderId: "ORD-007",
-    project: "Apartment Complex Phase 1",
-    items: ["Concrete Blocks (400 pieces)", "Sand (25 cubic meters)"],
-    supplyDate: "2024-01-10",
-    amount: 2100.0,
-    status: "completed",
-  },
-  {
-    id: "SUP-008",
-    orderId: "ORD-008",
-    project: "Industrial Warehouse",
-    items: ["Steel Rebar 20mm (12 tons)", "Portland Cement (200 bags)"],
-    supplyDate: "2024-01-09",
-    amount: 12500.0,
-    status: "completed",
-  },
-]
 
 // Custom Button Component
 const Button = ({ children, variant = "default", size = "default", className, disabled, onClick, ...props }) => {
@@ -311,12 +236,155 @@ const Label = ({ children, className, htmlFor, ...props }) => (
 )
 
 const Shistory = () => {
-  const [supplies, setSupplies] = useState(mockSupplyHistory)
+  const [supplies, setSupplies] = useState([])
   const [projectFilter, setProjectFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSupply, setSelectedSupply] = useState(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [orderItems, setOrderItems] = useState({})
+  const [loadingOrderItems, setLoadingOrderItems] = useState(false)
+
+  // Fetch supply history from backend
+  useEffect(() => {
+    const fetchSupplyHistory = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await fetch('http://localhost:8086/api/v1/api/supplier/history')
+        if (!response.ok) {
+          throw new Error('Failed to fetch supply history')
+        }
+        const data = await response.json()
+        console.log('Backend response:', data) // Debug log
+
+        // Map backend data to frontend format
+        const mappedSupplies = data.map(supply => {
+          console.log('Supply data:', supply) // Debug individual supply
+          return {
+            id: supply.historyId || supply.supplyId || supply.id,
+            orderId: supply.orderId || "N/A",
+            supplierId: supply.supplierId || supply.supplier_id || 1,
+            project: supply.projectName || supply.project || "Unknown Project",
+            items: supply.items || supply.itemsList || [],
+            supplyDate: supply.supplyDate || supply.deliveryDate || new Date().toISOString().split('T')[0],
+            amount: supply.amount || supply.totalAmount || 0,
+            status: supply.status || "completed",
+          }
+        })
+
+        console.log('Mapped supplies:', mappedSupplies) // Debug mapped data
+        setSupplies(mappedSupplies)
+
+        // Fetch order items for each supply
+        mappedSupplies.forEach(async (supply) => {
+          if (supply.orderId && supply.orderId !== "N/A" && supply.supplierId) {
+            try {
+              const itemsResponse = await fetch(
+                `http://localhost:8086/api/v1/api/supplier/history/items/order/${supply.orderId}/supplier/${supply.supplierId}`
+              )
+              if (itemsResponse.ok) {
+                const items = await itemsResponse.json()
+                console.log(`Items for order ${supply.orderId}:`, items)
+
+                // Handle both array and object responses
+                let itemsArray = []
+                if (Array.isArray(items)) {
+                  itemsArray = items
+                } else if (items && typeof items === 'object') {
+                  // If it's an object, check for common array properties
+                  if (items.items) {
+                    itemsArray = items.items
+                  } else if (items.data) {
+                    itemsArray = items.data
+                  } else if (items.orderItems) {
+                    itemsArray = items.orderItems
+                  } else {
+                    // If it's a single item object, wrap it in array
+                    itemsArray = [items]
+                  }
+                }
+
+                console.log(`Processed items array for order ${supply.orderId}:`, itemsArray)
+
+                // Extract project name from items if available
+                const projectName = itemsArray.length > 0 && itemsArray[0].projectName
+                  ? itemsArray[0].projectName
+                  : null
+
+                // Update the supply with fetched items and project name
+                setSupplies(prevSupplies =>
+                  prevSupplies.map(s =>
+                    s.id === supply.id
+                      ? {
+                          ...s,
+                          items: itemsArray.length > 0 ? itemsArray : s.items,
+                          project: projectName || s.project // Update project name if available
+                        }
+                      : s
+                  )
+                )
+              }
+            } catch (itemErr) {
+              console.error(`Error fetching items for order ${supply.orderId}:`, itemErr)
+            }
+          }
+        })
+      } catch (err) {
+        setError(err.message)
+        console.error('Error fetching supply history:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSupplyHistory()
+  }, [])
+
+  // Fetch order items for a specific order and supplier
+  const fetchOrderItems = async (orderId, supplierId) => {
+    setLoadingOrderItems(true)
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/api/supplier/history/items/order/${orderId}/supplier/${supplierId}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch order items')
+      }
+      const data = await response.json()
+
+      // Handle both array and object responses
+      let itemsArray = []
+      if (Array.isArray(data)) {
+        itemsArray = data
+      } else if (data && typeof data === 'object') {
+        // If it's an object, check for common array properties
+        if (data.items) {
+          itemsArray = data.items
+        } else if (data.data) {
+          itemsArray = data.data
+        } else if (data.orderItems) {
+          itemsArray = data.orderItems
+        } else {
+          // If it's a single item object, wrap it in array
+          itemsArray = [data]
+        }
+      }
+
+      // Store order items in state
+      setOrderItems(prev => ({
+        ...prev,
+        [`${orderId}-${supplierId}`]: itemsArray
+      }))
+
+      return itemsArray
+    } catch (err) {
+      console.error('Error fetching order items:', err)
+      return null
+    } finally {
+      setLoadingOrderItems(false)
+    }
+  }
 
   const uniqueProjects = Array.from(new Set(supplies.map((s) => s.project)))
 
@@ -359,46 +427,68 @@ const Shistory = () => {
 getFullYear() === now.getFullYear()
   }).length
 
-  const handleViewDetails = (supply) => {
+  const handleViewDetails = async (supply) => {
     setSelectedSupply(supply)
     setIsDetailsModalOpen(true)
+
+    // Fetch order items if orderId and supplierId are available
+    if (supply.orderId && supply.orderId !== "N/A" && supply.supplierId) {
+      const itemsKey = `${supply.orderId}-${supply.supplierId}`
+      // Only fetch if we don't already have the items
+      if (!orderItems[itemsKey]) {
+        const items = await fetchOrderItems(supply.orderId, supply.supplierId)
+        if (items) {
+          // Update the selected supply with the fetched items
+          setSelectedSupply(prev => ({
+            ...prev,
+            orderItems: items
+          }))
+        }
+      } else {
+        // Use cached items
+        setSelectedSupply(prev => ({
+          ...prev,
+          orderItems: orderItems[itemsKey]
+        }))
+      }
+    }
   }
 
   // PDF Export Function
   const exportSupplyDetailsToPDF = (supply) => {
     const doc = new jsPDF()
-    
+
     // Set up colors
     const primaryColor = [250, 173, 0] // #FAAD00
     const darkGray = [64, 64, 64]
     const lightGray = [128, 128, 128]
     const white = [255, 255, 255]
-    
+
     // Header with gradient effect
     doc.setFillColor(...primaryColor)
     doc.rect(0, 0, 210, 30, 'F')
-    
+
     // Company Logo/Title
     doc.setTextColor(...white)
     doc.setFontSize(24)
     doc.setFont('helvetica', 'bold')
     doc.text('StructureX', 20, 20)
-    
+
     // Subtitle
     doc.setFontSize(12)
     doc.setFont('helvetica', 'normal')
     doc.text('Construction Supply Management', 20, 26)
-    
+
     // Document Title
     doc.setTextColor(...darkGray)
     doc.setFontSize(18)
     doc.setFont('helvetica', 'bold')
     doc.text('Supply Details Report', 20, 45)
-    
+
     // Supply ID highlight
     doc.setFontSize(14)
     doc.setTextColor(...primaryColor)
-    doc.text(`Supply ID: Rs.{supply.id}`, 20, 55)
+    doc.text(`Supply ID: ${supply.id}`, 20, 55)
     
     // Generated Date
     doc.setFontSize(10)
@@ -618,6 +708,43 @@ getFullYear() === now.getFullYear()
     doc.save(fileName)
   }
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#FAAD00]"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading supply history...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Data</h3>
+              <p className="text-red-700">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between">
@@ -745,13 +872,29 @@ getFullYear() === now.getFullYear()
                   <TableCell className="font-medium text-gray-900">{supply.project}</TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      {supply.items.slice(0, 2).map((item, index) => (
-                        <div key={index} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
-                          {item}
+                      {supply.items && supply.items.length > 0 ? (
+                        <>
+                          {supply.items.slice(0, 2).map((item, index) => {
+                            const itemName = typeof item === 'string'
+                              ? item
+                              : (item.itemName || item.name || item.description || item.materialName || 'Item')
+                            const itemQty = typeof item === 'object' && item.quantity
+                              ? ` (${item.quantity}${item.unit ? ' ' + item.unit : ''})`
+                              : ''
+                            return (
+                              <div key={index} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
+                                {itemName}{itemQty}
+                              </div>
+                            )
+                          })}
+                          {supply.items.length > 2 && (
+                            <div className="text-sm text-gray-500 italic">+{supply.items.length - 2} more items</div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-400 italic">
+                          Loading items...
                         </div>
-                      ))}
-                      {supply.items.length > 2 && (
-                        <div className="text-sm text-gray-500 italic">+{supply.items.length - 2} more items</div>
                       )}
                     </div>
                   </TableCell>
@@ -862,6 +1005,86 @@ getFullYear() === now.getFullYear()
                 </div>
               </div>
             </div>
+
+            {/* Order Items - Fetched from new endpoint */}
+            {loadingOrderItems && (
+              <div className="space-y-4">
+                <Label className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Loading Order Items...
+                </Label>
+                <div className="p-6 bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-xl border border-blue-200 shadow-sm">
+                  <div className="flex items-center justify-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p className="ml-3 text-blue-600 font-medium">Fetching order items...</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!loadingOrderItems && selectedSupply?.orderItems && selectedSupply.orderItems.length > 0 && (
+              <div className="space-y-4">
+                <Label className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Order Items Details ({selectedSupply.orderItems.length} items)
+                </Label>
+                <div className="p-6 bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-xl border border-blue-200 shadow-sm">
+                  <div className="grid gap-3">
+                    {selectedSupply.orderItems.map((item, index) => (
+                      <div key={index} className="flex items-start text-sm text-gray-700 py-4 px-4 bg-white rounded-lg border border-blue-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full mr-4 flex-shrink-0">
+                          <span className="text-xs font-bold text-blue-600">{index + 1}</span>
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="font-semibold text-gray-900">
+                              {item.itemName || item.name || item.description || 'Item'}
+                            </div>
+                            {item.projectName && (
+                              <div className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                {item.projectName}
+                              </div>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                            {item.quantity && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-500">Qty:</span>
+                                <span className="font-semibold text-gray-700">{item.quantity}</span>
+                              </div>
+                            )}
+                            {item.unit && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-500">Unit:</span>
+                                <span className="font-semibold text-gray-700">{item.unit}</span>
+                              </div>
+                            )}
+                            {item.price && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-500">Price:</span>
+                                <span className="font-semibold text-green-600">Rs.{item.price}</span>
+                              </div>
+                            )}
+                            {item.totalPrice && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-500">Total:</span>
+                                <span className="font-semibold text-green-600">Rs.{item.totalPrice}</span>
+                              </div>
+                            )}
+                            {item.status && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-500">Status:</span>
+                                <span className="font-semibold text-blue-600">{item.status}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Supply Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

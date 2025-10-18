@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Calendar, AlertCircle } from 'lucide-react';
 import axios from 'axios';
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
 
 // Define the API base URL
 const API_BASE_URL = 'http://localhost:8086/api/v1/legal_officer'; // Adjust this based on your backend URL
@@ -10,6 +12,12 @@ export default function ProjectList() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   
   const navigate = useNavigate();
 
@@ -42,9 +50,14 @@ export default function ProjectList() {
         
         setProjects(projectData);
         setError(null);
+        setSuccessMessage('Projects loaded successfully!');
+        setShowSuccessAlert(true);
       } catch (err) {
         console.error('Error fetching project IDs:', err);
-        setError('Failed to load projects. Please try again later.');
+        const errorMsg = 'Failed to load projects. Please try again later.';
+        setError(errorMsg);
+        setErrorMessage(errorMsg);
+        setShowErrorAlert(true);
         // Keep the dummy data as fallback in case of API failure
         // setProjects([
         //   { id: 'P1', status: 'In Progress', date: '2025-08-15' },
@@ -60,7 +73,15 @@ export default function ProjectList() {
   }, []);
 
   const handleProjectClick = (projectId) => {
-    navigate(`/legalofficer/action/${projectId}`);
+    try {
+      navigate(`/legalofficer/action/${projectId}`);
+      setSuccessMessage(`Navigating to project ${projectId} details`);
+      setShowSuccessAlert(true);
+    } catch (err) {
+      console.error('Error navigating to project:', err);
+      setErrorMessage('Failed to navigate to project details');
+      setShowErrorAlert(true);
+    }
   };
 
   return (
@@ -110,6 +131,22 @@ export default function ProjectList() {
           </div>
         </>
       )}
+
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </div>
   );
 }

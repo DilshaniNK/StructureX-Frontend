@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { FileText, Search, Calendar, ExternalLink, FolderOpen, CheckCircle, AlertCircle, X } from 'lucide-react';
 import axios from 'axios';
 import ProjectDetails from './ProjectDetails';
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
 
 export default function Dashboard({ user, onLogout }) {
   const [documents, setDocuments] = useState([]);
@@ -9,22 +11,17 @@ export default function Dashboard({ user, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [updating, setUpdating] = useState(false);
-  const [notification, setNotification] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ show: false, docId: null });
+
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     fetchDocuments();
   }, []);
-
-  // Auto-hide notification after 3 seconds
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => {
-        setNotification(null);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
 
   const fetchDocuments = () => {
     setLoading(true);
@@ -33,10 +30,14 @@ export default function Dashboard({ user, onLogout }) {
         console.log('Documents received:', res.data);
         setDocuments(res.data);
         setLoading(false);
+        setSuccessMessage('Documents loaded successfully!');
+        setShowSuccessAlert(true);
       })
       .catch(err => {
         console.error('Failed to fetch legal documents:', err);
         setLoading(false);
+        setErrorMessage('Failed to fetch legal documents. Please try again.');
+        setShowErrorAlert(true);
       });
   };
 
@@ -44,10 +45,8 @@ export default function Dashboard({ user, onLogout }) {
     console.log('Accepting document with ID:', docId);
     if (!docId) {
       console.error('Document ID is undefined');
-      setNotification({
-        type: 'error',
-        message: 'Error: Document ID is undefined'
-      });
+      setErrorMessage('Error: Document ID is undefined');
+      setShowErrorAlert(true);
       return;
     }
 
@@ -62,18 +61,14 @@ export default function Dashboard({ user, onLogout }) {
         );
         setUpdating(false);
         // Show success message
-        setNotification({
-          type: 'success',
-          message: 'Document accepted successfully'
-        });
+        setSuccessMessage('Document accepted successfully!');
+        setShowSuccessAlert(true);
       })
       .catch(err => {
         console.error('Failed to accept document:', err);
         setUpdating(false);
-        setNotification({
-          type: 'error',
-          message: 'Error accepting document: ' + (err.response?.data || err.message)
-        });
+        setErrorMessage('Error accepting document: ' + (err.response?.data || err.message));
+        setShowErrorAlert(true);
       });
   };
 
@@ -82,10 +77,8 @@ export default function Dashboard({ user, onLogout }) {
     console.log('Rejecting document with ID:', docId);
     if (!docId) {
       console.error('Document ID is undefined');
-      setNotification({
-        type: 'error',
-        message: 'Error: Document ID is undefined'
-      });
+      setErrorMessage('Error: Document ID is undefined');
+      setShowErrorAlert(true);
       return;
     }
 
@@ -100,18 +93,14 @@ export default function Dashboard({ user, onLogout }) {
         );
         setUpdating(false);
         // Show success message
-        setNotification({
-          type: 'success',
-          message: 'Document rejected successfully'
-        });
+        setSuccessMessage('Document rejected successfully!');
+        setShowSuccessAlert(true);
       })
       .catch(err => {
         console.error('Failed to reject document:', err);
         setUpdating(false);
-        setNotification({
-          type: 'error',
-          message: 'Error rejecting document: ' + (err.response?.data || err.message)
-        });
+        setErrorMessage('Error rejecting document: ' + (err.response?.data || err.message));
+        setShowErrorAlert(true);
       });
   };
 
@@ -164,19 +153,6 @@ export default function Dashboard({ user, onLogout }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        {/* Notification */}
-        {notification && (
-          <div className={`fixed top-4 right-4 flex items-center p-4 mb-4 rounded-lg shadow-md ${notification.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-            }`}>
-            {notification.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 mr-2" />
-            ) : (
-              <AlertCircle className="w-5 h-5 mr-2" />
-            )}
-            <span className="font-medium">{notification.message}</span>
-          </div>
-        )}
 
         {/* Confirmation Dialog */}
         {confirmDialog.show && (
@@ -259,7 +235,11 @@ export default function Dashboard({ user, onLogout }) {
             <h2 className="text-lg font-semibold text-gray-900">Search Documents</h2>
             {searchTerm && (
               <button
-                onClick={() => setSearchTerm('')}
+                onClick={() => {
+                  setSearchTerm('');
+                  setSuccessMessage('Search cleared successfully!');
+                  setShowSuccessAlert(true);
+                }}
                 className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
               >
                 Clear search
@@ -400,6 +380,22 @@ export default function Dashboard({ user, onLogout }) {
           )}
         </div>
       </main>
+
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Upload, Plus, FileText, Clock, CheckCircle, AlertCircle, Calendar, User, Edit3, Download, Trash2 } from 'lucide-react';
 import axios from 'axios';
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
 import DocumentUploadModal from './DocumentUpdate';
 import ProcessModal from './ProcessModel';
 import UpdateProcessModal from './UpdateProcessModal';
@@ -18,12 +20,20 @@ export default function ProjectDetails({ projectId, onBack, user }) {
   const [processes, setProcesses] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
   const fetchDocuments = async () => {
     try {
       const documentsResponse = await axios.get(`http://localhost:8086/api/v1/legal_officer/legal_documents/${projectId}`);
       setDocuments(documentsResponse.data);
     } catch (error) {
       console.error('Error fetching documents:', error);
+      setErrorMessage('Failed to fetch legal documents');
+      setShowErrorAlert(true);
     }
   };
 
@@ -40,11 +50,15 @@ export default function ProjectDetails({ projectId, onBack, user }) {
           setProcesses(processesResponse.data || []);
         } catch (err) {
           console.error('Error fetching legal processes:', err);
+          setErrorMessage('Failed to fetch legal processes');
+          setShowErrorAlert(true);
           setProcesses([]);
         }
 
       } catch (error) {
         console.error('Error fetching project data:', error);
+        setErrorMessage('Failed to fetch project data');
+        setShowErrorAlert(true);
       } finally {
         setLoading(false);
       }
@@ -72,6 +86,8 @@ export default function ProjectDetails({ projectId, onBack, user }) {
 
   const handleDocumentUploaded = (newDocument) => {
     setDocuments(prevDocuments => [...prevDocuments, newDocument]);
+    setSuccessMessage('Document uploaded successfully!');
+    setShowSuccessAlert(true);
     fetchDocuments(); // Re-fetch to ensure accuracy
   };
 
@@ -122,10 +138,14 @@ export default function ProjectDetails({ projectId, onBack, user }) {
         // Close the confirmation dialog
         setShowDeleteConfirm(false);
         setProcessToDelete(null);
+        // Show success message
+        setSuccessMessage('Legal process deleted successfully!');
+        setShowSuccessAlert(true);
       }
     } catch (error) {
       console.error('Error deleting legal process:', error);
-      alert('Failed to delete legal process. Please try again.');
+      setErrorMessage('Failed to delete legal process. Please try again.');
+      setShowErrorAlert(true);
     }
   };
 
@@ -348,6 +368,8 @@ export default function ProjectDetails({ projectId, onBack, user }) {
           onUploaded={(updatedProcesses) => {
             // update local processes list with server-provided fresh data
             setProcesses(updatedProcesses || []);
+            setSuccessMessage('Legal process added successfully!');
+            setShowSuccessAlert(true);
           }}
           user={user}
         />
@@ -364,6 +386,8 @@ export default function ProjectDetails({ projectId, onBack, user }) {
           onUpdated={(updatedProcesses) => {
             // update local processes list with server-provided fresh data
             setProcesses(updatedProcesses || []);
+            setSuccessMessage('Legal process updated successfully!');
+            setShowSuccessAlert(true);
           }}
           user={user}
         />
@@ -403,6 +427,22 @@ export default function ProjectDetails({ projectId, onBack, user }) {
           </div>
         </div>
       )}
+
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </div>
   );
 }

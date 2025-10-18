@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
 import { X, Plus } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
 
@@ -14,6 +16,13 @@ export default function ProcessModal({ projectId, onClose, onUploaded, user }) {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  
   // No fetching: this component only sends form data to the backend
 
   const validateForm = () => {
@@ -58,6 +67,10 @@ export default function ProcessModal({ projectId, onClose, onUploaded, user }) {
       setFormData({ description: '', status: 'pending', approvalDate: '' });
       setErrors({});
 
+      // Show success message
+      setSuccessMessage('Legal process added successfully!');
+      setShowSuccessAlert(true);
+
       // Fetch updated list of legal processes for this project and notify parent
       try {
         const res = await axios.get(`http://localhost:8086/api/v1/legal_officer/legal_processes/${projectId}`);
@@ -69,6 +82,8 @@ export default function ProcessModal({ projectId, onClose, onUploaded, user }) {
       } catch (fetchErr) {
         // Non-fatal: log and continue to close modal. Parent can optionally re-fetch later.
         console.warn('Failed to fetch updated legal processes after upload:', fetchErr);
+        setErrorMessage('Process added but failed to refresh list. Please refresh the page.');
+        setShowErrorAlert(true);
       }
 
       // finally close modal (if parent provided onClose)
@@ -77,7 +92,9 @@ export default function ProcessModal({ projectId, onClose, onUploaded, user }) {
     } catch (error) {
       // surface server error message if available
       console.error('Add legal process error:', error);
-      const serverMessage = error?.response?.data || error?.message || 'Failed to add process. Please try again.';
+      const serverMessage = error?.response?.data?.message || error?.response?.data || error?.message || 'Failed to add process. Please try again.';
+      setErrorMessage(typeof serverMessage === 'string' ? serverMessage : 'An error occurred while adding the legal process');
+      setShowErrorAlert(true);
       setErrors({ submit: typeof serverMessage === 'string' ? serverMessage : JSON.stringify(serverMessage) });
     } finally {
       setLoading(false);
@@ -204,6 +221,22 @@ export default function ProcessModal({ projectId, onClose, onUploaded, user }) {
 
         {/* No process list: this modal only submits data to the backend */}
       </div>
+      
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </div>
   );
 }

@@ -7,34 +7,69 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import axios from "axios";
+import { useParams } from "react-router-dom";
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
 
 export default function DailyUpdates() {
   const [update, setUpdate] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
 
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
   // Hardcoded user for now (can later come from login / route)
-  const userid = "EMP_001";
+  const { employeeId } = useParams();
+  console.log("UserID from params:", employeeId);
 
   useEffect(() => {
-    if (userid) {
+    if (employeeId) {
       axios
         .get(
-          `http://localhost:8086/api/v1/project_manager/daily-updates/${userid}`
+          `http://localhost:8086/api/v1/project_manager/daily-updates/${employeeId}`
         )
         .then((response) => {
           console.log("✅ Data from backend:", response.data);
-          setUpdate(response.data);
+          // Normalize the response into an array so callers can safely use array methods
+          const data = response.data;
+          let arr = [];
+          if (Array.isArray(data)) {
+            arr = data;
+          } else if (data && typeof data === "object" && Array.isArray(data.updates)) {
+            // some APIs wrap results in an `updates` field
+            arr = data.updates;
+          } else if (data && typeof data === "object") {
+            // single object -> wrap in array
+            arr = [data];
+          }
+          setUpdate(arr);
+          setSuccessMessage('Daily updates loaded successfully!');
+          setShowSuccessAlert(true);
         })
         .catch((error) => {
           console.error("❌ Error fetching updates:", error);
+          setErrorMessage('Failed to load daily updates. Please try again.');
+          setShowErrorAlert(true);
         });
+    } else {
+      console.warn("⚠️ No user ID provided, skipping fetch.");
     }
-  }, [userid]);
+  }, [employeeId]);
 
   // Filter updates by selected date
   const filteredUpdates = selectedDate
     ? update.filter((u) => u.date === selectedDate)
     : update;
+
+  // Handle clear filters
+  const handleClearFilters = () => {
+    setSelectedDate("");
+    setSuccessMessage('Filters cleared successfully!');
+    setShowSuccessAlert(true);
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto bg-gray-50 min-h-screen">
@@ -141,7 +176,7 @@ export default function DailyUpdates() {
             />
           </div>
           <button
-            onClick={() => setSelectedDate("")}
+            onClick={handleClearFilters}
             className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
           >
             Clear Filters
@@ -201,6 +236,22 @@ export default function DailyUpdates() {
           </div>
         )}
       </div>
+
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </div>
   );
 }

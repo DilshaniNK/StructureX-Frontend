@@ -66,150 +66,82 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
 
   // Main login handler - unified for employee & client - adjust your API endpoint accordingly
   const handleLogin = async () => {
-  if (!validateForm()) return;
+    if (!validateForm()) return;
 
-  setIsLoading(true);
+    setIsLoading(true);
 
-  try {
-    // Employee login
-    const resEmp = await axios.post("http://localhost:8086/api/v1/employee/login", {
-      email: formData.email,
-      password: formData.password,
-    });
+    try {
+      // Employee login
+      const resEmp = await axios.post("http://localhost:8086/api/v1/user/login", {
+        email: formData.email,
+        password: formData.password,
+      });
 
-    const tokenEmp = resEmp.data.token;
-    if (!tokenEmp) throw new Error("Token not provided from employee login");
+      const tokenEmp = resEmp.data.token;
+      if (!tokenEmp) throw new Error("Token not provided from login");
 
-    localStorage.setItem("token", tokenEmp);
+      localStorage.setItem("token", tokenEmp);
 
-    const decodedEmp = jwtDecode(tokenEmp);
-    console.log("Decoded JWT (employee):", decodedEmp);
+      const decodedEmp = jwtDecode(tokenEmp);
+      console.log("Decoded JWT (employee):", decodedEmp);
 
-    alert("Employee Login Successful");
+      alert("Login Successful");
 
-    const role = decodedEmp.role;
-    const employeeId = decodedEmp.employeeId;
+      const role = decodedEmp.type;
+      console.log("User role:", role);
+      const employeeId = decodedEmp.employeeId;
+      const clientId = decodedEmp.clientId;
+      const adminId = decodedEmp.adminId;
+      const supplierId = decodedEmp.supplierId;
 
-    switch (role) {
-      case "Site_Supervisor":
-        navigate(`/site_supervisor/${employeeId}`);
-        break;
-      case "Financial_Officer":
-        navigate(`/financial_officer/${employeeId}`);
-        break;
-      case "Designer":
-        navigate(`/designer/${employeeId}`);
-        break;
-      case "admin":
-        navigate("/admin/dashboard");
-        break;
-      case "Project_Manager":
-          navigate(`/projectmanager/home`);
+      switch (role) {
+        case "Site_Supervisor":
+          navigate(`/site_supervisor/${employeeId}`);
+          break;
+        case "Financial_Officer":
+          navigate(`/financial_officer/${employeeId}`);
+          break;
+        case "Designer":
+          navigate(`/designer/${employeeId}`);
+          break;
+        case "Director":
+          navigate(`/director/${employeeId}`);
           break;
         case "Legal_Officer":
           navigate(`/legalofficer/${employeeId}`);
           break;
-        case "Director":
-          navigate(`director/${employeeId}`);
+        case "Supplier":
+          navigate(`/supplier/${supplierId}`);
+          break;
+        case "Client":
+          navigate(`/project_owner/${clientId}`);
+          break;
+        case "Project_Manager":
+          navigate(`/projectmanager/${employeeId}`);
+          break;
+        case "QS_Officer":
+          navigate(`/designer/${employeeId}`);
+          break;
+        case "Senior_QS_Officer":
+          navigate(`/designer/${employeeId}`);
+          break;
+        case "Admin":
+          navigate("/admin/dashboard");
           break;
         default:
           navigate("/unauthorized");
-          //comment
       }
 
-      onClose(); // Optional: close modal
+      onClose();
+      return; // stop processing after success
+    } catch (empErr) {
+      console.log("Login failed!", empErr);
+    }
+    // If no login succeeded
+    alert("Login failed. Please check your credentials.");
 
-   
-
-    onClose();
-    return; // stop processing after success
-  } catch (empErr) {
-    console.log("Employee login failed, trying client login...", empErr);
-  }
-
-  try {
-    // Client login
-    const resCli = await axios.post("http://localhost:8086/api/v1/client/login", {
-      email: formData.email,
-      password: formData.password,
-    });
-
-    const tokenCli = resCli.data.token;
-    if (!tokenCli) throw new Error("Token not provided from client login");
-
-    localStorage.setItem("token", tokenCli);
-
-    const decodedCli = jwtDecode(tokenCli);
-    console.log("Decoded JWT (client):", decodedCli);
-
-    alert("Client Login Successful");
-
-    const clientId = decodedCli.clientId || decodedCli.employeeId;
-    navigate(`/project_owner/${clientId}`);
-
-    onClose();
-    return;
-  } catch (clientErr) {
-    console.log("Client login failed, trying supplier login...", clientErr);
-  }
-
-  try {
-    // Supplier login
-    const resSup = await axios.post("http://localhost:8086/api/v1/supplier/login", {
-      email: formData.email,
-      password: formData.password,
-    });
-
-    const tokenSup = resSup.data.token;
-    if (!tokenSup) throw new Error("Token not provided from supplier login");
-
-    localStorage.setItem("token", tokenSup);
-
-    const decodedSup = jwtDecode(tokenSup);
-    console.log("Decoded JWT (supplier):", decodedSup);
-
-    alert("Supplier Login Successful");
-
-    const supplierId = decodedSup.supplier_id || decodedSup.employeeId;
-    navigate(`/supplier/${supplierId}`);
-
-    onClose();
-    return;
-  } catch (supplierErr) {
-    console.error("Supplier login failed:", supplierErr);
-  }
-
-  try {
-    // Supplier login
-    const resSup = await axios.post("http://localhost:8086/api/v1/admin/login", {
-      email: formData.email,
-      password: formData.password,
-    });
-
-    const tokenSup = resSup.data.token;
-    if (!tokenSup) throw new Error("Token not provided from admin login");
-
-    localStorage.setItem("token", tokenSup);
-
-    const decodedSup = jwtDecode(tokenSup);
-    console.log("Decoded JWT (admin):", decodedSup);
-
-    alert("Admin Login Successful");
-
-    const adminId = decodedSup.adminId || decodedSup.employeeId;
-    navigate(`/admin/${adminId}`);
-
-    onClose();
-    return;
-  } catch (adminErr) {
-    console.error("Admin login failed:", adminErr);
-  }
-
-  // If no login succeeded
-  alert("Login failed. Please check your credentials.");
-
-  setIsLoading(false);
-};
+    setIsLoading(false);
+  };
 
 
 
@@ -226,7 +158,7 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
     }
   };
 
-  
+
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -271,11 +203,10 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-                  errors.email
-                    ? "border-red-500 focus:ring-red-200"
-                    : "border-gray-300 focus:ring-yellow-200 focus:border-yellow-500"
-                }`}
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${errors.email
+                  ? "border-red-500 focus:ring-red-200"
+                  : "border-gray-300 focus:ring-yellow-200 focus:border-yellow-500"
+                  }`}
                 placeholder="Enter email"
               />
             </div>
@@ -300,11 +231,10 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
-                  errors.password
-                    ? "border-red-500 focus:ring-red-200"
-                    : "border-gray-300 focus:ring-yellow-200 focus:border-yellow-500"
-                }`}
+                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${errors.password
+                  ? "border-red-500 focus:ring-red-200"
+                  : "border-gray-300 focus:ring-yellow-200 focus:border-yellow-500"
+                  }`}
                 placeholder="Enter your password"
               />
               <button
@@ -334,9 +264,9 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
               />
               <span className="ml-2 text-sm text-gray-600">Remember me</span>
             </label>
-            <button className="text-sm text-yellow-500 hover:text-yellow-600 font-semibold">
+            <a href="/forgot-password" className="text-sm text-yellow-500 hover:text-yellow-600 font-semibold">
               Forgot password?
-            </button>
+            </a>
           </div>
 
           {/* Login Button */}
@@ -344,11 +274,10 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
             type="button"
             onClick={handleLogin}
             disabled={isLoading}
-            className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 transform ${
-              isLoading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-yellow-500 hover:bg-yellow-600 hover:scale-105 active:scale-95"
-            }`}
+            className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 transform ${isLoading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-yellow-500 hover:bg-yellow-600 hover:scale-105 active:scale-95"
+              }`}
           >
             {isLoading ? (
               <div className="flex items-center justify-center">
@@ -384,11 +313,10 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
 
             {/* Expandable Account Request Info */}
             <div
-              className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                showAccountRequest
-                  ? "max-h-96 opacity-100"
-                  : "max-h-0 opacity-0"
-              }`}
+              className={`transition-all duration-300 ease-in-out overflow-hidden ${showAccountRequest
+                ? "max-h-96 opacity-100"
+                : "max-h-0 opacity-0"
+                }`}
             >
               <div className="bg-yellow-50 rounded-lg p-4">
                 <div className="mt-3 pt-3 border-t border-yellow-300">

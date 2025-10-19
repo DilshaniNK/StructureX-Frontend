@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FileText, Calendar, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import SuccessAlert from '../../Components/Employee/SuccessAlert';
@@ -20,6 +20,7 @@ export default function ProjectList() {
   const [errorMessage, setErrorMessage] = useState('');
   
   const navigate = useNavigate();
+  const { employeeId } = useParams();
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -74,7 +75,7 @@ export default function ProjectList() {
 
   const handleProjectClick = (projectId) => {
     try {
-      navigate(`/legalofficer/action/${projectId}`);
+      navigate(`/legalofficer/${employeeId}/action/${projectId}`);
       setSuccessMessage(`Navigating to project ${projectId} details`);
       setShowSuccessAlert(true);
     } catch (err) {

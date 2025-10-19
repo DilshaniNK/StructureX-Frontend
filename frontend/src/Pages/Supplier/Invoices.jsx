@@ -189,7 +189,7 @@ const Invoices = () => {
       setError(null)
       try {
         // Fetch supplier orders with delivered status
-        const response = await fetch('http://localhost:8086/api/v1/api/supplier/orders')
+        const response = await fetch('http://localhost:8086/api/v1/supplier/orders')
         if (!response.ok) {
           throw new Error('Failed to fetch orders')
         }
@@ -224,7 +224,7 @@ const Invoices = () => {
     const fetchInvoices = async () => {
       try {
         // Try to fetch invoices - if endpoint doesn't exist yet, just use empty array
-        const response = await fetch('http://localhost:8086/api/v1/api/supplier/invoice')
+        const response = await fetch('http://localhost:8086/api/v1/supplier/invoice')
 
         // If endpoint returns error or doesn't exist, just set empty array
         if (!response.ok) {
@@ -302,7 +302,7 @@ const Invoices = () => {
       formData.append('projectName', order.project)
 
       // Submit invoice to backend
-      const response = await fetch('http://localhost:8086/api/v1/api/supplier/invoice/create', {
+      const response = await fetch('http://localhost:8086/api/v1/supplier/invoice/create', {
         method: 'POST',
         body: formData,
       })

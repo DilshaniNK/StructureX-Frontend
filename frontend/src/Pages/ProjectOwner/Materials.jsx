@@ -157,14 +157,14 @@ const Materials = () => {
 
   // Get projectId from localStorage
   const projectId = localStorage.getItem('projectId') || 'PRJ_001';
-  const API_BASE_URL = 'http://localhost:8086/api/project-owner/materials';
+  const API_BASE_URL = 'http://localhost:8086/api/v1';
 
   // API Functions
   const fetchMaterials = async () => {
     try {
       setIsLoadingMaterials(true);
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/${projectId}`);
+      const response = await fetch(`${API_BASE_URL}/api/project-owner/materials/${projectId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -182,7 +182,7 @@ const Materials = () => {
 
   const fetchMaterialSummary = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/${projectId}/summary`);
+      const response = await fetch(`${API_BASE_URL}/api/project-owner/materials/${projectId}/summary`);
       const data = await response.json();
 
       if (data.success) {
@@ -196,7 +196,7 @@ const Materials = () => {
   const fetchSiteVisits = async () => {
     try {
       setIsLoadingSiteVisits(true);
-      const response = await fetch(`${API_BASE_URL}/site-visits/${projectId}`);
+      const response = await fetch(`${API_BASE_URL}/api/project-owner/materials/site-visits/${projectId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -287,7 +287,7 @@ const Materials = () => {
         status: "Requested"
       };
 
-      const response = await fetch(`${API_BASE_URL}/site-visits`, {
+      const response = await fetch(`${API_BASE_URL}/api/project-owner/materials/site-visits`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

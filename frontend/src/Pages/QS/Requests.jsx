@@ -413,15 +413,6 @@ function Requests() {
                       </button>
                     </>
                   )}
-                  {request.status === 'accepted' && (
-                    <button 
-                      className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      onClick={() => handleProceedToPurchase(request.requestId)}
-                    >
-                      {request.requestType === 'material' ? 'Purchase' : 
-                       request.requestType === 'labor' ? 'Hire' : 'Rent'}
-                    </button>
-                  )}
                 </div>
               </td>
             </tr>
@@ -621,18 +612,6 @@ function Requests() {
                     Reject Request
                   </button>
                 </>
-              )}
-              {selectedRequest.status === 'accepted' && (
-                <button 
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  onClick={() => {
-                    handleProceedToPurchase(selectedRequest.requestId)
-                    setShowModal(false)
-                  }}
-                >
-                  {selectedRequest.requestType === 'material' ? 'Proceed to Purchase' : 
-                   selectedRequest.requestType === 'labor' ? 'Proceed to Hire' : 'Proceed to Rent'}
-                </button>
               )}
               <button 
                 className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"

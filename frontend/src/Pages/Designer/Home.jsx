@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Search, Filter, Calendar, StickyNote, Trash2, Edit, Eye, X
@@ -11,7 +10,7 @@ const fetchDesigns = async () => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    console.log('Fetched designs:', data); // Debug log
+    console.log('Fetched designs:', data);
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Error fetching designs:', error);
@@ -114,8 +113,7 @@ const DesignerHome = () => {
         body: JSON.stringify(updatedData)
       });
       if (response.ok) {
-        const responseData = await response.json(); // Get the actual response data
-        // Update the local state with the response data (which includes client_name)
+        const responseData = await response.json();
         setDesigns(designs.map(design => 
           design.design_id === designId ? { ...design, ...responseData } : design
         ));
@@ -216,7 +214,6 @@ const DesignerHome = () => {
     if (success) {
       setShowUpdatePopup(false);
       setSelectedDesign(null);
-      // Clear form data
       setUpdateFormData({
         name: '',
         type: '',
@@ -241,7 +238,6 @@ const DesignerHome = () => {
     }));
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -253,7 +249,6 @@ const DesignerHome = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -274,7 +269,7 @@ const DesignerHome = () => {
     );
   }
 
-return (
+  return (
     <div className="min-h-screen bg-gray-50 w-full">
       {(showDeletePopup || showViewPopup || showUpdatePopup) && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"></div>
@@ -352,7 +347,7 @@ return (
               <div className="bg-gray-50 rounded-lg p-4">
                 <label className="text-sm font-medium text-gray-500">Priority</label>
                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(selectedDesign.priority)}`}>
-                  {selectedDesign.priority?.charAt(0).toUpperCase() + selectedDesign.priority?.slice(1)}
+                  {selectedDesign.priority?.charAt(0).toUpperCase() + selectedDesign.priority?.slice(1) || 'Medium'}
                 </span>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
@@ -362,7 +357,7 @@ return (
               <div className="bg-gray-50 rounded-lg p-4">
                 <label className="text-sm font-medium text-gray-500">Status</label>
                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedDesign.status)}`}>
-                  {selectedDesign.status?.charAt(0).toUpperCase() + selectedDesign.status?.slice(1)}
+                  {selectedDesign.status?.charAt(0).toUpperCase() + selectedDesign.status?.slice(1) || 'Ongoing'}
                 </span>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
@@ -530,7 +525,6 @@ return (
         </div>
       )}
 
-      {/* Full width container */}
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -649,13 +643,13 @@ return (
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{design.client_name}</div>
+                        <div className="text-sm font-medium text-gray-900">{design.client_name || 'Unknown'}</div>
                         <div className="text-sm text-gray-500">{design.client_id}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(design.status)}`}>
-                        {design.status.charAt(0).toUpperCase() + design.status.slice(1)}
+                        {design.status?.charAt(0).toUpperCase() + design.status?.slice(1) || 'Ongoing'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -673,7 +667,7 @@ return (
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(design.priority)}`}>
-                        {design.priority.charAt(0).toUpperCase() + design.priority.slice(1)}
+                        {design.priority?.charAt(0).toUpperCase() + design.priority?.slice(1) || 'Medium'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -26,16 +26,19 @@ export default function InventoryRequest({
   const [selectedSite, setSelectedSite] = useState('');
   const [submitted, setSubmitted] = useState([]);
   const [toolSubmitted, setToolSubmitted] = useState([]);
+  const [laborSubmitted, setLaborSubmitted] = useState([]);
   const [materials, setMaterials] = useState([{ id: null, name: '', quantity: '', priority: 'medium' }]);
   const { employeeId } = useParams();
   const [isEditing, setIsEditing] = useState(false);
   const [editingRequestId, setEditingRequestId] = useState(null);
   const [requestType] = useState(type);
+  const [editingRequest, setEditingRequest] = useState(null);
 
   useEffect(() => {
     fetchSites();
     fetchMaterialRequests();
     fetchToolRequests();
+    fetchLaborRequests();
   }, []);
 
   useEffect(() => {
@@ -46,7 +49,7 @@ export default function InventoryRequest({
 
   const fetchSites = async () => {
     try {
-      const res = await axios.get('http://localhost:8086/api/v1/financial_officer');
+      const res = await axios.get(`http://localhost:8086/api/v1/site_supervisor/projects/${employeeId}`);
       if (res.data) setSites(res.data);
     } catch (error) {
       console.error('Failed to fetch sites:', error);
@@ -58,6 +61,7 @@ export default function InventoryRequest({
       const res = await axios.get('http://localhost:8086/api/v1/site_supervisor/material_requests');
       if (Array.isArray(res.data)) {
         setSubmitted(res.data);
+        console.log("material requests", res.data)
       } else {
         console.warn('Unexpected response format:', res.data);
       }
@@ -71,6 +75,21 @@ export default function InventoryRequest({
       const res = await axios.get('http://localhost:8086/api/v1/site_supervisor/tool_requests');
       if (Array.isArray(res.data)) {
         setToolSubmitted(res.data);
+        console.log("tool requests", res.data)
+      } else {
+        console.warn('Unexpected response format:', res.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch requests:', err);
+    }
+  };
+
+  const fetchLaborRequests = async () => {
+    try {
+      const res = await axios.get('http://localhost:8086/api/v1/site_supervisor/labor_requests');
+      if (Array.isArray(res.data)) {
+        setLaborSubmitted(res.data);
+        console.log("labor requests", res.data)
       } else {
         console.warn('Unexpected response format:', res.data);
       }
@@ -119,13 +138,14 @@ export default function InventoryRequest({
       }
     }
     const requestPayload = {
-      pmApproval: 'pending',
-      qsApproval: 'pending',
+      pmApproval: 'Pending',
+      qsApproval: 'Pending',
       requestType: requestType.toLowerCase(),
       date: new Date().toISOString().split('T')[0],
       projectId: selectedSite,
       siteSupervisorId: employeeId,
-      qsId: '',
+      qsId: sites.find((s) => s.projectId === selectedSite)?.qsId || '',
+      pmId: sites.find((s) => s.projectId === selectedSite)?.qsId || '',
       isReceived: 0,
       materials: materials.map((r) => ({
         materialName: r.name,
@@ -149,13 +169,15 @@ export default function InventoryRequest({
 
   // Only allow editing when both pmApproval and qsApproval are "pending"
   const startEditing = (request) => {
-    if (request.pmApproval !== 'pending' || request.qsApproval !== 'pending') {
-      showNotification('Editing is allowed only before any approval.', 'error');
+    if ((request.pmApproval || "").toLowerCase() !== "pending" ||
+      (request.qsApproval || "").toLowerCase() !== "pending") {
+      showNotification("Editing is allowed only before any approval.", "error");
       return;
     }
-    setEditingRequestId(request.requestId);
+
+    setEditingRequest(request); // store the whole request
     setMaterials(
-      request.materials.map((m) => ({
+      (request.materials || []).map((m) => ({
         id: m.id,
         name: m.materialName,
         quantity: m.quantity,
@@ -170,28 +192,22 @@ export default function InventoryRequest({
 
   // Update existing request
   const handleUpdateRequest = async () => {
-    const request = getEditingRequest();
+    const request = editingRequest; // use the stored object
+    console.log("updating", request);
 
-    // Defensive backend state check
-    if (!request || request.pmApproval !== 'pending' || request.qsApproval !== 'pending') {
-      showNotification("You can't update after approval/rejection.", 'error');
+    if (!request) return;
+
+    if ((request.pmApproval || "").toLowerCase() !== 'pending' ||
+      (request.qsApproval || "").toLowerCase() !== 'pending') {
+      showNotification("You can't update after approval/rejection.", "error");
       setIsEditing(false);
-      setEditingRequestId(null);
+      setEditingRequest(null);
       return;
     }
+
     try {
-      for (const req of materials) {
-        if (!req.name || !req.quantity || !req.priority) {
-          showNotification('Please fill in all fields for each material.', 'error');
-          return;
-        }
-        if (isNaN(parseInt(req.quantity))) {
-          showNotification('Quantity must be a number.', 'error');
-          return;
-        }
-      }
       const payload = {
-        requestId: editingRequestId,
+        requestId: request.requestId,
         projectId: selectedSite,
         isReceived: true,
         pmApproval: request.pmApproval,
@@ -203,7 +219,8 @@ export default function InventoryRequest({
           priority: m.priority,
         })),
       };
-      console.log("editing", payload)
+
+      console.log("editing payload", payload);
 
       await axios.put('http://localhost:8086/api/v1/site_supervisor/request/update', payload, {
         headers: { 'Content-Type': 'application/json' },
@@ -213,13 +230,42 @@ export default function InventoryRequest({
       fetchMaterialRequests();
 
       setIsEditing(false);
-      setEditingRequestId(null);
+      setEditingRequest(null);
       setMaterials([{ id: null, name: '', quantity: '', priority: 'medium' }]);
       setSelectedSite('');
     } catch (err) {
       showNotification('Update failed: ' + (err.response?.data || err.message), 'error');
     }
   };
+
+  const toggleDeliveryStatus = async (entry) => {
+    const updatedStatus = !entry.isReceived; // toggle true/false
+
+    try {
+      await axios.put(`http://localhost:8086/api/v1/site_supervisor/request/update`, {
+        requestId: entry.requestId,
+        projectId: entry.projectId,
+        isReceived: updatedStatus,
+      });
+
+      // Update the local state to reflect the new value
+      setLaborSubmitted((prev) =>
+        prev.map((r) =>
+          r.requestId === entry.requestId ? { isReceived: updatedStatus } : r
+        )
+      );
+
+      showNotification(
+        updatedStatus ? "Marked as Delivered" : "Marked as Not Delivered",
+        "success"
+      );
+    } catch (error) {
+      console.error("Error updating delivery status:", error);
+      //showNotification("Failed to update delivery status", "error");
+    }
+  };
+
+
 
   const handleDelete = async (requestId) => {
     const confirmed = window.confirm("Are you sure you want to delete this request? This action cannot be undone.");
@@ -234,6 +280,11 @@ export default function InventoryRequest({
       // Assuming toolSubmitted should also be filtered if it's a tool request
       setToolSubmitted(prevToolSubmitted =>
         prevToolSubmitted.filter(req => req.requestId !== requestId)
+      );
+
+      // Assuming toolSubmitted should also be filtered if it's a tool request
+      setLaborSubmitted(prevLaborSubmitted =>
+        prevLaborSubmitted.filter(req => req.requestId !== requestId)
       );
 
       // Reset form state if needed (only if the deleted item was currently being edited)
@@ -260,6 +311,7 @@ export default function InventoryRequest({
   // Filter requests for UI
   const materialRequests = type === 'Material' ? submitted.filter((e) => e.requestType === 'material') : [];
   const toolRequests = type === 'Tool' ? toolSubmitted.filter((e) => e.requestType === 'tool') : [];
+  const laborRequests = type === 'Labor' ? laborSubmitted.filter((e) => e.requestType === 'labor') : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -448,14 +500,14 @@ export default function InventoryRequest({
               <div className="bg-slate-50 rounded-xl px-4 py-2">
                 <span className="text-sm text-slate-600">Total Requests</span>
                 <p className="text-xl font-bold text-slate-800">
-                  {materialRequests.length + toolRequests.length}
+                  {materialRequests.length + toolRequests.length + laborRequests.length}
                 </p>
               </div>
             </div>
           </div>
 
           {/* Empty State */}
-          {materialRequests.length === 0 && toolRequests.length === 0 ? (
+          {materialRequests.length === 0 && toolRequests.length === 0 && laborRequests.length === 0 ? (
             <div className="text-center py-16">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-slate-100 rounded-full blur-3xl opacity-30"></div>
@@ -476,7 +528,7 @@ export default function InventoryRequest({
               {materialRequests.length > 0 && (
                 <div>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full"></div>
+                    <div className="w-1 h-10 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full"></div>
                     <h3 className="text-xl font-bold text-slate-800">Material Requests</h3>
                     <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium">
                       {materialRequests.length}
@@ -509,15 +561,24 @@ export default function InventoryRequest({
                           <div className="flex flex-col items-end gap-2">
                             <span className="px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ">
                               {entry.pmApproval === 'rejected'
-                                ? 'rejected'
-                                : entry.pmApproval === 'approved' && entry.qsApproval === 'approved'
+                                ? 'Rejected'
+                                : entry.pmApproval === 'Approved' && entry.qsApproval === 'Approved'
                                   ? 'approved'
-                                  : entry.pmApproval === 'approved' && entry.qsApproval === 'rejected'
+                                  : entry.pmApproval === 'Approved' && entry.qsApproval === 'Rejected'
                                     ? 'rejected'
-                                    : entry.pmApproval === 'approved' && entry.qsApproval === 'pending'
+                                    : entry.pmApproval === 'Approved' && entry.qsApproval === 'Pending'
                                       ? 'PM approved'
                                       : 'pending'}
                             </span>
+                            <button
+                              onClick={() => toggleDeliveryStatus(entry)}
+                              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm 
+      ${entry.isReceived
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                            >
+                              {entry.isReceived ? 'Delivered' : 'Mark as Delivered'}
+                            </button>
                           </div>
                         </div>
                         {/* Details */}
@@ -568,13 +629,13 @@ export default function InventoryRequest({
                         {/* Edit Button */}
                         <button
                           onClick={() => startEditing(entry)}
-                          disabled={entry.pmApproval !== 'pending' || entry.qsApproval !== 'pending'}
-                          className={`p-2 rounded-lg transition-colors ${entry.pmApproval === 'pending' && entry.qsApproval === 'pending'
-                              ? 'text-gray-600 hover:bg-gray-50 cursor-pointer'
-                              : 'text-gray-400 cursor-not-allowed'
+                          disabled={entry.pmApproval !== 'Pending' || entry.qsApproval !== 'Pending'}
+                          className={`p-2 rounded-lg transition-colors ${entry.pmApproval === 'Pending' && entry.qsApproval === 'Pending'
+                            ? 'text-gray-600 hover:bg-gray-50 cursor-pointer'
+                            : 'text-gray-400 cursor-not-allowed'
                             }`}
                           title={
-                            entry.pmApproval !== 'pending' || entry.qsApproval !== 'pending'
+                            entry.pmApproval !== 'Pending' || entry.qsApproval !== 'Pending'
                               ? 'Editing not allowed after approval'
                               : 'Edit'
                           }
@@ -624,16 +685,26 @@ export default function InventoryRequest({
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2">
-                            <span
-                              className={`px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ${entry.pmApproval === 1
-                                  ? 'bg-green-100 text-green-700'
-                                  : entry.pmApproval === 0
-                                    ? 'bg-red-100 text-red-700'
-                                    : 'bg-yellow-100 text-yellow-700'
-                                }`}
-                            >
-                              {entry.pmApproval}
+                            <span className="px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ">
+                              {entry.pmApproval === 'rejected'
+                                ? 'Rejected'
+                                : entry.pmApproval === 'Approved' && entry.qsApproval === 'Approved'
+                                  ? 'approved'
+                                  : entry.pmApproval === 'Approved' && entry.qsApproval === 'Rejected'
+                                    ? 'rejected'
+                                    : entry.pmApproval === 'Approved' && entry.qsApproval === 'Pending'
+                                      ? 'PM approved'
+                                      : 'pending'}
                             </span>
+                            <button
+                              onClick={() => toggleDeliveryStatus(entry)}
+                              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm 
+      ${entry.isReceived
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                            >
+                              {entry.isReceived ? 'Delivered' : 'Mark as Delivered'}
+                            </button>
                           </div>
                         </div>
                         {/* Details Grid */}
@@ -683,22 +754,154 @@ export default function InventoryRequest({
                         </div>
                         <button
                           onClick={() => startEditing(entry)}
-                          disabled={entry.pmApproval !== 'pending' || entry.qsApproval !== 'pending'}
-                          className={`p-2 rounded-lg transition-colors ${entry.pmApproval === 'pending' && entry.qsApproval === 'pending'
-                              ? 'text-gray-600 hover:bg-gray-50 cursor-pointer'
-                              : 'text-gray-400 cursor-not-allowed'
+                          disabled={entry.pmApproval !== 'Pending' || entry.qsApproval !== 'Pending'}
+                          className={`p-2 rounded-lg transition-colors ${entry.pmApproval === 'Pending' && entry.qsApproval === 'Pending'
+                            ? 'text-gray-600 hover:bg-gray-50 cursor-pointer'
+                            : 'text-gray-400 cursor-not-allowed'
                             }`}
                           title={
-                            entry.pmApproval !== 'pending' || entry.qsApproval !== 'pending'
+                            entry.pmApproval !== 'Pending' || entry.qsApproval !== 'Pending'
                               ? 'Editing not allowed after approval'
                               : 'Edit'
                           }
+
                         >
                           <Edit className="h-4 w-4" />
                         </button>
+
                         <button onClick={() => handleDelete(entry.requestId)}>
                           <Trash2 className="h-4 w-4" />
                         </button>
+
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+
+              {/* Labour Requests */}
+              {laborRequests.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full"></div>
+                    <h3 className="text-xl font-bold text-slate-800">Labour Requests</h3>
+                    <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                      {laborRequests.length}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    {laborRequests.map((entry) => (
+                      <div
+                        key={entry.requestId}
+                        className="group bg-gradient-to-br from-white via-slate-50/50 to-white border border-slate-200/60 rounded-2xl p-7 hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1"
+                      >
+                        {/* Card Header */}
+                        <div className="flex justify-between items-start mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                              <span className="text-white font-bold text-sm">#{entry.requestId.toString().slice(-2)}</span>
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-slate-800 text-lg">
+                                Request #{entry.requestId.toString().slice(-6)}
+                              </h4>
+                              <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+                                <Calendar className="w-4 h-4" />
+                                <span>{entry.date}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className="px-4 py-2 rounded-xl text-xs font-semibold shadow-sm ">
+                              {entry.pmApproval === 'rejected'
+                                ? 'Rejected'
+                                : entry.pmApproval === 'Approved' && entry.qsApproval === 'Approved'
+                                  ? 'approved'
+                                  : entry.pmApproval === 'Approved' && entry.qsApproval === 'Rejected'
+                                    ? 'rejected'
+                                    : entry.pmApproval === 'Approved' && entry.qsApproval === 'Pending'
+                                      ? 'PM approved'
+                                      : 'pending'}
+                            </span>
+                            <button
+                              onClick={() => toggleDeliveryStatus(entry)}
+                              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm 
+      ${entry.isReceived
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                            >
+                              {entry.isReceived ? 'Delivered' : 'Mark as Delivered'}
+                            </button>
+                          </div>
+                        </div>
+                        {/* Details Grid */}
+                        <div className="bg-slate-50/50 rounded-xl p-5 mb-6">
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="text-center">
+                              <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Site</div>
+                              <div className="text-sm font-semibold text-slate-800 truncate">
+                                {sites.find((site) => site.projectId === entry.projectId)?.name || 'Unknown'}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Type</div>
+                              <div className="text-sm font-semibold text-slate-800">{entry.requestType}</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Items</div>
+                              <div className="text-sm font-semibold text-slate-800">{entry.materials.length} items</div>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Requested Items */}
+                        <div className="mb-6">
+                          <h5 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                            Requested Items
+                          </h5>
+                          <div className="space-y-3 max-h-48 overflow-y-auto custom-scrollbar">
+                            {entry.materials.map((r, i) => (
+                              <div
+                                key={i}
+                                className="bg-white border border-slate-200/60 rounded-xl p-4 hover:shadow-sm transition-shadow"
+                              >
+                                <div className="flex justify-between items-start mb-3">
+                                  <span className="font-semibold text-slate-800 text-sm leading-tight">{r.materialName}</span>
+                                  <span className="px-3 py-1 rounded-lg text-xs font-medium border shadow-sm">{r.priority}</span>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-slate-500">Qty:</span>
+                                    <span className="font-semibold text-slate-700">{r.quantity}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => startEditing(entry)}
+                          disabled={entry.pmApproval !== 'Pending' || entry.qsApproval !== 'Pending'}
+                          className={`p-2 rounded-lg transition-colors ${entry.pmApproval === 'Pending' && entry.qsApproval === 'Pending'
+                            ? 'text-gray-600 hover:bg-gray-50 cursor-pointer'
+                            : 'text-gray-400 cursor-not-allowed'
+                            }`}
+                          title={
+                            entry.pmApproval !== 'Pending' || entry.qsApproval !== 'Pending'
+                              ? 'Editing not allowed after approval'
+                              : 'Edit'
+                          }
+
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+
+                        <button onClick={() => handleDelete(entry.requestId)}>
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+
+
                       </div>
                     ))}
                   </div>

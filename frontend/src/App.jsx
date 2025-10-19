@@ -50,7 +50,7 @@ const App = () => {
                 <Supplier />
               </ProtectedRoute>
             } />
-            <Route path="/project_owner/:clientId/*" element={
+             <Route path="/project_owner/:clientId/*" element={
               <ProtectedRoute allowedRoles={['Project_Owner']}>
                 <ProjectOwner />
               </ProtectedRoute>

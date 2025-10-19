@@ -1,6 +1,8 @@
 import axios from 'axios'
 import React, { use, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
 
 function Projects() {
   const [activeTab, setActiveTab] = useState('ongoing')
@@ -32,6 +34,12 @@ function Projects() {
   const [projectMaterials, setProjectMaterials] = useState([])
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false)
   
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  
   const { employeeId } = useParams();
   console.log("🚀 ProjectManager Projects - UserID from params:", employeeId);
 
@@ -39,12 +47,13 @@ function Projects() {
   const copyDesignLink = async (link) => {
     try {
       await navigator.clipboard.writeText(link);
-      // You could add a toast notification here
       console.log('✅ Design link copied to clipboard');
-      alert('Design link copied to clipboard!');
+      setSuccessMessage('Design link copied to clipboard!');
+      setShowSuccessAlert(true);
     } catch (error) {
       console.error('❌ Failed to copy link:', error);
-      alert('Failed to copy link. Please try again.');
+      setErrorMessage('Failed to copy link. Please try again.');
+      setShowErrorAlert(true);
     }
   };
 
@@ -74,6 +83,8 @@ const fetchProjectMaterials = async (projectId) =>{
   } catch (error) {
     console.error("❌ Error fetching project materials:", error)
     setProjectMaterials([])
+    setErrorMessage('Failed to load project materials. Please try again.');
+    setShowErrorAlert(true);
   } finally {
     setIsLoadingMaterials(false)
   }
@@ -105,6 +116,8 @@ const fetchProjectMaterials = async (projectId) =>{
     } catch (error) {
       console.error("❌ Error fetching project payments:", error)
       setProjectpayments([])
+      setErrorMessage('Failed to load project payments. Please try again.');
+      setShowErrorAlert(true);
     } finally {
       setIsLoadingPayments(false)
     }
@@ -137,6 +150,8 @@ const fetchProjectMaterials = async (projectId) =>{
     } catch (error) {
       console.error("❌ Error fetching project boq:", error)
       setProjectboq([])
+      setErrorMessage('Failed to load project BOQ. Please try again.');
+      setShowErrorAlert(true);
     } finally {
       setIsLoadingBOQ(false)
     }
@@ -171,6 +186,8 @@ const fetchProjectMaterials = async (projectId) =>{
     } catch (error) {
       console.error("❌ Error fetching project wbs:", error);
       setProjectwbs([]);
+      setErrorMessage('Failed to load project WBS. Please try again.');
+      setShowErrorAlert(true);
     } finally {
       setIsLoadingWBS(false);
     }
@@ -224,6 +241,8 @@ const fetchProjectMaterials = async (projectId) =>{
     } catch (error) {
       console.error("❌ Error fetching project designs:", error);
       setProjectDesigns([]);
+      setErrorMessage('Failed to load project designs. Please try again.');
+      setShowErrorAlert(true);
     } finally {
       setIsLoadingDesigns(false);
     }
@@ -269,6 +288,8 @@ const fetchProjectMaterials = async (projectId) =>{
       console.log("✅ Project data refreshed successfully");
     } catch (error) {
       console.error("❌ Error refreshing project data:", error);
+      setErrorMessage('Failed to refresh project data. Please try again.');
+      setShowErrorAlert(true);
     } finally {
       setIsLoadingProjects(false);
     }
@@ -277,6 +298,26 @@ const fetchProjectMaterials = async (projectId) =>{
   useEffect(() => {
     refreshProjectData();
   }, [employeeId]);
+
+  // Auto hide success alert after 3 seconds
+  useEffect(() => {
+    if (showSuccessAlert) {
+      const timer = setTimeout(() => {
+        setShowSuccessAlert(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessAlert]);
+
+  // Auto hide error alert after 5 seconds
+  useEffect(() => {
+    if (showErrorAlert) {
+      const timer = setTimeout(() => {
+        setShowErrorAlert(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showErrorAlert]);
 
   useEffect(() => {
     if (employeeId) {
@@ -305,6 +346,8 @@ const fetchProjectMaterials = async (projectId) =>{
         .catch((error) => {
           console.error("❌ Error fetching initiated projects:", error);
           setInitiatedProjectsError("Failed to load initiated projects");
+          setErrorMessage('Failed to load initiated projects. Please try again.');
+          setShowErrorAlert(true);
         })
         .finally(() => {
           setIsLoadingInitiatedProjects(false)
@@ -372,7 +415,8 @@ const fetchProjectMaterials = async (projectId) =>{
 
         if (materialDataResponse.status === 200) {
           console.log('✅ Project data sent to materials successfully')
-          alert('Project updated successfully and sent to materials system!')
+          setSuccessMessage('Project updated successfully and sent to materials system!');
+          setShowSuccessAlert(true);
 
           // Refresh the projects list to get updated data
           if (employeeId) {
@@ -394,7 +438,8 @@ const fetchProjectMaterials = async (projectId) =>{
       }
     } catch (error) {
       console.error('❌ Error updating project:', error)
-      alert('Failed to update project. Please try again.')
+      setErrorMessage('Failed to update project. Please try again.');
+      setShowErrorAlert(true);
     } finally {
       setIsUpdating(false)
       setShowUpdateForm(false)
@@ -1765,6 +1810,22 @@ const fetchProjectMaterials = async (projectId) =>{
           renderProjectDetails()
         )}
       </div>
+
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </div>
   )
 }

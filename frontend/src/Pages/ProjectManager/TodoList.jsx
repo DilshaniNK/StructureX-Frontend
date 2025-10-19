@@ -84,6 +84,10 @@ const TodoList = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Date validation states
+  const [newDateError, setNewDateError] = useState('');
+  const [editDateError, setEditDateError] = useState('');
+
   // helper to map server TodoDTO -> UI todo shape used in this component
   const mapTodoFromServer = (t) => ({
     // preserve server id separately so we always call backend with the correct id
@@ -97,6 +101,31 @@ const TodoList = () => {
     project: t.project ?? '',
     assignee: t.assignee ?? ''
   });
+
+  // Get today's date in YYYY-MM-DD format for validation
+  const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
+  // Validate if the selected date is not in the past
+  const validateDate = (dateValue, setErrorCallback) => {
+    if (!dateValue) {
+      setErrorCallback('Date is required');
+      return false;
+    }
+    
+    const selectedDate = new Date(dateValue);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    
+    if (selectedDate < today) {
+      setErrorCallback('Due date cannot be in the past');
+      return false;
+    }
+    
+    setErrorCallback('');
+    return true;
+  };
 
   const { employeeId } = useParams();
   console.log("UserID from params:", employeeId);
@@ -370,7 +399,10 @@ const TodoList = () => {
                 Add New Task
               </h2>
               <button
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowAddForm(false);
+                  setNewDateError('');
+                }}
                 className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
                 aria-label="Close modal"
               >
@@ -403,9 +435,21 @@ const TodoList = () => {
                   type="date"
                   id="due_date"
                   value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 shadow-sm"
+                  min={getTodayDate()}
+                  onChange={(e) => {
+                    setNewDate(e.target.value);
+                    validateDate(e.target.value, setNewDateError);
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 shadow-sm ${
+                    newDateError ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
                 />
+                {newDateError && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertTriangle size={16} className="mr-1" />
+                    {newDateError}
+                  </p>
+                )}
               </div>
 
               {/* Status Field */}
@@ -436,7 +480,10 @@ const TodoList = () => {
               <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
                 <button
                   type="button"
-                  onClick={() => setShowAddForm(false)}
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setNewDateError('');
+                  }}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
@@ -445,6 +492,20 @@ const TodoList = () => {
                   type="submit"
                   onClick={async (e) => {
                     e.preventDefault();
+                    
+                    // Validate all required fields
+                    if (!newDescription.trim()) {
+                      setErrorMessage('Task description is required');
+                      setShowErrorAlert(true);
+                      return;
+                    }
+                    
+                    if (!validateDate(newDate, setNewDateError)) {
+                      setErrorMessage('Please select a valid future date');
+                      setShowErrorAlert(true);
+                      return;
+                    }
+                    
                     // Build payload expected by your controller/DAO
                     const payload = {
                       // controller sets employeeId from path variable, but include for clarity
@@ -463,6 +524,7 @@ const TodoList = () => {
                       setNewDescription('');
                       setNewDate('');
                       setNewStatus('Pending');
+                      setNewDateError('');
                       setShowAddForm(false);
                       // Show success alert
                       setSuccessMessage('Task added successfully!');
@@ -493,7 +555,10 @@ const TodoList = () => {
                 Edit Task
               </h2>
               <button
-                onClick={() => setShowEditForm(false)}
+                onClick={() => {
+                  setShowEditForm(false);
+                  setEditDateError('');
+                }}
                 className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
                 aria-label="Close modal"
               >
@@ -526,9 +591,21 @@ const TodoList = () => {
                   type="date"
                   id="edit_due_date"
                   value={editDate}
-                  onChange={(e) => setEditDate(e.target.value)}
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 shadow-sm"
+                  min={getTodayDate()}
+                  onChange={(e) => {
+                    setEditDate(e.target.value);
+                    validateDate(e.target.value, setEditDateError);
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 shadow-sm ${
+                    editDateError ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
                 />
+                {editDateError && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertTriangle size={16} className="mr-1" />
+                    {editDateError}
+                  </p>
+                )}
               </div>
 
               {/* Status Field */}
@@ -559,7 +636,10 @@ const TodoList = () => {
               <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
                 <button
                   type="button"
-                  onClick={() => setShowEditForm(false)}
+                  onClick={() => {
+                    setShowEditForm(false);
+                    setEditDateError('');
+                  }}
                   className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
@@ -568,6 +648,20 @@ const TodoList = () => {
                   type="submit"
                   onClick={async (e) => {
                     e.preventDefault();
+                    
+                    // Validate all required fields
+                    if (!editDescription.trim()) {
+                      setErrorMessage('Task description is required');
+                      setShowErrorAlert(true);
+                      return;
+                    }
+                    
+                    if (!validateDate(editDate, setEditDateError)) {
+                      setErrorMessage('Please select a valid future date');
+                      setShowErrorAlert(true);
+                      return;
+                    }
+                    
                     const taskId = editTodoId;
                     const payload = {
                       // controller will set taskId from path; include fields that update
@@ -587,6 +681,7 @@ const TodoList = () => {
                         } : t));
                         setShowEditForm(false);
                         setEditTodoId(null);
+                        setEditDateError('');
                         console.log('✅ Todo updated');
                         // Show success alert
                         setSuccessMessage('Task updated successfully!');

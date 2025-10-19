@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom"; 
+import { useParams } from "react-router-dom";
 
 const API_BASE = "http://localhost:8086/api/v1/site_supervisor";
 
@@ -28,17 +28,18 @@ export default function KanbanBoard() {
 
         allTasks.forEach((task) => {
           const formattedTask = {
-            id: task.taskId,
+            id: task.task_id,
             name: task.description,
             date: task.date,
           };
 
+          console.log("Fetched task:", formattedTask);
           const status = (task.status || "").toLowerCase();
           if (status === "pending" || status === "todo") {
             newTasks.todo.push(formattedTask);
           } else if (status === "in_progress") {
             newTasks.inProgress.push(formattedTask);
-          } else if (status === "completed" ) {
+          } else if (status === "completed") {
             newTasks.done.push(formattedTask);
           } else {
             // If unknown status, default to todo
@@ -58,7 +59,7 @@ export default function KanbanBoard() {
     if (!taskName || !taskDate) return alert("Please enter task and date");
 
     const newTaskPayload = {
-      employeeId: employeeId,
+      employee_id: employeeId,
       status: "pending",
       description: taskName,
       date: taskDate,
@@ -68,7 +69,7 @@ export default function KanbanBoard() {
       .post(`${API_BASE}/to_do`, newTaskPayload)
       .then((res) => {
         const addedTask = {
-          id: res.data.taskId,
+          id: res.data.task_id,
           name: res.data.description,
           date: res.data.date,
         };
@@ -98,8 +99,8 @@ export default function KanbanBoard() {
     if (!taskToMove) return;
 
     const updatePayload = {
-      taskId: taskToMove.id,
-      employeeId: employeeId,
+      task_id: taskToMove.id,
+      employee_id: employeeId,
       status: statusMap[to],
       description: taskToMove.name,
       date: taskToMove.date,
@@ -121,18 +122,22 @@ export default function KanbanBoard() {
 
   // Delete task from backend and state
   function deleteTask(taskId, from) {
+    // Optional: log the tasks in that column
+    console.log(tasks[from]);
+
     axios
-      .delete(`${API_BASE}/todo/${taskId}`)
+      .delete(`${API_BASE}/todo/${taskId}`) // <-- use taskId, not task.id
       .then(() => {
         setTasks((prev) => ({
           ...prev,
-          [from]: prev[from].filter((t) => t.id !== taskId),
+          [from]: prev[from].filter((t) => t.task_id !== taskId),
         }));
       })
       .catch((err) => {
         console.error("Error deleting task:", err);
       });
   }
+
 
   return (
     <div className="min-h-screen p-6 bg-gray-50">

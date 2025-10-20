@@ -1,148 +1,49 @@
-import React, { useState } from 'react';
-import { Eye, FileText, Users, BarChart3, Calendar, MapPin, DollarSign, Clock, CheckCircle, AlertCircle, XCircle, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, FileText, Users, BarChart3, Calendar, MapPin, DollarSign, Clock, CheckCircle, AlertCircle, XCircle, ArrowLeft, ChevronLeft, ChevronRight, Mail, Phone } from 'lucide-react';
 
 const ProjectOverviewDashboard = () => {
+  const [projects, setProjects] = useState([]);
+  const [clients, setClients] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedClient, setSelectedClient] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [loading, setLoading] = useState(true);
 
-  // Sample project data
-  const projects = [
-    {
-      id: 'PRJ-001',
-      clientId: 'CLI-001',
-      clientName: 'TechCorp Solutions',
-      title: 'E-commerce Platform Development',
-      status: 'ongoing',
-      progress: 75,
-      budget: '$125,000',
-      startDate: '2024-01-15',
-      endDate: '2024-06-30',
-      assignedOfficers: ['John Smith', 'Sarah Johnson', 'Mike Chen'],
-      location: 'New York, NY',
-      documents: ['Project Brief.pdf', 'Technical Specs.docx', 'Design Mockups.zip'],
-      description: 'Complete e-commerce platform with advanced analytics and payment integration'
-    },
-    {
-      id: 'PRJ-002',
-      clientId: 'CLI-002',
-      clientName: 'Global Logistics Inc',
-      title: 'Supply Chain Management System',
-      status: 'completed',
-      progress: 100,
-      budget: '$89,500',
-      startDate: '2023-09-01',
-      endDate: '2024-02-28',
-      assignedOfficers: ['Emma Wilson', 'David Rodriguez'],
-      location: 'Chicago, IL',
-      documents: ['Final Report.pdf', 'User Manual.pdf', 'System Architecture.docx'],
-      description: 'Comprehensive supply chain tracking and management solution'
-    },
-    {
-      id: 'PRJ-003',
-      clientId: 'CLI-003',
-      clientName: 'Healthcare Partners',
-      title: 'Patient Management Portal',
-      status: 'pending',
-      progress: 25,
-      budget: '$67,800',
-      startDate: '2024-03-01',
-      endDate: '2024-08-15',
-      assignedOfficers: ['Lisa Park', 'Robert Taylor', 'Anna Martinez'],
-      location: 'Los Angeles, CA',
-      documents: ['Requirements.pdf', 'HIPAA Guidelines.docx'],
-      description: 'HIPAA-compliant patient portal with appointment scheduling and records management'
-    },
-    {
-      id: 'PRJ-004',
-      clientId: 'CLI-004',
-      clientName: 'FinanceFlow Corp',
-      title: 'Banking Mobile App',
-      status: 'ongoing',
-      progress: 60,
-      budget: '$156,000',
-      startDate: '2024-02-01',
-      endDate: '2024-07-31',
-      assignedOfficers: ['Kevin Wong', 'Michelle Davis'],
-      location: 'San Francisco, CA',
-      documents: ['Security Assessment.pdf', 'UI/UX Design.figma', 'API Documentation.pdf'],
-      description: 'Secure mobile banking application with biometric authentication'
-    },
-    {
-      id: 'PRJ-005',
-      clientId: 'CLI-005',
-      clientName: 'EduTech Solutions',
-      title: 'Learning Management System',
-      status: 'on-hold',
-      progress: 40,
-      budget: '$94,200',
-      startDate: '2024-01-10',
-      endDate: '2024-09-30',
-      assignedOfficers: ['Thomas Anderson', 'Jennifer Lee'],
-      location: 'Austin, TX',
-      documents: ['Educational Framework.pdf', 'Student Portal Wireframes.pdf'],
-      description: 'Comprehensive LMS with virtual classroom and assessment tools'
-    },
-    {
-      id: 'PRJ-006',
-      clientId: 'CLI-006',
-      clientName: 'RetailMax Corp',
-      title: 'Inventory Management System',
-      status: 'completed',
-      progress: 100,
-      budget: '$78,900',
-      startDate: '2023-08-01',
-      endDate: '2024-01-15',
-      assignedOfficers: ['Alex Johnson', 'Maria Garcia'],
-      location: 'Miami, FL',
-      documents: ['System Manual.pdf', 'Training Guide.pdf'],
-      description: 'Real-time inventory tracking and automated reorder system'
-    },
-    {
-      id: 'PRJ-007',
-      clientId: 'CLI-007',
-      clientName: 'SmartHome Tech',
-      title: 'IoT Control Platform',
-      status: 'pending',
-      progress: 15,
-      budget: '$112,000',
-      startDate: '2024-04-01',
-      endDate: '2024-10-31',
-      assignedOfficers: ['Chris Brown', 'Amanda Wilson'],
-      location: 'Seattle, WA',
-      documents: ['IoT Architecture.pdf', 'Security Protocols.docx'],
-      description: 'Centralized IoT device management and automation platform'
-    },
-    {
-      id: 'PRJ-008',
-      clientId: 'CLI-008',
-      clientName: 'Media Solutions Pro',
-      title: 'Content Management System',
-      status: 'ongoing',
-      progress: 80,
-      budget: '$95,500',
-      startDate: '2024-02-15',
-      endDate: '2024-08-30',
-      assignedOfficers: ['Ryan Davis', 'Sophie Turner'],
-      location: 'Los Angeles, CA',
-      documents: ['Content Strategy.pdf', 'API Documentation.pdf'],
-      description: 'Multi-channel content management and distribution system'
-    }
-  ];
+  const API_BASE_URL = 'http://localhost:8086/api/v1';
 
-  // Pagination calculations
-  const totalPages = Math.ceil(projects.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProjects = projects.slice(startIndex, endIndex);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [projectsRes, clientsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/admin/get_all_projects`),
+          fetch(`${API_BASE_URL}/admin/get_all_clients`)
+        ]);
+
+        if (!projectsRes.ok || !clientsRes.ok) throw new Error('Failed to fetch data');
+
+        const projectsData = await projectsRes.json();
+        const clientsData = await clientsRes.json();
+
+        setProjects(projectsData);
+        setClients(clientsData);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'text-green-400 border-green-400';
       case 'ongoing': return 'text-[#FAAD00] border-[#FAAD00]';
       case 'pending': return 'text-blue-400 border-blue-400';
-      case 'on-hold': return 'text-red-400 border-red-400';
+      case 'hold': return 'text-red-400 border-red-400';
       default: return 'text-gray-400 border-gray-400';
     }
   };
@@ -152,20 +53,39 @@ const ProjectOverviewDashboard = () => {
       case 'completed': return <CheckCircle className="w-4 h-4" />;
       case 'ongoing': return <Clock className="w-4 h-4" />;
       case 'pending': return <AlertCircle className="w-4 h-4" />;
-      case 'on-hold': return <XCircle className="w-4 h-4" />;
+      case 'hold': return <XCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
   };
 
   const handleViewDetails = (project) => {
+    const relatedClient = clients.find(c => c.ownerId === project.ownerId || c.clientId === project.ownerId);
     setSelectedProject(project);
+    setSelectedClient(relatedClient || null);
     setShowDetails(true);
   };
 
   const handleBackToList = () => {
     setShowDetails(false);
     setSelectedProject(null);
+    setSelectedClient(null);
   };
+
+  const totalPages = Math.ceil(projects.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProjects = projects.slice(startIndex, endIndex);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#FAAD00] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showDetails && selectedProject) {
     return (
@@ -189,7 +109,7 @@ const ProjectOverviewDashboard = () => {
         <div className="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">{selectedProject.title}</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">{selectedProject.name}</h2>
               <p className="text-gray-300">{selectedProject.description}</p>
             </div>
             <div className={`px-3 py-1 rounded-full text-sm flex items-center gap-2 border ${getStatusColor(selectedProject.status)}`}>
@@ -205,7 +125,7 @@ const ProjectOverviewDashboard = () => {
               </div>
               <div>
                 <p className="text-gray-400 text-sm">Budget</p>
-                <p className="font-semibold">{selectedProject.budget}</p>
+                <p className="font-semibold">${(selectedProject.budget / 1000000).toFixed(2)}M</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -214,7 +134,7 @@ const ProjectOverviewDashboard = () => {
               </div>
               <div>
                 <p className="text-gray-400 text-sm">Duration</p>
-                <p className="font-semibold">{selectedProject.startDate} - {selectedProject.endDate}</p>
+                <p className="font-semibold text-xs">{selectedProject.startDate} - {selectedProject.dueDate}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -231,8 +151,8 @@ const ProjectOverviewDashboard = () => {
                 <BarChart3 className="w-5 h-5 text-[#FFC746]" />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Progress</p>
-                <p className="font-semibold">{selectedProject.progress}%</p>
+                <p className="text-gray-400 text-sm">Category</p>
+                <p className="font-semibold capitalize">{selectedProject.category}</p>
               </div>
             </div>
           </div>
@@ -240,94 +160,75 @@ const ProjectOverviewDashboard = () => {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Progress Chart */}
+          {/* Progress and Details */}
           <div className="lg:col-span-2 bg-gray-800 rounded-xl p-6 border border-gray-700">
             <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-[#FAAD00]" />
-              Progress Overview
+              Project Information
             </h3>
             <div className="space-y-4">
               <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-gray-300">Overall Progress</span>
-                  <span className="text-[#FAAD00] font-semibold">{selectedProject.progress}%</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-3">
-                  <div 
-                    className="bg-gradient-to-r from-[#FAAD00] to-[#FFC746] h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${selectedProject.progress}%` }}
-                  ></div>
-                </div>
+                <p className="text-gray-400 text-sm mb-2">Project ID</p>
+                <p className="text-white font-mono font-semibold">{selectedProject.projectId}</p>
               </div>
               
-              {/* Milestone Progress */}
-              <div className="space-y-3 mt-6">
-                <h4 className="font-semibold text-gray-200">Project Milestones</h4>
-                {[
-                  { name: 'Project Planning', progress: 100, status: 'completed' },
-                  { name: 'Design Phase', progress: 90, status: 'ongoing' },
-                  { name: 'Development', progress: selectedProject.progress, status: 'ongoing' },
-                  { name: 'Testing', progress: 20, status: 'pending' },
-                  { name: 'Deployment', progress: 0, status: 'pending' }
-                ].map((milestone, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                    <span className="text-gray-300">{milestone.name}</span>
-                    <div className="flex items-center gap-3">
-                      <div className="w-24 bg-gray-600 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-to-r from-[#FAAD00] to-[#FFC746] h-2 rounded-full"
-                          style={{ width: `${milestone.progress}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-gray-400 w-12">{milestone.progress}%</span>
-                    </div>
-                  </div>
-                ))}
+              <div>
+                <p className="text-gray-400 text-sm mb-2">Estimated Value</p>
+                <p className="text-white font-semibold">${(selectedProject.estimatedValue || 0).toFixed(2)}</p>
+              </div>
+
+              <div>
+                <p className="text-gray-400 text-sm mb-2">Project Officers</p>
+                <div className="space-y-2">
+                  {selectedProject.qsId && <p className="text-white text-sm"><span className="text-gray-400">QS Officer:</span> {selectedProject.qsId}</p>}
+                  {selectedProject.spId && <p className="text-white text-sm"><span className="text-gray-400">Project Manager:</span> {selectedProject.spId}</p>}
+                  {selectedProject.planId && <p className="text-white text-sm"><span className="text-gray-400">Site Supervisor:</span> {selectedProject.planId}</p>}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Assigned Officers */}
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-[#FFC746]" />
-              Assigned Officers
-            </h3>
-            <div className="space-y-3">
-              {selectedProject.assignedOfficers.map((officer, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors">
-                  <div className="w-10 h-10 bg-gradient-to-r from-[#FAAD00] to-[#FFC746] rounded-full flex items-center justify-center text-black font-semibold">
-                    {officer.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <p className="font-medium text-white">{officer}</p>
-                    <p className="text-sm text-gray-400">Team Member</p>
-                  </div>
+          {/* Client Information */}
+          {selectedClient && (
+            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#FFC746]" />
+                Client Details
+              </h3>
+              <div className="space-y-3">
+                <div className="p-3 bg-gray-700/50 rounded-lg">
+                  <p className="text-gray-400 text-xs mb-1">Client ID</p>
+                  <p className="text-white font-mono font-semibold">{selectedClient.clientId}</p>
                 </div>
-              ))}
-            </div>
-          </div>
+                
+                <div className="p-3 bg-gray-700/50 rounded-lg">
+                  <p className="text-gray-400 text-xs mb-1">Name</p>
+                  <p className="text-white font-semibold">{selectedClient.name}</p>
+                </div>
 
-          {/* Project Documents */}
-          <div className="lg:col-span-3 bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-[#FAAD00]" />
-              Project Documents
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {selectedProject.documents.map((doc, index) => (
-                <div key={index} className="flex items-center gap-3 p-4 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer group">
-                  <div className="p-2 bg-[#FAAD00]/10 rounded-lg group-hover:bg-[#FAAD00]/20 transition-colors">
-                    <FileText className="w-5 h-5 text-[#FAAD00]" />
+                <div className="p-3 bg-gray-700/50 rounded-lg">
+                  <p className="text-gray-400 text-xs mb-1">Type</p>
+                  <p className="text-white font-semibold capitalize">{selectedClient.clientType}</p>
+                </div>
+
+                <div className="p-3 bg-gray-700/50 rounded-lg">
+                  <div className="flex items-center gap-2 text-white text-sm mb-2">
+                    <Mail className="w-4 h-4 text-[#FAAD00]" />
+                    {selectedClient.email}
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-white group-hover:text-[#FAAD00] transition-colors">{doc}</p>
-                    <p className="text-sm text-gray-400">Document</p>
+                  <div className="flex items-center gap-2 text-white text-sm">
+                    <Phone className="w-4 h-4 text-[#FAAD00]" />
+                    {selectedClient.phoneNumber}
                   </div>
                 </div>
-              ))}
+
+                <div className="p-3 bg-gray-700/50 rounded-lg">
+                  <p className="text-gray-400 text-xs mb-1">Address</p>
+                  <p className="text-white text-sm">{selectedClient.address}</p>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     );
@@ -401,32 +302,26 @@ const ProjectOverviewDashboard = () => {
             <thead className="bg-gray-700/50">
               <tr>
                 <th className="text-left p-4 font-semibold text-gray-300">Project ID</th>
+                <th className="text-left p-4 font-semibold text-gray-300">Project Name</th>
                 <th className="text-left p-4 font-semibold text-gray-300">Client ID</th>
-                <th className="text-left p-4 font-semibold text-gray-300">Client Name</th>
-                <th className="text-left p-4 font-semibold text-gray-300">Project Title</th>
                 <th className="text-left p-4 font-semibold text-gray-300">Status</th>
-                <th className="text-left p-4 font-semibold text-gray-300">Progress</th>
                 <th className="text-left p-4 font-semibold text-gray-300">Budget</th>
+                <th className="text-left p-4 font-semibold text-gray-300">Location</th>
+                <th className="text-left p-4 font-semibold text-gray-300">Category</th>
                 <th className="text-center p-4 font-semibold text-gray-300">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {currentProjects.map((project, index) => (
-                <tr key={project.id} className="border-b border-gray-700 hover:bg-gray-700/30 transition-colors">
+              {currentProjects.map((project) => (
+                <tr key={project.projectId} className="border-b border-gray-700 hover:bg-gray-700/30 transition-colors">
                   <td className="p-4">
-                    <span className="font-mono text-[#FAAD00] font-semibold">{project.id}</span>
+                    <span className="font-mono text-[#FAAD00] font-semibold">{project.projectId}</span>
                   </td>
                   <td className="p-4">
-                    <span className="text-gray-300 font-mono">{project.clientId}</span>
+                    <p className="text-white font-medium">{project.name}</p>
                   </td>
                   <td className="p-4">
-                    <span className="text-white font-medium">{project.clientName}</span>
-                  </td>
-                  <td className="p-4">
-                    <div>
-                      <p className="text-white font-medium">{project.title}</p>
-                      <p className="text-gray-400 text-sm mt-1">{project.startDate} - {project.endDate}</p>
-                    </div>
+                    <span className="text-gray-300 font-mono">{project.ownerId}</span>
                   </td>
                   <td className="p-4">
                     <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm border ${getStatusColor(project.status)}`}>
@@ -435,18 +330,13 @@ const ProjectOverviewDashboard = () => {
                     </div>
                   </td>
                   <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-gray-600 rounded-full h-2 max-w-[80px]">
-                        <div 
-                          className="bg-gradient-to-r from-[#FAAD00] to-[#FFC746] h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${project.progress}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-gray-300 font-medium">{project.progress}%</span>
-                    </div>
+                    <span className="text-white font-semibold">${(project.budget / 1000000).toFixed(2)}M</span>
                   </td>
                   <td className="p-4">
-                    <span className="text-white font-semibold">{project.budget}</span>
+                    <span className="text-gray-300">{project.location}</span>
+                  </td>
+                  <td className="p-4">
+                    <span className="text-gray-300 capitalize text-sm">{project.category}</span>
                   </td>
                   <td className="p-4 text-center">
                     <button 

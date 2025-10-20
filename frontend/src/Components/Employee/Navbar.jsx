@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Bell, ChevronDown, User, MessageSquare, Settings, AlertTriangle, CheckCircle, Menu, X
 } from 'lucide-react';
-
+import { useNavigate , useParams } from 'react-router-dom';
 import name from '../../assets/name.png'; // Adjust the path as necessary
 
 const Navbar = ({ 
@@ -86,6 +86,10 @@ const Navbar = ({
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const navigate = useNavigate();
+  const { employeeId, supplierId, clientId, adminId } = useParams();
+  const handleLogout = () => { localStorage.clear(); navigate('/'); setShowLogoutConfirm(false); };
 
   return (
     <nav className="bg-white h-16 flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50 border-b border-gray-200 shadow-sm">
@@ -201,17 +205,36 @@ const Navbar = ({
                 <p className="text-xs text-gray-600">{getRoleDisplayName(userRole)}</p>
               </div>
               <div className="py-2">
-                <a href="#profile" className="block px-4 py-3 text-sm text-gray-700 hover:bg-[#FAAD00]/10 hover:text-[#FAAD00] transition-all duration-150 font-medium">
+                <a
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowProfileMenu(false);
+
+                    const currentPath = window.location.pathname;
+
+                    // ✅ Only navigate if we’re NOT already on /profile
+                    if (!currentPath.endsWith('/profile')) {
+                      // Remove any trailing slashes, just in case
+                      const cleanedPath = currentPath.replace(/\/+$/, '');
+                      navigate(`${cleanedPath}/profile`);
+                    }
+                  }}
+                  className="block px-4 py-3 text-sm text-gray-700 hover:bg-[#FAAD00]/10 hover:text-[#FAAD00] transition-all duration-150 font-medium"
+                >
                   My Profile
-                </a>
-                <a href="#settings" className="block px-4 py-3 text-sm text-gray-700 hover:bg-[#FAAD00]/10 hover:text-[#FAAD00] transition-all duration-150 font-medium">
-                  Settings
                 </a>
                 <a href="#help" className="block px-4 py-3 text-sm text-gray-700 hover:bg-[#FAAD00]/10 hover:text-[#FAAD00] transition-all duration-150 font-medium">
                   Help & Support
                 </a>
                 <hr className="my-2 border-gray-100" />
-                <a href="#logout" className="block px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-150 font-medium">
+                <a
+                  href="#logout"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleLogout();
+                  }}
+                  className="block px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-150 font-medium"
+                >
                   Sign Out
                 </a>
               </div>

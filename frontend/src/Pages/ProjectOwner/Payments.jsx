@@ -10,7 +10,7 @@ import {
 
 const CONFIG = {
   // API Configuration
-  API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8086/api/v1',
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8086/api/v1',
   API_ENDPOINTS: {
     PAYMENT_SUMMARY: (projectId) => `/api/project-owner/materials/payments/${projectId}/summary`,
     PAYMENT_HISTORY: (projectId) => `/api/project-owner/materials/payments/${projectId}/history`,
@@ -44,7 +44,7 @@ const CONFIG = {
   },
 };
 
-/
+
 
 /**
  * Format currency with proper localization

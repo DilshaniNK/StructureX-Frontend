@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useParams } from 'react-router-dom';
 import {
   Users,
   MapPin,
@@ -52,6 +53,8 @@ export default function Labors() {
   const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', contact: '', specialization: '' });
 
+  const {employeeId} = useParams();
+
   useEffect(() => {
     fetchSites();
     fetchRecords();
@@ -59,7 +62,7 @@ export default function Labors() {
 
   const fetchSites = async () => {
     try {
-      const res = await axios.get('http://localhost:8086/api/v1/financial_officer');
+      const res = await axios.get(`http://localhost:8086/api/v1/site_supervisor/projects/${employeeId}`);
       if (res.data) {
         setSites(res.data);
       }

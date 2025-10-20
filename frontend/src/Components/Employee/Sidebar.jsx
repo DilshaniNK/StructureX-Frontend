@@ -8,6 +8,7 @@ import Calendar from '@mui/icons-material/CalendarMonthOutlined';
 import Materials from '@mui/icons-material/HandymanOutlined';
 import Inventory from '@mui/icons-material/Inventory2Outlined';
 import TodoList from '@mui/icons-material/ListAltOutlined';
+import Update from '@mui/icons-material/UpdateOutlined';
 
 import {
   Home, Users, BarChart3, BookmarkCheck, ClipboardPenLine, UserRoundSearch, Clipboard, BadgeCheck, BookOpen, Shield, ChevronRight, Bell, MessageSquare, Settings, LogOut, Rocket, Loader, FileText, Truck, Package, Receipt, FolderOpen, User, MapPin, X
@@ -56,6 +57,7 @@ const Sidebar = ({
       { id: 'projects', label: 'Projects', icon: Projects, path: `/financial_officer/${employeeId}/projects` },
       { id: 'payments', label: 'Payments', icon: Payments, path: `/financial_officer/${employeeId}/payments`, badge: null },
       { id: 'calendar', label: 'Calendar', icon: Calendar, path: `/financial_officer/${employeeId}/calendar`, badge: null },
+      { id: 'petty_cash', label: 'PettyCash', icon: Payments, path: `/financial_officer/${employeeId}/petty_cash`, badge: null },
       { id: 'daily labors', label: 'Daily Labors', icon: Labors, path: `/financial_officer/${employeeId}/daily_labors`, badge: '12' },
       { id: 'settings', label: 'Settings', icon: Settings, path: `/financial_officer/${employeeId}/settings`, badge: '5' }
     ],
@@ -73,6 +75,10 @@ const Sidebar = ({
       { id: 'progress', label: 'Progress', icon: BadgeCheck, path: `/site_supervisor/${employeeId}/progress`, badge: null },
       { id: 'materials', label: 'Materials', icon: Materials, path: `/site_supervisor/${employeeId}/materials`, badge: '12' },
       { id: 'inventory', label: 'Inventory', icon: Inventory, path: `/site_supervisor/${employeeId}/inventory`, badge: '5' },
+      { id: 'labour_request', label: 'Labours Request', icon: Inventory, path: `/site_supervisor/${employeeId}/labour_request`, badge: '5' },
+      { id: 'daily updates', label: 'Daily Updates', icon: Update, path: `/site_supervisor/${employeeId}/daily_updates`, badge: '5' },
+      { id: 'wbs', label: 'WBS', icon: Calendar, path: `/site_supervisor/${employeeId}/wbs`, badge: '5' },
+      { id: 'petty cash', label: 'Petty Cash', icon: TodoList, path: `/site_supervisor/${employeeId}/petty_cash`, badge: null },
       { id: 'to do', label: 'To-Do', icon: TodoList, path: `/site_supervisor/${employeeId}/to-do`, badge: '5' },
       { id: 'calendar', label: 'Calendar', icon: Calendar, path: `/site_supervisor/${employeeId}/calendar`, badge: null },
       { id: 'settings', label: 'Settings', icon: Settings, path: `/site_supervisor/${employeeId}/settings`, badge: '5' }

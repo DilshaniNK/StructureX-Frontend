@@ -991,7 +991,7 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                 >
                   <option>Completed</option>
                   <option>Follow-up Required</option>
-                  <option>Pending</option>
+                  <option>pending</option>
                 </select>
               </div>
 
@@ -1096,7 +1096,7 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                 >
                   <option>Completed</option>
                   <option>Follow-up Required</option>
-                  <option>Pending</option>
+                  <option>pending</option>
                 </select>
               </div>
 

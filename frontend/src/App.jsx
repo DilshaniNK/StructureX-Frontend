@@ -50,7 +50,7 @@ const App = () => {
                 <Supplier />
               </ProtectedRoute>
             } />
-             <Route path="/project_owner/:clientId/*" element={
+            <Route path="/project_owner/:clientId/*" element={
               <ProtectedRoute allowedRoles={['Project_Owner']}>
                 <ProjectOwner />
               </ProtectedRoute>
@@ -80,10 +80,16 @@ const App = () => {
               </ProtectedRoute>
             } />
 
-            <Route path='/director/:employeeId/*' element={<Director />} />
-            <Route path='/directorcont/:employeeId/*' element={<DirectorCont />} />
-            <Route path='/forgot-password' element={<ForgotPassword />} />
-            <Route path='/reset-password' element={<ResetPassword />} />
+            <Route path='/director/:employeeId/*' element={
+              <ProtectedRoute allowedRoles={['Director']}>
+                  <Director />
+              </ProtectedRoute>
+              } />
+            <Route path='/directorcont/:employeeId/*' element={
+              
+                   <DirectorCont />
+              
+             } />
 
 
           </Route>

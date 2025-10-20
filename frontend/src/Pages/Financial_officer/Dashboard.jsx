@@ -1,22 +1,20 @@
-import React,{useState,useEffect} from 'react';
-import CostBarChart from '../../Components/Financial_officer/CostBarChart';
-import axios from 'axios';
-
-import { 
-  Building2, 
-  Clock, 
-  DollarSign, 
-  Users, 
-  TrendingUp, 
-  Calendar,
-  ChevronRight,
-  AlertCircle,
+import React, { useState, useEffect } from "react";
+import CostBarChart from "../../Components/Financial_officer/CostBarChart";
+import axios from "axios";
+import {
+  Building2,
+  Clock,
+  DollarSign,
+  Users,
   CheckCircle2,
+  AlertCircle,
+  ChevronRight,
   BarChart3,
-  PieChart
-} from 'lucide-react';
+  PieChart,
+  Calendar,
+} from "lucide-react";
+import ProjectTypePieChart from "../../Components/Financial_officer/ProjectPieChart";
 
-// Mock components - replace with your actual components
 const CalenderCard = () => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
     <div className="flex items-center justify-between mb-4">
@@ -39,107 +37,152 @@ const CalenderCard = () => (
   </div>
 );
 
-const MonthlyCostBarChart = () => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-    <div className="flex items-center justify-between mb-6">
-      <h3 className="text-lg font-semibold text-gray-900">Monthly Cost Analysis</h3>
-      <BarChart3 className="w-5 h-5 text-gray-500" />
-    </div>
-    <div className="h-64 bg-gradient-to-t from-blue-50 to-transparent rounded-lg flex items-end justify-center">
-      <div className="text-gray-500 text-sm">Chart visualization would go here</div>
-    </div>
-  </div>
-);
 
-const LaborPieChart = () => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-    <div className="flex items-center justify-between mb-6">
-      <h3 className="text-lg font-semibold text-gray-900">Labor Distribution</h3>
-      <PieChart className="w-5 h-5 text-gray-500" />
-    </div>
-    <div className="h-48 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg flex items-center justify-center">
-      <div className="text-gray-500 text-sm">Pie chart visualization would go here</div>
-    </div>
-  </div>
-);
 
 const Dashboard = () => {
-
   const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [projectIds, setProjectIds] = useState([]); // ✅ this must be here
+  const [selectedDate, setSelectedDate] = useState(null);
   const [activeCount, setActiveCount] = useState(0);
+  const [attendance, setAttendance] = useState([]);
+  const [workerCount, setWorkerCount] = useState(0); // ✅ added for worker count
+  const [formConfirmation, setFormConfirmation] = useState({
+    confirmation_id: "",
+    payment_id: "",
+    project_id: "",
+    amount: "",
+    document_id: "",
+    status: "Pending",
+    confirmation_date: "",
+  });
+
+  const [recentPayments, setRecentPayments] = useState([]);
+
+
 
   useEffect(() => {
-    axios.get("http://localhost:8086/api/v1/financial_officer")
- // Replace with your API endpoint
-      .then((response) => {
-        setProjects(response.data);
-
-        setActiveCount(response.data.filter(p => p.status === "ongoing").length);
-       
+    axios
+      .get("http://localhost:8086/api/v1/financial_officer")
+      .then((res) => {
+        const ongoing = res.data.filter((p) => p.status === "ongoing");
+        setProjects(ongoing);
+        setProjectIds(ongoing.map((p) => p.projectId)); // ✅ ensure projectIds are set here
       })
-      .catch((err) => {
-        console.error("Error fetching projects:", err);
-        
-      });
+      .catch((err) => console.error("Error fetching projects:", err));
   }, []);
 
-   
+  useEffect(() => {
+    if (!projectIds.length) return;
 
+    const fetchWorkerCount = async () => {
+      try {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const formattedDate = yesterday.toISOString().split("T")[0];
+
+        const responses = await Promise.all(
+          projectIds.map((id) =>
+            axios.get(`http://localhost:8086/api/v1/financial_officer/attendance/${id}/date?date=${formattedDate}`)
+          )
+        );
+
+        const allAttendance = responses.flatMap((r) => (Array.isArray(r.data) ? r.data : []));
+        const uniqueWorkers = new Set(allAttendance.map((w) => w.workerId)); // change field name if different
+        const totalWorkerCount = uniqueWorkers.size;
+
+        setWorkerCount(totalWorkerCount);
+        console.log("Worker count for yesterday:", totalWorkerCount);
+      } catch (error) {
+        console.error("Error fetching worker count:", error);
+      }
+    };
+
+    fetchWorkerCount();
+  }, [projectIds]);
+
+
+
+
+  // 🟦 Fetch Confirmations
+  useEffect(() => {
+    axios
+      .get("http://localhost:8086/api/v1/financial_officer/payment_confirmation")
+      .then((res) => setFormConfirmation(res.data))
+      .catch((err) => console.error("Error fetching confirmations:", err));
+  }, []);
+
+  // 🟦 Fetch Orders
+  useEffect(() => {
+    setLoading(true);
+    axios
+      .get("http://localhost:8086/api/v1/financial_officer/orders")
+      .then((res) => setOrders(res.data))
+      .catch((err) => console.error("Error fetching orders:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const fetchPayments = async () => {
+    try {
+      const res = await fetch("http://localhost:8086/api/v1/financial_officer/labor_payment");
+      const data = await res.json();
+      setRecentPayments(data);
+    } catch (err) {
+      console.error("Error fetching recent payments:", err);
+    }
+  };
+
+  // 🟩 Call this once when component mounts
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+
+
+  // 🟨 Summary Cards
   const summaryCards = [
     {
       title: "Ongoing Projects",
       value: activeCount,
       icon: Building2,
       trend: "+2 from last month",
-      color: "blue",
       bgColor: "bg-blue-50",
       iconColor: "text-blue-600",
-      borderColor: "border-blue-200"
+      borderColor: "border-blue-200",
     },
     {
       title: "Pending Approvals",
-      value: "5",
+      value: formConfirmation.length,
       icon: Clock,
       trend: "3 urgent",
-      color: "amber",
       bgColor: "bg-amber-50",
       iconColor: "text-amber-600",
-      borderColor: "border-amber-200"
+      borderColor: "border-amber-200",
     },
     {
       title: "Pending Payments",
-      value: "5",
+      value: orders.filter((o) => o.status?.toLowerCase() === "pending").length,
       icon: DollarSign,
       trend: "Rs. 312,500 total",
-      color: "green",
       bgColor: "bg-green-50",
       iconColor: "text-green-600",
-      borderColor: "border-green-200"
+      borderColor: "border-green-200",
     },
     {
       title: "Active Workers",
-      value: "35",
+      value: workerCount,
       icon: Users,
       trend: "85% capacity",
-      color: "purple",
       bgColor: "bg-purple-50",
       iconColor: "text-purple-600",
-      borderColor: "border-purple-200"
-    }
+      borderColor: "border-purple-200",
+    },
   ];
 
-  const recentPayments = [
-    { project: "Residential Complex A", amount: "120,000", status: "Completed", date: "Today" },
-    { project: "Commercial Building B", amount: "245,000", status: "Processing", date: "Yesterday" },
-    { project: "Infrastructure Project C", amount: "180,000", status: "Completed", date: "2 days ago" },
-    { project: "Renovation Project D", amount: "67,500", status: "Pending", date: "3 days ago" }
-  ];
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header Section */}
-      
-
       <div className="max-w-9xl mx-auto px-6 py-8">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -166,20 +209,25 @@ const Dashboard = () => {
           })}
         </div>
 
-        {/* Main Content Grid */}
+        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Left Section - Charts */}
           <div className="lg:col-span-3 space-y-8">
-            {/* Charts Row */}
+            {/* Charts */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2">
-                <CostBarChart />
+                <CostBarChart projects={projects} />
               </div>
+
               <div>
-                <LaborPieChart />
+                <ProjectTypePieChart/>
               </div>
             </div>
 
+
+          </div>
+
+          {/* Right Side */}
+          <div className="space-y-6">
             {/* Recent Payments */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-6">
@@ -189,85 +237,55 @@ const Dashboard = () => {
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
               </div>
-              <div className="space-y-4">
-                {recentPayments.map((payment, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Building2 className="w-5 h-5 text-blue-600" />
+
+              {loading ? (
+                <p className="text-gray-500">Loading...</p>
+              ) : (
+                <div className="space-y-4">
+                  {recentPayments.map((payment, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <Building2 className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{payment.projectId}</p>
+                          <p className="text-sm text-gray-500">{payment.comment}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{payment.project}</p>
-                        <p className="text-sm text-gray-500">{payment.date}</p>
-                      </div>
-                    </div>
-                    <div className="text-right flex items-center space-x-4">
-                      <div>
+                      <div className="text-right flex items-center space-x-4">
                         <p className="font-semibold text-gray-900">Rs. {payment.amount}</p>
-                      </div>
-                      <div className="flex items-center">
-                        {payment.status === 'Completed' ? (
-                          <div className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            Completed
-                          </div>
-                        ) : payment.status === 'Processing' ? (
-                          <div className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                            <Clock className="w-3 h-3 mr-1" />
-                            Processing
-                          </div>
-                        ) : (
-                          <div className="flex items-center bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm">
-                            <AlertCircle className="w-3 h-3 mr-1" />
-                            Pending
-                          </div>
-                        )}
+                        <div className="flex items-center">
+                          {payment.status === "Completed" ? (
+                            <div className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Completed
+                            </div>
+                          ) : payment.status === "Processing" ? (
+                            <div className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Processing
+                            </div>
+                          ) : (
+                            <div className="flex items-center bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              Pending
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Section - Calendar and Quick Actions */}
-          <div className="space-y-6">
-            <CalenderCard />
-            
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Process Payment
-                </button>
-                <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
-                  <Building2 className="w-4 h-4 mr-2" />
-                  New Project
-                </button>
-                <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Generate Report
-                </button>
-              </div>
-            </div>
-
-            {/* Alert Box */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <div className="flex items-start">
-                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3" />
-                <div>
-                  <h4 className="font-medium text-amber-900">Attention Required</h4>
-                  <p className="text-sm text-amber-700 mt-1">
-                    3 urgent approvals are pending review. Please check your approval queue.
-                  </p>
-                  <button className="text-amber-800 text-sm font-medium mt-2 hover:underline">
-                    Review Now →
-                  </button>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
+
+
+
+
           </div>
         </div>
       </div>

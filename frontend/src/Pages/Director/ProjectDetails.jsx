@@ -419,7 +419,7 @@ const ProjectDetails = () => {
                 <>
                     {/* Blur Background Overlay */}
                     <div 
-                        className="fixed inset-0 z-40 backdrop-blur-md"
+                        className="fixed "
                         style={{
                             animation: 'fadeIn 0.3s ease-out',
                             

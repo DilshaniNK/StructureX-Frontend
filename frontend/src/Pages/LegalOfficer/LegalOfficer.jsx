@@ -10,6 +10,22 @@ import ProjectDetails from './ProjectDetails';
 import ProjectList from './ProjectList';
 import Profile from '../../Components/Employee/Profile';
 
+// Create a wrapper component for ProjectDetails to handle params
+function ProjectDetailsWrapper() {
+  const { projectId, employeeId } = useParams();
+  const navigate = useNavigate();
+  const userRole = 'Legal_Officer';
+  const userName = 'Ramesh Peshala';
+  
+  return (
+    <ProjectDetails 
+      projectId={projectId}
+      user={{ name: userName, role: userRole }}
+      onBack={() => navigate(`/legalofficer/${employeeId}/action`)}
+    />
+  );
+}
+
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const userRole = 'Legal_Officer';
@@ -59,11 +75,7 @@ export default function Home() {
             <Route path="/" element={<Main />} />
             <Route path="/home" element={<Main />} />
             <Route path='/action' element={<ProjectList />} />
-            <Route path='/action/:projectId' element={<ProjectDetails 
-              projectId={location.pathname.split('/').pop()} 
-              user={{ name: userName, role: userRole }}
-              onBack={() => navigate('/legalofficer/action')}
-            />} />
+            <Route path='/action/:projectId' element={<ProjectDetailsWrapper />} />
             <Route path='/chat' element={<Chat />} />
             <Route path="/notifications" element={<Notification />} />
             <Route path="/profile" element={<Profile />} />

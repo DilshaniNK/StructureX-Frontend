@@ -85,7 +85,11 @@ const App = () => {
                   <Director />
               </ProtectedRoute>
               } />
-            <Route path='/directorcont/*' element={<DirectorCont />} />
+            <Route path='/directorcont/:employeeId/*' element={
+              
+                   <DirectorCont />
+              
+             } />
 
 
           </Route>

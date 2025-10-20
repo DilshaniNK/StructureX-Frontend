@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { X, ChevronLeft, ChevronRight, MapPin, Calendar, DollarSign, Users, Phone, Building, Tag } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Calendar, DollarSign, Users, Phone, Building, Tag, Eye } from 'lucide-react';
 import axios from 'axios';
+import SiteVisitForm from '../../Components/Director/SiteVisitForm';
+
 
 const ProjectDetails = () => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -10,6 +12,7 @@ const ProjectDetails = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [project,setProject] = useState(null);
     const[loading,setLoading] = useState(true);
+    const [showSiteVisitForm,setShowSiteVisitForm] = useState(false)
     const { id } = useParams();
     
     const fetchEmployeeById = async (employeeId) => {
@@ -17,7 +20,7 @@ const ProjectDetails = () => {
             return null;
         }
         try{
-            const response = await axios.get(`http://localhost:8086/api/v1/admin/${employeeId}`);
+            const response = await axios.get(`http://localhost:8086/api/v1/director/${employeeId}`);
             return response.data;
         }catch(err){
             console.log('failed to fetch employee', err);
@@ -40,8 +43,10 @@ const ProjectDetails = () => {
                 };
                 setProject(projectData);
                 console.log(projectData);
-                if(response.data.pm_id){
-                    const pmData = await fetchEmployeeById(response.data.pm_id);
+                if(projectData.pm_id){
+                    console.log(projectData.pm_id)
+                    const pmData = await fetchEmployeeById(projectData.pm_id);
+                    console.log(pmData)
                     setProjectManager(pmData);
                 }else{
                     setProjectManager(null)
@@ -94,6 +99,36 @@ const ProjectDetails = () => {
         return <p className="text-center mt-10 text-red-500 font-semibold">No project data found. Try navigating from the main page.</p>;
     }
 
+    const handleRequestSiteVisit = () => {
+        setShowSiteVisitForm(true);
+    };
+
+    const handleCloseSiteVisitForm = () => {
+        setShowSiteVisitForm(false);
+    };
+
+    const handleSiteVisitSubmit = async (formData) => {
+        try {
+            // Send the site visit request to your backend
+            const response = await axios.post('http://localhost:8086/api/v1/director/site-visits', {
+                ...formData,
+                project: project.id || id
+            });
+            console.log('Site visit request submitted:', response.data);
+            alert('Site visit request submitted successfully!');
+            setShowSiteVisitForm(false);
+        } catch (err) {
+            console.error('Failed to submit site visit request:', err);
+            alert('Failed to submit site visit request');
+        }
+    };
+
+    // Prepare team members list for the form
+    const teamMembers = [
+        projectManager && { id: projectManager.id, name: projectManager.name, role: 'Project Manager' },
+        seniorQsOfficer && { id: seniorQsOfficer.id, name: seniorQsOfficer.name, role: 'QS Officer' }
+    ].filter(Boolean);
+
     return (
         <div className="min-h-screen bg-white mt-[50px]">
             {/* Header Section */}
@@ -120,19 +155,15 @@ const ProjectDetails = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
                         <div>
                             <span className="font-medium text-gray-900">Client:</span>
-                            <p className="text-gray-600 mt-1">{project.first_name || 'Asia Leisure / Belluna Co. Ltd.'}</p>
+                            <p className="text-gray-600 mt-1">{project.client_name || 'Asia Leisure / Belluna Co. Ltd.'}</p>
                         </div>
                         <div>
                             <span className="font-medium text-gray-900">Completion Date:</span>
-                            <p className="text-gray-600 mt-1">{project.expectedCompletion || 'July 2018'}</p>
+                            <p className="text-gray-600 mt-1">{project.due_date || 'July 2018'}</p>
                         </div>
                         <div>
                             <span className="font-medium text-gray-900">Location:</span>
                             <p className="text-gray-600 mt-1">{project.location || 'Kaluwella, Galle'}</p>
-                        </div>
-                        <div>
-                            <span className="font-medium text-gray-900">Project Manager:</span>
-                            <p className="text-gray-600 mt-1">{project.projectmanager}</p>
                         </div>
                     </div>
                 </div>
@@ -153,17 +184,14 @@ const ProjectDetails = () => {
                                     onClick={openFullscreen}
                                     onError={(e) =>{
                                         console.log("Image failed to load :", e);
-
                                     }}
                                 />
-
                             ):(
                                 <div className="w-full h-80 bg-gray-200 flex items-center justify-center">
                                     <p className="text-gray-500">No image available</p>
                                 </div>
                             )}
                            
-                            
                             {/* Navigation Buttons */}
                             {project.images && project.images.length > 1 && (
                                 <>
@@ -226,37 +254,23 @@ const ProjectDetails = () => {
                         {/* Project Description */}
                         <div className="mb-12">
                             <p className="text-gray-700 leading-relaxed text-base">
+                                Project Description: 
                                 {project.description}
                             </p>
-                            
-                            <div className="mt-8 text-gray-700 leading-relaxed">
-                                <p className="mb-4">
-                                    Completed in 2018, this project's scope of work included construction of the entire 
-                                    superstructure. The property is founded on hard rock strata at ground level and 
-                                    construction work ensured that the nearby coastal environment was protected throughout. 
-                                    Embracing the natural landscape, the building follows a 'without boundaries' concept, 
-                                    employing environmentally conscious design and construction techniques.
-                                </p>
-                                
-                                <p>
-                                    The project is now a choice destination positioned as an urban 
-                                    resort and lifestyle destination that welcomes a variety of travelers.
-                                </p>
-                            </div>
                         </div>
 
                         {/* Project Team */}
                         <div className="mb-12">
-                            <h2 className="text-xl font-light text-gray-900 mb-6">Project Team</h2>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-light text-gray-900">Project Team</h2>
+                                
+                            </div>
+                            
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="border-l-4 border-gray-200 pl-4">
                                     <h4 className="font-medium text-gray-900">Project Manager</h4>
                                     <p className="text-gray-600 mt-1">{projectManager?.name || 'Not Assigned'}</p>
                                 </div>
-                                {/* <div className="border-l-4 border-gray-200 pl-4">
-                                    <h4 className="font-medium text-gray-900">Site Supervisor</h4>
-                                    <p className="text-gray-600 mt-1">{seniorQsOfficer?.name || 'Not assigend'}</p>
-                                </div> */}
                                 <div className="border-l-4 border-gray-200 pl-4">
                                     <h4 className="font-medium text-gray-900">QS Officer</h4>
                                     <p className="text-gray-600 mt-1">{seniorQsOfficer?.name || 'Not Assigned'}</p>
@@ -266,11 +280,19 @@ const ProjectDetails = () => {
                                     <p className="text-gray-600 mt-1">{project.designer}</p>
                                 </div>
                             </div>
+                            <button
+                                    onClick={handleRequestSiteVisit}
+                                    className="flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors mt-[50px]"
+                                >
+                                    <Eye size={16} />
+                                    Request Site Visit
+                            </button>
                         </div>
                     </div>  
                 </div>
             </div>  
-                        {/* Engineers Table */}
+                        
+            {/* Engineers Table */}
             <div className="mb-12 ml-[40px]">
                     <h2 className="text-xl font-light text-gray-900 mb-6 ">Engineers</h2>
                     <hr></hr>
@@ -308,7 +330,7 @@ const ProjectDetails = () => {
                     </div>
             </div>
 
-                        {/* Materials & Suppliers Table */}
+            {/* Materials & Suppliers Table */}
             <div className="mb-12 ml-[40px]">
                 <h2 className="text-xl font-light text-gray-900 mb-6">Materials & Suppliers</h2>
                 <hr></hr>
@@ -346,11 +368,6 @@ const ProjectDetails = () => {
                 </div>
             </div>
 
-                        
-                    
-                
-            
-
             {/* Fullscreen Modal */}
             {isFullscreen && (
                 <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center">
@@ -370,7 +387,7 @@ const ProjectDetails = () => {
                         </button>
                         
                         {/* Navigation in Fullscreen */}
-                        {project.image && project.images.length > 1 && (
+                        {project.images && project.images.length > 1 && (
                             <>
                                 <button
                                     onClick={prevImage}
@@ -389,13 +406,66 @@ const ProjectDetails = () => {
                         
                         {/* Image Counter in Fullscreen */}
                         {project.images && (
-
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-4 py-2 rounded">
-                            {currentImageIndex + 1} / {project.images.length}
-                        </div>
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-4 py-2 rounded">
+                                {currentImageIndex + 1} / {project.images.length}
+                            </div>
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Site Visit Form Modal with Blur Overlay */}
+            {showSiteVisitForm && (
+                <>
+                    {/* Blur Background Overlay */}
+                    <div 
+                        className="fixed inset-0 z-40 backdrop-blur-md"
+                        style={{
+                            animation: 'fadeIn 0.3s ease-out',
+                            
+                        }}
+                    />
+
+                    {/* Modal Container */}
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div 
+                            style={{
+                                animation: 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                            }}
+                        >
+                            <SiteVisitForm
+                                projectId={project.id || id}
+                                onClose={handleCloseSiteVisitForm}
+                                onSubmit={handleSiteVisitSubmit}
+                                teamMembers={teamMembers}
+                                location={project.location}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Animation Styles */}
+                    <style>{`
+                        @keyframes fadeIn {
+                            from {
+                                opacity: 0;
+                            }
+                            to {
+                                opacity: 1;
+                            }
+                        }
+                        
+                        @keyframes slideUp {
+                            from {
+                                opacity: 0;
+                                transform: translateY(30px) scale(0.95);
+                            }
+                            to {
+                                opacity: 1;
+                                transform: translateY(0) scale(1);
+                            }
+                        }
+                    `}</style>
+                </>
             )}
         </div>
     );

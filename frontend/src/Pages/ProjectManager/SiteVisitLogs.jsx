@@ -121,7 +121,9 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
   const [visitRequests, setVisitRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
 
-
+  // Project IDs state
+  const [projectIds, setProjectIds] = useState([]);
+  const [projectIdsLoading, setProjectIdsLoading] = useState(false);
 
   // Alert states
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
@@ -203,12 +205,47 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
     }
   };
 
+  // Fetch project IDs for dropdown
+  const fetchProjectIds = async () => {
+    try {
+      setProjectIdsLoading(true);
+      const response = await axios.get('http://localhost:8086/api/v1/project_manager/projects/ongoing/ids', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
+      if (response.status === 200) {
+        console.log('Project IDs response:', response.data);
+        // Handle different response structures
+        let projectData = [];
+        if (Array.isArray(response.data)) {
+          projectData = response.data;
+        } else if (response.data && Array.isArray(response.data.projectIds)) {
+          projectData = response.data.projectIds;
+        } else if (response.data && Array.isArray(response.data.ids)) {
+          projectData = response.data.ids;
+        } else if (response.data && response.data.data) {
+          projectData = Array.isArray(response.data.data) ? response.data.data : [response.data.data];
+        }
+        
+        setProjectIds(projectData);
+        console.log('Processed project IDs:', projectData);
+      }
+    } catch (error) {
+      console.error('Error fetching project IDs:', error);
+      setErrorMessage('Failed to fetch project IDs');
+      setShowErrorAlert(true);
+    } finally {
+      setProjectIdsLoading(false);
+    }
+  };
 
   // Fetch visits on component mount
   useEffect(() => {
     fetchVisits();
     fetchVisitRequests();
+    fetchProjectIds();
   }, []);
 
 
@@ -327,9 +364,9 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
     setShowEditForm(true);
   };
 
-  const generateReport = () => {
-    setShowReport(true);
-  };
+  // const generateReport = () => {
+  //   setShowReport(true);
+  // };
 
   const downloadReport = () => {
     setSuccessMessage('Site Visit Report downloaded successfully!');
@@ -491,13 +528,13 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div className="flex space-x-3 mt-4 sm:mt-0">
-          <button
+          {/* <button
             onClick={generateReport}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
           >
             <Download size={20} className="mr-2" />
             Generate Report
-          </button>
+          </button> */}
           <button
             onClick={() => setShowAddForme(true)}
             className="px-4 py-2 bg-primary-500 bg-amber-400 text-gray-900 rounded-lg cursor-pointer hover:bg-amber-200 transition-colors flex items-center"
@@ -853,22 +890,14 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                 <label htmlFor="project_id" className="block text-sm font-medium text-gray-700 mb-2">
                   Project ID <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type='text'
+                <select
                   id="project_id"
                   name="project_id"
                   value={formData.project_id}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
-                />
-                {/* <select
-                  id="project_id"
-                  name="project_id"
-                  value={formData.project_id}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                  disabled={projectIdsLoading}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                   style={{
                     backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
                     backgroundPosition: "right 0.5rem center",
@@ -877,13 +906,36 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                     paddingRight: "2.5rem"
                   }}
                 >
-                  <option value="">Select Project</option>
-                  <option value="PRJ_001">PRJ_001</option>
-                  <option value="PJT002">PJT002</option>
-                  <option value="PJT003">PJT003</option>
-                  <option value="PJT004">PJT004</option>
-                  <option value="PJT005">PJT005</option>
-                </select> */}
+                  <option value="">
+                    {projectIdsLoading ? 'Loading projects...' : 'Select Project'}
+                  </option>
+                  {projectIds.map((project, index) => {
+                    // Handle different possible data structures
+                    const projectId = typeof project === 'string' ? project : 
+                                    project.project_id || project.id || project.projectId || 
+                                    project.code || project.name || `Project_${index + 1}`;
+                    const projectName = typeof project === 'object' ? 
+                                      (project.project_names || project.name || project.title || projectId) : 
+                                      project;
+                    
+                    return (
+                      <option key={projectId || index} value={projectId}>
+                        {projectId}
+                      </option>
+                    );
+                  })}
+                </select>
+                {projectIdsLoading && (
+                  <div className="mt-1 flex items-center text-sm text-gray-500">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600 mr-2"></div>
+                    Loading project IDs...
+                  </div>
+                )}
+                {!projectIdsLoading && projectIds.length === 0 && (
+                  <p className="mt-1 text-sm text-red-600">
+                    No projects found. Please contact your administrator.
+                  </p>
+                )}
               </div>
 
               {/* Date Field */}
@@ -1127,41 +1179,6 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                   </div>
                 </div>
               </div>
-
-              {/* Visit Details */}
-              {/* <div className="mb-8">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Visit Details</h3>
-                <div className="space-y-4">
-                  {visits.map((visit) => (
-                    <div key={visit.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-gray-900">{visit.visitor} - {visit.role}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(visit.status)}`}>
-                          {visit.status}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-2">
-                        <div>
-                          <p className="text-gray-600">Date & Time</p>
-                          <p className="font-medium">{visit.date} at {visit.time}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Purpose</p>
-                          <p className="font-medium">{visit.purpose}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Weather</p>
-                          <p className="font-medium">{visit.weather}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-sm">Remarks</p>
-                        <p className="text-gray-900">{visit.remarks}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div> */}
 
               {/* Report Footer */}
               <div className="border-t border-gray-200 pt-6">

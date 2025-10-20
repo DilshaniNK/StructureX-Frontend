@@ -7,6 +7,7 @@ import Project from './Project';
 import Materials from './Materials';
 import Messages from './Messages';
 import Payments from './Payments';
+import Profile from '../../Components/Employee/Profile';
 
 export default function ProjectOwner() {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ export default function ProjectOwner() {
     if (path.includes('/materials')) return 'materials';
     if (path.includes('/messages')) return 'communications';
     if (path.includes('/payments')) return 'payments';
+    if (path.includes('/profile')) return 'profile';
     return 'dashboard'; // default
   };
   
@@ -57,6 +59,7 @@ export default function ProjectOwner() {
             <Route path="/materials" element={<Materials />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/payments" element={<Payments />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </div>
       </div>

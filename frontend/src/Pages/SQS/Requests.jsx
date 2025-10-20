@@ -17,7 +17,7 @@ function Requests() {
   })
 
   // Senior QS ID - this would typically come from authentication/context
-  const seniorQsId = 'EMP_003' // Senior QS employee ID
+  const seniorQsId = 'EMP_002' // Senior QS employee ID
 
   // Fetch data from API
   useEffect(() => {

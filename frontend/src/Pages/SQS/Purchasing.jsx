@@ -72,7 +72,7 @@ const Purchasing = () => {
 
   // Mock QS ID - In real app, this would come from authentication context  
   const qsId = 2; // Different ID for SQS
-  const qsEmpId = 'EMP_003'; // SQS Employee ID for fetching projects
+  const qsEmpId = 'EMP_002'; // SQS Employee ID for fetching projects
 
   // State for projects from API
   const [ongoingProjects, setOngoingProjects] = useState([]);

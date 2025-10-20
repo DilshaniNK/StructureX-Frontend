@@ -20,48 +20,15 @@ import {
 
 
 function BOQ() {
+  // TODO: Replace with actual employee ID from login token/session
+  const QS_EMPLOYEE_ID = 'EMP_001';
+  
   const [activeTab, setActiveTab] = useState('create'); // 'create' or 'edit'
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showViewForm, setShowViewForm] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  // Sample data for existing BOQs
-  const existingBOQs = [
-    {
-      id: 'BOQ001',
-      projectName: 'Luxury Villa Complex',
-      projectId: 'PROJ001',
-      clientName: 'ABC Holdings',
-      status: 'Draft',
-      totalAmount: 2500000,
-      lastModified: '2024-01-15',
-      createdBy: 'John Doe',
-      itemsCount: 45
-    },
-    {
-      id: 'BOQ002',
-      projectName: 'Commercial Tower',
-      projectId: 'PROJ002',
-      clientName: 'XYZ Developers',
-      status: 'Approved',
-      totalAmount: 8750000,
-      lastModified: '2024-01-10',
-      createdBy: 'Jane Smith',
-      itemsCount: 78
-    },
-    {
-      id: 'BOQ003',
-      projectName: 'Residential Apartments',
-      projectId: 'PROJ003',
-      clientName: 'HomeLife',
-      status: 'Under Review',
-      totalAmount: 4200000,
-      lastModified: '2024-01-08',
-      createdBy: 'Mike Johnson',
-      itemsCount: 56
-    }
-  ];
 
   // Project lists fetched from backend
   const [projectsWithoutBOQ, setProjectsWithoutBOQ] = useState([]);
@@ -80,7 +47,7 @@ function BOQ() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      const res = await fetch('http://localhost:8086/api/v1/qs/projects-with-data/EMP_001', {
+      const res = await fetch(`http://localhost:8086/api/v1/qs/projects-with-data/${QS_EMPLOYEE_ID}`, {
         signal: controller.signal
       });
       
@@ -123,12 +90,14 @@ function BOQ() {
             }
           });
         } else {
-          // Project doesn't have BOQ - add to create list
-          withoutBOQ.push({
-            id: project.project_id,
-            name: project.name,
-            client: `${project.client_data?.first_name || ''} ${project.client_data?.last_name || ''}`.trim() || 'Unknown Client'
-          });
+          // Project doesn't have BOQ and has "ongoing" status - add to create list
+          if (project.status?.toLowerCase() === 'ongoing') {
+            withoutBOQ.push({
+              id: project.project_id,
+              name: project.name,
+              client: `${project.client_data?.first_name || ''} ${project.client_data?.last_name || ''}`.trim() || 'Unknown Client'
+            });
+          }
         }
       });
       
@@ -389,7 +358,7 @@ function BOQ() {
     const boqObj = {
       projectId: projectId,
       date: formatDate(boqDate),
-      qsId: "EMP_001",
+      qsId: QS_EMPLOYEE_ID,
       status: status
     };
     if (isEdit && selectedProject && selectedProject.id) boqObj.boqId = selectedProject.id;
@@ -415,10 +384,16 @@ function BOQ() {
         console.error("[BOQ Save] Backend error:", errorText);
         throw new Error("Failed to save BOQ: " + errorText);
       }
+      // Show success message
+      alert(isEdit ? "BOQ updated successfully!" : "BOQ created successfully!");
+      
       setShowCreateForm(false);
       setShowEditForm(false);
       setSelectedProject(null);
       clearBOQForm();
+      
+      // Refresh the data to show updated list
+      await fetchProjectsData();
     } catch (err) {
       alert("Error saving BOQ: " + err.message);
       console.error("[BOQ Save] Exception:", err);

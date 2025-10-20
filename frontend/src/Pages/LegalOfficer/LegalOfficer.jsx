@@ -8,6 +8,7 @@ import Notification from '../../Components/Employee/Notification'
 import Chat from './Chat';
 import ProjectDetails from './ProjectDetails';
 import ProjectList from './ProjectList';
+import Profile from '../../Components/Employee/Profile';
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -29,6 +30,7 @@ export default function Home() {
     if (path.includes('/dashboard') || path === '/') return 'dashboard';
     if (path.includes('/chat')) return 'chat';
     if (path.includes('/notifications')) return 'notifications';
+    if (path.includes('/profile')) return 'profile';
 
     return 'home'; // default
   };
@@ -64,6 +66,7 @@ export default function Home() {
             />} />
             <Route path='/chat' element={<Chat />} />
             <Route path="/notifications" element={<Notification />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </div>
       </div>

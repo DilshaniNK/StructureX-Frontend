@@ -81,7 +81,24 @@ export default function ProjectDetails({ projectId, onBack, user }) {
   }
 
   if (!projectId) {
-    return <div>Project ID not provided</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-xl shadow-md">
+          <div className="mb-4 text-red-600">
+            <AlertCircle className="h-16 w-16 mx-auto" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Project ID not provided</h2>
+          <p className="text-gray-600 mb-4">Unable to load project details without a valid project ID.</p>
+          <button
+            onClick={onBack}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Project List
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const handleDocumentUploaded = (newDocument) => {

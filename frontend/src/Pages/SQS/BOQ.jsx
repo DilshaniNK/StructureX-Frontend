@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
   Plus, 
   Edit3, 
@@ -19,6 +20,7 @@ import {
 
 
 function BOQ() {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('create'); // 'create' or 'edit'
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -35,65 +37,106 @@ function BOQ() {
   const [underReviewBOQs, setUnderReviewBOQs] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [projectError, setProjectError] = useState(null);
+  const [sqsEmployeeId, setSqsEmployeeId] = useState('EMP_002'); // TODO: Get from auth context (SQS Employee ID)
 
-  // Fetch BOQ data from API
-  const fetchBOQs = async () => {
+  // Fetch project data from QS endpoint and all BOQs from SQS endpoint
+  const fetchProjectData = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('[SQS BOQ] Starting fetch...');
+      console.log('[SQS BOQ] Starting fetch from both endpoints...');
       
       // Add timeout to the fetch
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      const response = await fetch('http://localhost:8086/api/v1/sqs/boqs', {
+      // Fetch projects with data (for create dropdown)
+      const projectsResponse = await fetch(`http://localhost:8086/api/v1/qs/projects-with-data/${sqsEmployeeId}`, {
+        signal: controller.signal
+      });
+      
+      if (!projectsResponse.ok) {
+        const errorMessage = `Failed to fetch project data: ${projectsResponse.status} ${projectsResponse.statusText}`;
+        console.error('[SQS BOQ] HTTP Error:', errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      const projectsData = await projectsResponse.json();
+      console.log('[SQS BOQ] Project data received:', projectsData);
+      
+      // Fetch all BOQs from SQS endpoint
+      const boqsResponse = await fetch('http://localhost:8086/api/v1/sqs/boqs', {
         signal: controller.signal
       });
       
       clearTimeout(timeoutId);
       
-      if (!response.ok) {
-        const errorMessage = `Failed to fetch BOQs: ${response.status} ${response.statusText}`;
+      if (!boqsResponse.ok) {
+        const errorMessage = `Failed to fetch BOQs: ${boqsResponse.status} ${boqsResponse.statusText}`;
         console.error('[SQS BOQ] HTTP Error:', errorMessage);
         throw new Error(errorMessage);
       }
       
-      const data = await response.json();
-      console.log('[SQS BOQ] Data received:', data);
+      const boqsData = await boqsResponse.json();
+      console.log('[SQS BOQ] BOQs data received:', boqsData);
       
-      // Process the BOQ data according to the new API format
-      const processedBOQs = data.map(boqData => {
-        const boq = boqData.boq;
-        const items = boqData.items || [];
+      // Process projects data to get projects without BOQ and with "ongoing" status
+      const projectsWithoutBOQData = [];
+      
+      projectsData.forEach(project => {
+        // Only include projects that don't have BOQ and have "ongoing" status
+        if (project.boq_data === null && project.status?.toLowerCase() === 'ongoing') {
+          // Projects without BOQ - for create dropdown
+          projectsWithoutBOQData.push({
+            id: project.project_id,
+            name: project.name,
+            client: `${project.client_data?.first_name || ''} ${project.client_data?.last_name || ''}`.trim() || 'Unknown Client',
+            location: project.location,
+            category: project.category,
+            status: project.status,
+            budget: project.budget,
+            description: project.description,
+            startDate: project.start_date,
+            dueDate: project.due_date,
+            estimatedValue: project.estimated_value,
+            clientData: project.client_data
+          });
+        }
+      });
+      
+      // Process all BOQs from SQS endpoint
+      const projectsWithBOQData = boqsData.map(boqItem => {
+        const boq = boqItem.boq;
+        const items = boqItem.items || [];
         const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0);
         
         return {
           id: boq.boqId,
-          projectName: boqData.projectName || 'Unknown Project',
+          projectName: boqItem.projectName || 'Unknown Project',
           projectId: boq.projectId,
-          clientName: 'Unknown Client', // Client info not available in this API format
+          clientName: 'Unknown Client', // Client info not available in this format
           status: boq.status || 'Draft',
           totalAmount: totalAmount,
           lastModified: boq.date || new Date().toISOString().split('T')[0],
-          createdBy: boqData.qsName || 'Unknown',
+          createdBy: boqItem.qsName || 'Unknown',
           itemsCount: items.length,
-          projectLocation: boqData.projectLocation || '',
-          projectCategory: boqData.projectCategory || '',
+          projectLocation: boqItem.projectLocation || '',
+          projectCategory: boqItem.projectCategory || '',
           boqData: {
             ...boq,
             items: items,
             createdDate: boq.date,
-            projectName: boqData.projectName,
-            projectLocation: boqData.projectLocation,
-            projectCategory: boqData.projectCategory,
-            qsName: boqData.qsName
+            projectName: boqItem.projectName,
+            projectLocation: boqItem.projectLocation,
+            projectCategory: boqItem.projectCategory,
+            qsName: boqItem.qsName,
+            qsId: boq.qsId
           }
         };
       });
       
       // Filter BOQs to show only FINAL and APPROVED status for SQS officers
-      const finalBOQs = processedBOQs.filter(boq => {
+      const finalBOQs = projectsWithBOQData.filter(boq => {
         const status = boq.status?.toUpperCase();
         return status === 'FINAL' || status === 'APPROVED';
       });
@@ -102,14 +145,13 @@ function BOQ() {
       const approvedBOQs = finalBOQs.filter(boq => boq.status?.toUpperCase() === 'APPROVED');
       const underReviewBOQs = finalBOQs.filter(boq => boq.status?.toUpperCase() === 'FINAL');
       
-      // For now, assume all returned BOQs are for editing (projects with BOQs)
-      // You might need a separate API call to get projects without BOQs
-      setProjectsWithoutBOQ([]); // Empty for now - need separate API for projects without BOQs
+      // Update state
+      setProjectsWithoutBOQ(projectsWithoutBOQData);
       setProjectsWithBOQ(finalBOQs);
       setBOQs(finalBOQs);
       setApprovedBOQs(approvedBOQs);
       setUnderReviewBOQs(underReviewBOQs);
-      console.log('[SQS BOQ] Data processed successfully');
+      console.log('[SQS BOQ] Data processed successfully. Projects without BOQ:', projectsWithoutBOQData.length, 'Projects with BOQ:', finalBOQs.length);
     } catch (err) {
       console.error('[SQS BOQ] Error fetching BOQs:', err);
       let errorMessage = 'Failed to fetch BOQ data. Please try again.';
@@ -136,8 +178,48 @@ function BOQ() {
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchBOQs();
-  }, []);
+    fetchProjectData();
+  }, [sqsEmployeeId]);
+  
+  // Handle navigation state from Projects page
+  useEffect(() => {
+    if (location.state) {
+      const { editBoqId, createForProject } = location.state;
+      
+      if (editBoqId) {
+        // Navigate to edit tab and open edit form for specific BOQ
+        setActiveTab('edit');
+        // Wait for BOQs to be loaded, then find and open the BOQ
+        const waitForBOQs = setInterval(() => {
+          if (!loading && boqs.length > 0) {
+            const boqToEdit = boqs.find(b => b.id === editBoqId || b.boqId === editBoqId);
+            if (boqToEdit) {
+              handleEditBOQ(boqToEdit);
+            }
+            clearInterval(waitForBOQs);
+          }
+        }, 100);
+        
+        // Clear interval after 5 seconds to prevent infinite loop
+        setTimeout(() => clearInterval(waitForBOQs), 5000);
+      } else if (createForProject) {
+        // Navigate to create tab and open create form with pre-selected project
+        setActiveTab('create');
+        setShowCreateForm(true);
+        // If projects are loaded, pre-select the project
+        if (projectsWithoutBOQ.length > 0) {
+          const project = projectsWithoutBOQ.find(p => p.id === createForProject);
+          if (project) {
+            setSelectedProjectId(createForProject);
+            setClientName(project.client);
+          }
+        }
+      }
+      
+      // Clear the location state after handling it
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, loading, boqs, projectsWithoutBOQ]);
 
   // Load BOQ items when editing a project
   useEffect(() => {
@@ -153,50 +235,6 @@ function BOQ() {
       })));
     }
   }, [showEditForm, selectedProject]);
-
-  // Sample data for existing BOQs (fallback)
-  const existingBOQs = [
-    {
-      id: 'BOQ001',
-      projectName: 'Luxury Villa Complex',
-      projectId: 'PROJ001',
-      clientName: 'ABC Holdings',
-      status: 'Draft',
-      totalAmount: 2500000,
-      lastModified: '2024-01-15',
-      createdBy: 'John Doe',
-      itemsCount: 45
-    },
-    {
-      id: 'BOQ002',
-      projectName: 'Commercial Tower',
-      projectId: 'PROJ002',
-      clientName: 'XYZ Developers',
-      status: 'Approved',
-      totalAmount: 8750000,
-      lastModified: '2024-01-10',
-      createdBy: 'Jane Smith',
-      itemsCount: 78
-    },
-    {
-      id: 'BOQ003',
-      projectName: 'Residential Apartments',
-      projectId: 'PROJ003',
-      clientName: 'HomeLife',
-      status: 'Under Review',
-      totalAmount: 4200000,
-      lastModified: '2024-01-08',
-      createdBy: 'Mike Johnson',
-      itemsCount: 56
-    }
-  ];
-
-  // Sample project list for dropdown
-  const projectList = [
-    { id: 'PROJ001', name: 'Luxury Villa Complex', client: 'ABC Holdings' },
-    { id: 'PROJ002', name: 'Commercial Tower', client: 'XYZ Developers' },
-    { id: 'PROJ003', name: 'Residential Apartments', client: 'HomeLife' },
-  ];
 
   // State for create form fields
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -450,7 +488,7 @@ function BOQ() {
 
   // Function to refresh data manually
   const handleRefresh = () => {
-    fetchBOQs();
+    fetchProjectData();
   };
 
   // Handle edit BOQ - load details from selectedProject
@@ -552,7 +590,7 @@ function BOQ() {
       alert('BOQ has been successfully approved!');
       
       // Refresh the BOQ list to update the UI
-      await fetchBOQs();
+      await fetchProjectData();
       
     } catch (err) {
       alert('Error approving BOQ: ' + err.message);
@@ -615,7 +653,7 @@ function BOQ() {
     const boqObj = {
       projectId: projectId,
       date: formatDate(boqDate),
-      qsId: isEdit && selectedProject?.boqData?.qsId ? selectedProject.boqData.qsId : "EMP_001", // Use original QS ID for updates
+      qsId: isEdit ? (selectedProject?.boqData?.qsId || sqsEmployeeId) : sqsEmployeeId, // Use SQS Employee ID as QS ID
       status: status
     };
     if (isEdit && selectedProject && selectedProject.id) boqObj.boqId = selectedProject.id;
@@ -644,12 +682,17 @@ function BOQ() {
         console.error("[BOQ Save] Backend error:", errorText);
         throw new Error("Failed to save BOQ: " + errorText);
       }
+      
+      // Show success message
+      alert(isEdit ? "BOQ updated successfully!" : "BOQ created successfully!");
+      
       setShowCreateForm(false);
       setShowEditForm(false);
       setSelectedProject(null);
       clearBOQForm();
+      
       // Refresh the BOQ list
-      fetchBOQs();
+      await fetchProjectData();
     } catch (err) {
       alert("Error saving BOQ: " + err.message);
       console.error("[BOQ Save] Exception:", err);
@@ -782,7 +825,7 @@ function BOQ() {
                   <div className="text-red-600 font-medium mb-2">Error Loading BOQs</div>
                   <div className="text-red-500 text-sm">{error}</div>
                   <button 
-                    onClick={fetchBOQs}
+                    onClick={fetchProjectData}
                     className="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
                   >
                     Retry
@@ -826,16 +869,32 @@ function BOQ() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-                  <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
-                    value={selectedProjectId}
-                    onChange={handleProjectChange}
-                  >
-                    <option value="">Select a project</option>
-                    {projectsWithoutBOQ.map((proj) => (
-                      <option key={proj.id} value={proj.id}>{proj.name}</option>
-                    ))}
-                  </select>
+                  {loading ? (
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                      Loading projects...
+                    </div>
+                  ) : error ? (
+                    <div className="w-full px-3 py-2 border border-red-300 rounded-lg bg-red-50 text-red-500">
+                      {error}
+                    </div>
+                  ) : projectsWithoutBOQ.length === 0 ? (
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                      No projects available for new BOQ creation
+                    </div>
+                  ) : (
+                    <select
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
+                      value={selectedProjectId}
+                      onChange={handleProjectChange}
+                    >
+                      <option value="">Select a project</option>
+                      {projectsWithoutBOQ.map((proj) => (
+                        <option key={proj.id} value={proj.id}>
+                          {proj.name} - {proj.location} ({proj.category})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Project ID</label>

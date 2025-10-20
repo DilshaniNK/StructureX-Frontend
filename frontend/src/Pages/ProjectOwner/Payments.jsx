@@ -44,8 +44,6 @@ const CONFIG = {
   },
 };
 
-
-
 /**
  * Format currency with proper localization
  */

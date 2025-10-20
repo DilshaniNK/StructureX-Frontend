@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import Navbar from '../../Components/Employee/Navbar';
 import Sidebar from '../../Components/Employee/Sidebar';
+import Profile from '../../Components/Employee/Profile';
 
 import Dashboard from './Dashboard';
 import Catalogue from './Catalogue';
@@ -45,6 +46,7 @@ export default function Supplier() {
     if (path.match(/\/supplier\/[^/]+\/quotations/)) return 'quotations';
     if (path.match(/\/supplier\/[^/]+\/shistory/)) return 'shistory';
     if (path.match(/\/supplier\/[^/]+\/messages/)) return 'messages';
+    if (path.match(/\/supplier\/[^/]+\/profile/)) return 'profile';
     return 'home';
   };
 
@@ -77,6 +79,7 @@ export default function Supplier() {
             <Route path="/quotations" element={<Quotations />} />
             <Route path="/shistory" element={<Shistory />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/profile" element={<Profile />}/>
           </Routes>
         </div>
       </div>

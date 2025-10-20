@@ -11,6 +11,7 @@ import Chat from './Chat';
 
 import Notification from '../../Components/Employee/Notification'
 import Projects from './Projects';
+import Profile from '../../Components/Employee/Profile';
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -36,6 +37,7 @@ export default function Home() {
     if (path.includes('/todolist')) return 'todolist';
     if (path.includes('/chat')) return 'chat';
     if (path.includes('/notifications')) return 'notifications';
+    if (path.includes('/profile')) return 'profile';
     return 'home'; // default
   };
 
@@ -69,6 +71,7 @@ export default function Home() {
             <Route path="/sitevisitlogs" element={<SiteVisitLogs />} />
             <Route path="/todolist" element={<TodoList />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/profile" element={<Profile />} />
             {/* Add more routes as needed */}
 
           </Routes>

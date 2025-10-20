@@ -10,6 +10,7 @@ const Project = () => {
   const navigate = useNavigate();
   const employeeId = useParams();
 
+
   // ✅ Fetch projects from backend
   useEffect(() => {
     const fetchProjects = async () => {
@@ -148,10 +149,7 @@ const Project = () => {
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Project Overview</h1>
             <p className="text-gray-600">Manage and track all your projects in one place</p>
           </div>
-          <button className="bg-[#FAAD00] hover:bg-yellow-500 text-black font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-            <Plus className="w-5 h-5 mr-2" />
-            Add Project
-          </button>
+          
         </div>
 
         <div className="flex space-x-2 mb-8">

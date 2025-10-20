@@ -41,6 +41,7 @@ const ClientDetailsDisplay = () => {
           client_id: selectedClient.client_id
         }),
       });
+      console.log(selectedClient.client_id);
       if(response.ok){
         const result = await response.json(); // contains full project details
         console.log("Created project:", result); // ✅ result.project_id etc.
@@ -83,8 +84,10 @@ const ClientDetailsDisplay = () => {
       const withPlanData = await withPlanRes.json();
       const withoutPlanData = await withoutPlanRes.json();
 
+      console.log(withPlanData);
       setClientsWithPlan(withPlanData);
       setClientsWithoutPlan(withoutPlanData);
+      
       
     } catch (err) {
       setError(err.message);
@@ -134,7 +137,7 @@ const ClientDetailsDisplay = () => {
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {client.first_name} {client.last_name}
+                          {client.name} 
                         </div>
                       </div>
                     </div>
@@ -148,7 +151,7 @@ const ClientDetailsDisplay = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <Phone className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900">{client.contact_number}</span>
+                      <span className="text-sm text-gray-900">{client.phone_number}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

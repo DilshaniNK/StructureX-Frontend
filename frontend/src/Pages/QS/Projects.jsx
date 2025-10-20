@@ -3,6 +3,179 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { jwtDecode } from 'jwt-decode'
 import DailyUpdatesView from '../../Components/QS/DailyUpdatesView'
 import SiteVisitList from '../../Components/QS/SiteVisitList'
+import PaymentPlanView from '../../Components/QS/PaymentPlanView'
+
+// Materials Section Component
+const MaterialsSection = ({ projectId }) => {
+  const [purchaseOrders, setPurchaseOrders] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const fetchPurchaseOrders = async () => {
+      if (!projectId) return
+
+      setLoading(true)
+      setError(null)
+
+      try {
+        const response = await fetch(
+          `http://localhost:8086/api/v1/purchase-order/project/${projectId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch purchase orders')
+        }
+
+        const data = await response.json()
+        // Filter only active orders (where orderStatus is true)
+        const activeOrders = data.orders?.filter(order => order.orderStatus === true) || []
+        setPurchaseOrders(activeOrders)
+      } catch (err) {
+        console.error('Error fetching purchase orders:', err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPurchaseOrders()
+  }, [projectId])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-800">Error loading purchase orders: {error}</p>
+      </div>
+    )
+  }
+
+  if (purchaseOrders.length === 0) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+        <p className="text-gray-600">No active purchase orders found for this project.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold text-gray-900">Material Management - Purchase Orders</h3>
+      
+      {purchaseOrders.map((order) => (
+        <div key={order.orderId} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          {/* Order Header */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-gray-200">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center space-x-3 mb-2">
+                  <h4 className="text-lg font-semibold text-gray-900">Order #{order.orderId}</h4>
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                    {order.orderStatusText}
+                  </span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                    order.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {order.paymentStatusText}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-600">Order Date</p>
+                    <p className="font-medium text-gray-900">{order.orderDate}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Estimated Delivery</p>
+                    <p className="font-medium text-gray-900">{order.estimatedDeliveryDate}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Item Count</p>
+                    <p className="font-medium text-gray-900">{order.itemCount} items</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Total Amount</p>
+                    <p className="font-semibold text-blue-900">Rs {order.totalAmount?.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Order Items Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Item ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Quantity
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Unit Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {order.items.map((item, index) => (
+                  <tr key={item.itemId || index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      #{item.itemId}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {item.description}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {item.quantity}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      Rs {item.unitPrice?.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      Rs {(item.quantity * item.unitPrice)?.toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-gray-50">
+                <tr>
+                  <td colSpan="4" className="px-6 py-4 text-right text-sm font-bold text-gray-900">
+                    Order Total:
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-900">
+                    Rs {order.totalAmount?.toLocaleString()}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function Projects() {
   // TODO: Replace with actual employee ID from authentication/route params
@@ -37,6 +210,10 @@ function Projects() {
   const [boqData, setBoqData] = useState(null)
   const [loadingBoq, setLoadingBoq] = useState(false)
   const [boqError, setBoqError] = useState(null)
+  
+  // Payment/Financial state for overview
+  const [paymentData, setPaymentData] = useState(null)
+  const [loadingPayment, setLoadingPayment] = useState(false)
   
   const [taskFormData, setTaskFormData] = useState({
     name: '',
@@ -174,10 +351,44 @@ function Projects() {
     fetchBoqData()
   }, [selectedProject, activeSection])
   
-  // Fetch WBS data when project is selected and WBS section is active
+  // Fetch Payment data when a project is selected
+  useEffect(() => {
+    const fetchPaymentData = async () => {
+      if (!selectedProject) return
+      
+      setLoadingPayment(true)
+      
+      try {
+        const response = await fetch(
+          `http://localhost:8086/api/v1/payment-plan/project/${selectedProject.project_id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        )
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch payment data')
+        }
+        
+        const data = await response.json()
+        setPaymentData(data)
+      } catch (err) {
+        console.error('Error fetching payment data:', err)
+        setPaymentData(null)
+      } finally {
+        setLoadingPayment(false)
+      }
+    }
+    
+    fetchPaymentData()
+  }, [selectedProject])
+  
+  // Fetch WBS data when project is selected (for overview and WBS sections)
   useEffect(() => {
     const fetchWBSData = async () => {
-      if (!selectedProject || activeSection !== 'wbs') return
+      if (!selectedProject) return
       
       setLoading(true)
       setError(null)
@@ -215,7 +426,7 @@ function Projects() {
     }
     
     fetchWBSData()
-  }, [selectedProject, activeSection])
+  }, [selectedProject])
   
   // WBS Data with milestones and sub-tasks
   const [wbsData, setWbsData] = useState([
@@ -1161,6 +1372,66 @@ function Projects() {
     }
     return statusMap[status] || status
   }
+  
+  // Helper function to calculate WBS completion percentage
+  const calculateWBSCompletion = (tasks) => {
+    if (!tasks || tasks.length === 0) return 0
+    
+    const calculateTaskWeight = (task) => {
+      // If task has subtasks, its weight is the sum of subtask weights
+      if (task.subTasks && task.subTasks.length > 0) {
+        return task.subTasks.reduce((sum, subTask) => sum + calculateTaskWeight(subTask), 0)
+      }
+      // Leaf tasks have weight of 1
+      return 1
+    }
+    
+    const calculateTaskCompletion = (task) => {
+      const taskWeight = calculateTaskWeight(task)
+      
+      // If task has subtasks, calculate based on subtasks
+      if (task.subTasks && task.subTasks.length > 0) {
+        const subtaskCompletion = task.subTasks.reduce((sum, subTask) => {
+          return sum + calculateTaskCompletion(subTask)
+        }, 0)
+        return subtaskCompletion
+      }
+      
+      // Leaf task: return weight if completed, 0 otherwise
+      if (task.status?.toLowerCase() === 'completed') {
+        return taskWeight
+      }
+      return 0
+    }
+    
+    // Calculate total weight of all tasks
+    const totalWeight = tasks.reduce((sum, task) => sum + calculateTaskWeight(task), 0)
+    
+    if (totalWeight === 0) return 0
+    
+    // Calculate completed weight
+    const completedWeight = tasks.reduce((sum, task) => sum + calculateTaskCompletion(task), 0)
+    
+    // Return percentage
+    return Math.round((completedWeight / totalWeight) * 100)
+  }
+  
+  // Helper function to calculate payment completion percentage
+  const calculatePaymentCompletion = () => {
+    if (!paymentData || !paymentData.phases || paymentData.phases.length === 0) {
+      return 0
+    }
+    
+    const totalAmount = paymentData.phases.reduce((sum, phase) => sum + (phase.amount || 0), 0)
+    
+    if (totalAmount === 0) return 0
+    
+    const paidAmount = paymentData.phases
+      .filter(phase => phase.paymentStatus?.toLowerCase() === 'paid')
+      .reduce((sum, phase) => sum + (phase.amount || 0), 0)
+    
+    return Math.round((paidAmount / totalAmount) * 100)
+  }
 
   const renderProjectList = () => {
     const projects = getFilteredProjects()
@@ -1194,43 +1465,57 @@ function Projects() {
         {projects.map(project => (
           <div 
             key={project.project_id} 
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition duration-200 cursor-pointer transform hover:-translate-y-1"
+            className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 overflow-hidden"
             onClick={() => handleProjectSelect(project)}
           >
-            {project.project_images && project.project_images.length > 0 ? (
-              <img 
-                src={project.project_images[0]} 
-                alt={project.name} 
-                className="w-full h-48 object-cover rounded-lg mb-4"
-              />
-            ) : (
-              <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                <span className="text-gray-400">No image available</span>
+            {/* Header Section with light yellow background */}
+            <div className="p-4 border-b border-gray-200" style={{ backgroundColor: '#FFDD00' }}>
+              <div className="flex items-center space-x-2 mb-2">
+                <svg className="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                </svg>
+                <h3 className="font-bold text-xl text-black truncate">{project.name}</h3>
               </div>
-            )}
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">{project.name}</h3>
-              <p className="text-sm text-gray-600 mb-2">
-                <span className="font-medium">ID:</span> {project.project_id}
+              <p className="text-gray-800 text-sm flex items-center space-x-1">
+                <svg className="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+                <span className="font-semibold text-black">Client:</span>
+                <span className="truncate font-medium">{project.client_name}</span>
               </p>
-              <p className="text-sm text-gray-600 mb-2">
-                <span className="font-medium">Location:</span> {project.location}
-              </p>
-              <p className="text-sm text-gray-600 mb-2">
-                <span className="font-medium">Category:</span> {project.category}
-              </p>
-              <p className="text-sm text-gray-600 mb-2">
-                <span className="font-medium">Client:</span> {project.client_name}
-              </p>
-              <p className="text-sm text-gray-600 mb-2">
-                <span className="font-medium">Budget:</span> Rs {project.budget?.toLocaleString()}
-              </p>
-              <div className="flex justify-between items-center mt-3">
-                <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(project.status)}`}>
+            </div>
+
+            {/* Body Section with yellow background */}
+            <div className="p-4 bg-yellow-200">
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center justify-between bg-white rounded-lg p-2 shadow-sm">
+                  <span className="text-xs font-bold text-black">ID:</span>
+                  <span className="text-xs font-semibold text-black">{project.project_id}</span>
+                </div>
+                <div className="flex items-center justify-between bg-white rounded-lg p-2 shadow-sm">
+                  <span className="text-xs font-bold text-black">Location:</span>
+                  <span className="text-xs font-semibold text-black truncate ml-2">{project.location}</span>
+                </div>
+                <div className="flex items-center justify-between bg-white rounded-lg p-2 shadow-sm">
+                  <span className="text-xs font-bold text-black">Category:</span>
+                  <span className="text-xs font-semibold text-black">{project.category}</span>
+                </div>
+                <div className="flex items-center justify-between bg-white rounded-lg p-2 shadow-sm">
+                  <span className="text-xs font-bold text-black">Budget:</span>
+                  <span className="text-xs font-semibold text-black">Rs {project.budget?.toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Footer Section */}
+              <div className="flex justify-between items-center pt-3 border-t border-yellow-400">
+                <span className={`text-xs px-3 py-1 rounded-full font-bold ${getStatusColor(project.status)}`}>
                   {project.status}
                 </span>
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                  View Details →
+                <button className="bg-black text-white hover:bg-gray-800 px-4 py-2 rounded-lg text-xs font-bold transition-colors duration-200 flex items-center space-x-1 shadow-md">
+                  <span>View</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -1243,17 +1528,164 @@ function Projects() {
   const renderSectionContent = () => {
     switch (activeSection) {
       case 'overview':
+        const wbsCompletionPercentage = calculateWBSCompletion(wbsData)
+        const paymentCompletionPercentage = calculatePaymentCompletion()
+        
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-900">Project Overview</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Progress Summary</h4>
-                <p className="text-blue-700">Overall project progress: 65%</p>
+            
+            {/* WBS Completion Progress */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-600 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-blue-900 text-lg">Work Breakdown Structure (WBS) Progress</h4>
+                    <p className="text-sm text-blue-700">Overall project task completion</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-blue-900">{wbsCompletionPercentage}%</div>
+                  <p className="text-xs text-blue-600 mt-1">Completed</p>
+                </div>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-medium text-green-900 mb-2">Budget Status</h4>
-                <p className="text-green-700">Budget utilization: 58%</p>
+              
+              {/* Progress Bar */}
+              <div className="relative w-full bg-blue-200 rounded-full h-6 overflow-hidden">
+                <div 
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500 ease-out flex items-center justify-center"
+                  style={{ width: `${wbsCompletionPercentage}%` }}
+                >
+                  {wbsCompletionPercentage > 10 && (
+                    <span className="text-xs font-semibold text-white">{wbsCompletionPercentage}%</span>
+                  )}
+                </div>
+                {wbsCompletionPercentage <= 10 && wbsCompletionPercentage > 0 && (
+                  <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold text-blue-900">
+                    {wbsCompletionPercentage}%
+                  </span>
+                )}
+              </div>
+              
+              <div className="mt-3 flex items-center justify-between text-sm">
+                <span className="text-blue-700">
+                  {wbsData.length} main {wbsData.length === 1 ? 'task' : 'tasks'}
+                </span>
+                <span className="text-blue-700">
+                  Based on hierarchical task completion
+                </span>
+              </div>
+            </div>
+            
+            {/* Payment Completion Progress */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border border-green-200 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-600 rounded-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-green-900 text-lg">Payment Progress</h4>
+                    <p className="text-sm text-green-700">Financial milestone completion</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-green-900">{paymentCompletionPercentage}%</div>
+                  <p className="text-xs text-green-600 mt-1">Received</p>
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="relative w-full bg-green-200 rounded-full h-6 overflow-hidden">
+                <div 
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-500 ease-out flex items-center justify-center"
+                  style={{ width: `${paymentCompletionPercentage}%` }}
+                >
+                  {paymentCompletionPercentage > 10 && (
+                    <span className="text-xs font-semibold text-white">{paymentCompletionPercentage}%</span>
+                  )}
+                </div>
+                {paymentCompletionPercentage <= 10 && paymentCompletionPercentage > 0 && (
+                  <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold text-green-900">
+                    {paymentCompletionPercentage}%
+                  </span>
+                )}
+              </div>
+              
+              {loadingPayment ? (
+                <div className="mt-3 text-sm text-green-700">Loading payment data...</div>
+              ) : paymentData && paymentData.phases ? (
+                <div className="mt-3 flex items-center justify-between text-sm">
+                  <span className="text-green-700">
+                    {paymentData.phases.filter(p => p.paymentStatus?.toLowerCase() === 'paid').length} of {paymentData.phases.length} phases paid
+                  </span>
+                  <span className="text-green-700 font-semibold">
+                    Rs {paymentData.phases
+                      .filter(p => p.paymentStatus?.toLowerCase() === 'paid')
+                      .reduce((sum, p) => sum + (p.amount || 0), 0)
+                      .toLocaleString()} received
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-3 text-sm text-green-700">No payment data available</div>
+              )}
+            </div>
+            
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white border border-gray-200 p-5 rounded-lg shadow-sm">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-gray-900">Project Status</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Current Phase:</span>
+                    <span className={`font-medium px-2 py-0.5 rounded ${getStatusColor(selectedProject.status)}`}>
+                      {selectedProject.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Progress Variance:</span>
+                    <span className={`font-semibold ${
+                      wbsCompletionPercentage >= paymentCompletionPercentage ? 'text-green-600' : 'text-orange-600'
+                    }`}>
+                      {wbsCompletionPercentage >= paymentCompletionPercentage ? 'On Track' : 'Payment Ahead'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white border border-gray-200 p-5 rounded-lg shadow-sm">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-gray-900">Timeline</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Start Date:</span>
+                    <span className="font-medium text-gray-900">{selectedProject.start_date}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Due Date:</span>
+                    <span className="font-medium text-gray-900">{selectedProject.due_date}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1919,197 +2351,13 @@ function Projects() {
       
       case 'financial':
         return (
-          <div className="space-y-8">
-            <h3 className="text-lg font-semibold text-gray-900">Financial Overview</h3>
-            
-            {/* Financial Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
-                <h4 className="font-medium text-green-900">Payments Received</h4>
-                <p className="text-2xl font-bold text-green-700">Rs 36,000,000</p>
-                <p className="text-sm text-green-600 mt-1">60% of total budget</p>
-              </div>
-              <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
-                <h4 className="font-medium text-yellow-900">Payments Pending</h4>
-                <p className="text-2xl font-bold text-yellow-700">Rs 18,000,000</p>
-                <p className="text-sm text-yellow-600 mt-1">30% of total budget</p>
-              </div>
-              <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-                <h4 className="font-medium text-blue-900">Total Budget</h4>
-                <p className="text-2xl font-bold text-blue-700">Rs 76,500,000</p>
-                <p className="text-sm text-blue-600 mt-1">Project allocation</p>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
-                <h4 className="font-medium text-purple-900">Actual Cost</h4>
-                <p className="text-2xl font-bold text-purple-700">Rs 54,000,000</p>
-                <p className="text-sm text-purple-600 mt-1">71% of budget</p>
-              </div>
-            </div>
-
-            {/* Installment Plan Section */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h4 className="text-xl font-semibold text-gray-900 mb-6">Payment Schedule & Installments</h4>
-              
-              {/* Progress Bar */}
-              <div className="mb-6">
-                <div className="flex justify-between text-sm text-gray-600 mb-2">
-                  <span>Payment Progress</span>
-                  <span>60% Complete</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-300" style={{width: '60%'}}></div>
-                </div>
-              </div>
-
-              {/* Installment Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-4 py-3 font-medium text-gray-900">#</th>
-                      <th className="px-4 py-3 font-medium text-gray-900">Milestone</th>
-                      <th className="px-4 py-3 font-medium text-gray-900">Due Date</th>
-                      <th className="px-4 py-3 font-medium text-gray-900">Amount (LKR)</th>
-                      <th className="px-4 py-3 font-medium text-gray-900">Status</th>
-                      <th className="px-4 py-3 font-medium text-gray-900">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-4 py-3">1</td>
-                      <td className="px-4 py-3 font-medium">Project Initiation</td>
-                      <td className="px-4 py-3 text-gray-600">2024-01-15</td>
-                      <td className="px-4 py-3 font-semibold text-green-600">Rs 15,300,000</td>
-                      <td className="px-4 py-3">
-                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Paid</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">View Receipt</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-4 py-3">2</td>
-                      <td className="px-4 py-3 font-medium">Foundation Completion</td>
-                      <td className="px-4 py-3 text-gray-600">2024-03-01</td>
-                      <td className="px-4 py-3 font-semibold text-green-600">Rs 12,750,000</td>
-                      <td className="px-4 py-3">
-                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Paid</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">View Receipt</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-4 py-3">3</td>
-                      <td className="px-4 py-3 font-medium">Structural Framework</td>
-                      <td className="px-4 py-3 text-gray-600">2024-05-15</td>
-                      <td className="px-4 py-3 font-semibold text-green-600">Rs 7,950,000</td>
-                      <td className="px-4 py-3">
-                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Paid</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">View Receipt</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-4 py-3">4</td>
-                      <td className="px-4 py-3 font-medium">Roofing & Electrical</td>
-                      <td className="px-4 py-3 text-gray-600">2024-08-30</td>
-                      <td className="px-4 py-3 font-semibold text-yellow-600">Rs 10,200,000</td>
-                      <td className="px-4 py-3">
-                        <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Pending</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">Generate Invoice</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-4 py-3">5</td>
-                      <td className="px-4 py-3 font-medium">Interior & Finishing</td>
-                      <td className="px-4 py-3 text-gray-600">2024-11-15</td>
-                      <td className="px-4 py-3 font-semibold text-gray-600">Rs 12,750,000</td>
-                      <td className="px-4 py-3">
-                        <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Upcoming</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button className="text-gray-400 text-sm cursor-not-allowed">Scheduled</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-4 py-3">6</td>
-                      <td className="px-4 py-3 font-medium">Final Handover</td>
-                      <td className="px-4 py-3 text-gray-600">2024-12-30</td>
-                      <td className="px-4 py-3 font-semibold text-gray-600">Rs 17,550,000</td>
-                      <td className="px-4 py-3">
-                        <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Upcoming</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button className="text-gray-400 text-sm cursor-not-allowed">Scheduled</button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Summary */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-sm text-gray-600">Total Paid</p>
-                  <p className="text-lg font-semibold text-green-600">Rs 36,000,000</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Next Payment Due</p>
-                  <p className="text-lg font-semibold text-yellow-600">Rs 10,200,000</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Remaining Balance</p>
-                  <p className="text-lg font-semibold text-gray-600">Rs 30,300,000</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Terms */}
-            <div className="mt-6 p-4 border border-gray-200 rounded-lg">
-              <h5 className="font-medium text-gray-900 mb-3">Payment Terms & Conditions</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                <div>
-                  <p><strong>Late Payment Penalty:</strong> 2% per month</p>
-                  <p><strong>Early Payment Discount:</strong> 1% for payments made 30 days early</p>
-                </div>
-                <div>
-                  <p><strong>Payment Method:</strong> Bank Transfer to Company Account</p>
-                  <p><strong>Currency:</strong> Sri Lankan Rupees (LKR)</p>
-                </div>
-              </div>
-            </div>
+          <div className="space-y-6">
+            <PaymentPlanView projectId={selectedProject?.project_id} />
           </div>
         )
       
       case 'materials':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Material Management</h3>
-            <div className="space-y-4">
-              {[
-                { item: 'Cement', remaining: '50 bags', status: 'Approved' },
-                { item: 'Steel Bars', remaining: '200 units', status: 'Pending' },
-                { item: 'Bricks', remaining: '5000 pieces', status: 'Approved' }
-              ].map((material, index) => (
-                <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <span className="font-medium text-gray-900">{material.item}</span>
-                    <p className="text-sm text-gray-600">{material.remaining} remaining</p>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${material.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                    {material.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
+        return <MaterialsSection projectId={selectedProject?.project_id} />
       
       case 'visits':
         return (
@@ -2147,21 +2395,9 @@ function Projects() {
         </button>
         
         <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex flex-col lg:flex-row gap-6 mb-8">
-            {selectedProject.project_images && selectedProject.project_images.length > 0 ? (
-              <img 
-                src={selectedProject.project_images[0]} 
-                alt={selectedProject.name} 
-                className="w-full lg:w-80 h-64 object-cover rounded-lg"
-              />
-            ) : (
-              <div className="w-full lg:w-80 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-gray-400">No image available</span>
-              </div>
-            )}
-            <div className="flex-1 space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900">{selectedProject.name}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900">{selectedProject.name}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <span className="font-medium text-gray-700">Project ID:</span>
                   <p className="text-gray-600">{selectedProject.project_id}</p>
@@ -2309,7 +2545,6 @@ function Projects() {
                 )}
               </div>
             </div>
-          </div>
 
           <div className="border-b border-gray-200">
             <nav className="flex flex-wrap -mb-px space-x-8">

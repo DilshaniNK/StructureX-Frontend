@@ -51,7 +51,7 @@ const App = () => {
               </ProtectedRoute>
             } />
              <Route path="/project_owner/:clientId/*" element={
-              <ProtectedRoute allowedRoles={['Project_Owner']}>
+              <ProtectedRoute allowedRoles={['Client']}>
                 <ProjectOwner />
               </ProtectedRoute>
             } />

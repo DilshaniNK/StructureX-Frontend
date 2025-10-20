@@ -12,7 +12,10 @@ import Materials from './Materials';
 import Inventory from './Inventory';
 import Todo from './Todo';
 import S_calendar from './Calendar';
-import Profile from '../../Components/Employee/Profile';
+import LabourRequest from './LabourRequest';
+import DailyUpdates from './DailyUpdates';
+import Wbs from './Wbs';
+import PettyCash from './PettyCash';
 
 export default function SiteSupervisor() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -37,8 +40,13 @@ export default function SiteSupervisor() {
     if (path.includes('/labors')) return 'labors';
     if (path.includes('/materials')) return 'materials';
     if (path.includes('/inventory')) return 'inventory';
+    if (path.includes('/labour_request')) return 'LabourRequest';
+    if (path.includes('/daily_updates')) return 'DailyUpdates';
+    if (path.includes('/wbs')) return 'wbs';
+    if (path.includes('/petty_cash')) return 'PettyCash';
     if (path.includes('/calendar')) return 'S_calendar';
-    if (path.includes('/profile')) return 'profile';
+
+
     return 'home';
   };
 
@@ -70,11 +78,14 @@ export default function SiteSupervisor() {
             <Route path="/project_details" element={<ProjectDetails />} />
             <Route path="/progress" element={<Progress />} />
             <Route path="/labors" element={<Labors />} />
+            <Route path="/wbs" element={<Wbs />} />
             <Route path="/to-do" element={<Todo />} />
             <Route path="/calendar" element={<S_calendar />} />
+            <Route path="/daily_updates" element={<DailyUpdates />} />
             <Route path="/materials" element={<Materials />} />
+            <Route path="/petty_cash" element={<PettyCash employeeId={employeeId} />} />
+            <Route path="/labour_request" element={<LabourRequest />} />
             <Route path="/inventory" element={<Inventory />} />
-            <Route path="/profile" element={<Profile />} />
           </Routes>
         </div>
       </div>

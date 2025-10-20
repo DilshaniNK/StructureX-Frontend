@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 
 import { 
   Home, Users, BarChart3, Clipboard,BadgeCheck, BookOpen, Shield,ChevronRight, Bell, MessageSquare, Settings, LogOut,Rocket,Loader, ShoppingCart, FileText, AlertCircle
@@ -14,10 +15,30 @@ const Sidebar = ({
 }) => {
   const [isDesktopHovered, setIsDesktopHovered] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [employeeId, setEmployeeId] = useState(null);
   const navigate = useNavigate();
+  const params = useParams();
+
+  // Get employeeId from URL params or JWT
+  useEffect(() => {
+    if (params.employeeId) {
+      setEmployeeId(params.employeeId);
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          setEmployeeId(decoded.employeeId);
+        } catch (error) {
+          console.error('Error decoding token:', error);
+        }
+      }
+    }
+  }, [params.employeeId]);
 
   const menuItems = {
-    QSOfficer: [      { id: 'home', label: 'Home', icon: Home, path: '/qs', badge: null },
+    QSOfficer: [
+      { id: 'home', label: 'Home', icon: Home, path: '/qs', badge: null },
       { id: 'projects', label: 'Projects', icon: Rocket, path: '/qs/projects'},
       { id: 'purchasing', label: 'Purchasing', icon: ShoppingCart, path: '/qs/purchasing', badge: null },
       { id: 'boq', label: 'Bill Of Quantity', icon: BadgeCheck , path: '/qs/boq', badge: null },
@@ -30,8 +51,14 @@ const Sidebar = ({
   const currentMenu = menuItems.QSOfficer;
 
   const handleItemClick = (item) => {
-    if (onNavigate) {
-      onNavigate(item.id, item.path);
+    if (employeeId) {
+      // Build path with employeeId
+      const fullPath = item.path.replace('/qs', `/qs/${employeeId}`);
+      if (onNavigate) {
+        onNavigate(item.id, fullPath);
+      } else {
+        navigate(fullPath);
+      }
     } else if (item.path) {
       navigate(item.path);
     }

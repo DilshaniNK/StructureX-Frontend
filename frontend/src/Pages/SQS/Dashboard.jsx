@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import Layout from '../../Components/SQS/Layout';
 import CalendarCard from '../../Components/Financial_officer/CalenderCard';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
@@ -10,6 +11,8 @@ import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 
 function Dashboard() {
   const navigate = useNavigate();
+  const params = useParams();
+  const [employeeId, setEmployeeId] = useState(null);
   
   // State to control QS assignment overlay
   const [showQSAssignmentOverlay, setShowQSAssignmentOverlay] = useState(false);
@@ -22,6 +25,23 @@ function Dashboard() {
   // State for QS officers
   const [qsOfficers, setQsOfficers] = useState([]);
   const [loadingQsOfficers, setLoadingQsOfficers] = useState(false);
+
+  // Get employeeId from URL params or JWT
+  useEffect(() => {
+    if (params.employeeId) {
+      setEmployeeId(params.employeeId);
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          setEmployeeId(decoded.employeeId);
+        } catch (error) {
+          console.error('Error decoding token:', error);
+        }
+      }
+    }
+  }, [params.employeeId]);
 
   // Fetch projects without QS officers from API
   useEffect(() => {
@@ -125,18 +145,20 @@ function Dashboard() {
 
   // Navigation handlers for quick links
   const handleQuickLinkNavigation = (page) => {
+    if (!employeeId) return;
+    
     switch(page) {
       case 'projects':
-        navigate('/sqs/projects');
+        navigate(`/sqs/${employeeId}/projects`);
         break;
       case 'boqs':
-        navigate('/sqs/boq');
+        navigate(`/sqs/${employeeId}/boq`);
         break;
       case 'material-requests':
-        navigate('/sqs/requests');
+        navigate(`/sqs/${employeeId}/requests`);
         break;
       case 'purchasing':
-        navigate('/sqs/purchasing');
+        navigate(`/sqs/${employeeId}/purchasing`);
         break;
       case 'assign-qs':
         // Scroll to QS assignment section or open overlay

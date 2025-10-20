@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import { 
   Plus, 
   Edit3, 
@@ -21,6 +22,7 @@ import {
 
 function BOQ() {
   const location = useLocation();
+  const params = useParams();
   const [activeTab, setActiveTab] = useState('create'); // 'create' or 'edit'
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -37,7 +39,24 @@ function BOQ() {
   const [underReviewBOQs, setUnderReviewBOQs] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [projectError, setProjectError] = useState(null);
-  const [sqsEmployeeId, setSqsEmployeeId] = useState('EMP_002'); // TODO: Get from auth context (SQS Employee ID)
+  const [sqsEmployeeId, setSqsEmployeeId] = useState(null);
+
+  // Get employeeId from URL params or JWT
+  useEffect(() => {
+    if (params.employeeId) {
+      setSqsEmployeeId(params.employeeId);
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          setSqsEmployeeId(decoded.employeeId);
+        } catch (error) {
+          console.error('Error decoding token:', error);
+        }
+      }
+    }
+  }, [params.employeeId]);
 
   // Fetch project data from QS endpoint and all BOQs from SQS endpoint
   const fetchProjectData = async () => {

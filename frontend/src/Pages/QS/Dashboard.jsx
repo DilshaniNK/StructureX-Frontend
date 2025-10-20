@@ -1,5 +1,6 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import Layout from '../../Components/QS/Layout';
 import CalendarCard from '../../Components/Financial_officer/CalenderCard';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
@@ -9,21 +10,42 @@ import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 
 function Dashboard() {
   const navigate = useNavigate();
+  const params = useParams();
+  const [employeeId, setEmployeeId] = useState(null);
+
+  // Get employeeId from URL params or JWT
+  useEffect(() => {
+    if (params.employeeId) {
+      setEmployeeId(params.employeeId);
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          setEmployeeId(decoded.employeeId);
+        } catch (error) {
+          console.error('Error decoding token:', error);
+        }
+      }
+    }
+  }, [params.employeeId]);
 
   // Navigation handlers for quick links
   const handleQuickLinkNavigation = (page) => {
+    if (!employeeId) return;
+    
     switch(page) {
       case 'projects':
-        navigate('/qs/projects');
+        navigate(`/qs/${employeeId}/projects`);
         break;
       case 'boqs':
-        navigate('/qs/boq');
+        navigate(`/qs/${employeeId}/boq`);
         break;
       case 'material-requests':
-        navigate('/qs/requests');
+        navigate(`/qs/${employeeId}/requests`);
         break;
       case 'purchasing':
-        navigate('/qs/purchasing');
+        navigate(`/qs/${employeeId}/purchasing`);
         break;
       default:
         break;

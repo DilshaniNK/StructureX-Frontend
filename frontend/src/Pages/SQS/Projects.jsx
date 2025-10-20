@@ -230,13 +230,18 @@ function Projects() {
   ])
   const [bulkSubtaskParent, setBulkSubtaskParent] = useState(null)
   
-  // Fetch user role from JWT token
+  // Fetch user role and employeeId from JWT token
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
       try {
         const decoded = jwtDecode(token)
-        setUserRole(decoded.role || '')
+        setUserRole(decoded.type || '')
+        // Set employeeId from JWT if not in URL params
+        if (!employeeId && decoded.employeeId) {
+          // If employeeId is not available from URL, we can use it from token for API calls
+          console.log('Using employeeId from JWT:', decoded.employeeId)
+        }
       } catch (err) {
         console.error('Error decoding token:', err)
       }

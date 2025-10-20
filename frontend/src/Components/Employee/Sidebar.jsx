@@ -11,7 +11,7 @@ import TodoList from '@mui/icons-material/ListAltOutlined';
 import Update from '@mui/icons-material/UpdateOutlined';
 
 import {
-  Home, Users, BarChart3, BookmarkCheck, ClipboardPenLine, UserRoundSearch, Clipboard, BadgeCheck, BookOpen, Shield, ChevronRight, Bell, MessageSquare, Settings, LogOut, Rocket, Loader, FileText, Truck, Package, Receipt, FolderOpen, User, MapPin, X
+  Home, Users, BarChart3, BookmarkCheck, ClipboardPenLine, UserRoundSearch, Clipboard, BadgeCheck, BookOpen, Shield, ChevronRight, Bell, MessageSquare, Settings, LogOut, Rocket, Loader, FileText, Truck, Package, Receipt, FolderOpen, User, MapPin, X, ShoppingCart, AlertCircle
 } from 'lucide-react';
 
 const Sidebar = ({
@@ -105,6 +105,24 @@ const Sidebar = ({
 
 
 
+    ],
+    QSOfficer: [
+      { id: 'home', label: 'Home', icon: Home, path: '/qs', badge: null },
+      { id: 'projects', label: 'Projects', icon: Rocket, path: '/qs/projects'},
+      { id: 'purchasing', label: 'Purchasing', icon: ShoppingCart, path: '/qs/purchasing', badge: null },
+      { id: 'boq', label: 'Bill Of Quantity', icon: BadgeCheck , path: '/qs/boq', badge: null },
+      { id: 'request', label: 'Requests', icon: AlertCircle , path: '/qs/requests', badge: null },
+      { id: 'notification', label: 'Notifications', icon: Bell, path: '/qs/notifications', badge: '12' },
+      { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/qs/chat', badge: '5' }
+    ],
+    SeniorQSOfficer: [
+      { id: 'home', label: 'Home', icon: Home, path: '/sqs', badge: null },
+      { id: 'projects', label: 'Projects', icon: Rocket, path: '/sqs/projects'},
+      { id: 'purchasing', label: 'Purchasing', icon: ShoppingCart, path: '/sqs/purchasing', badge: null },
+      { id: 'boq', label: 'Bill Of Quantity', icon: BadgeCheck , path: '/sqs/boq', badge: null },
+      { id: 'request', label: 'Requests', icon: AlertCircle , path: '/sqs/requests', badge: null },
+      { id: 'notification', label: 'Notifications', icon: Bell, path: '/sqs/notifications', badge: '12' },
+      { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/sqs/chat', badge: '5' }
     ]
   };
 
@@ -132,7 +150,9 @@ const Sidebar = ({
       admin: 'Administration',
       Designer: 'Designer Portal',
       employee: 'Employee Portal',
-      Example: 'example portal'
+      Example: 'example portal',
+      QSOfficer: 'QS Officer Portal',
+      SeniorQSOfficer: 'Senior QS Officer Portal'
     };
     return titles[role] || 'Dashboard';
   };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { jwtDecode } from 'jwt-decode';
 
 function Requests() {
   const [requests, setRequests] = useState([])
@@ -6,17 +7,30 @@ function Requests() {
   const [loading, setLoading] = useState(true)
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [qsId, setQsId] = useState(null)
   const [filters, setFilters] = useState({
     project: '',
     type: '',
     status: ''
   })
 
-  // QS ID - this would typically come from authentication/context
-  const qsId = 'EMP_001' // QS officer employee ID
+  // Extract employeeId from JWT token
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setQsId(decoded.employeeId);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
 
   // Fetch data from API
   useEffect(() => {
+    if (!qsId) return; // Don't fetch until we have the employeeId
+
     const fetchRequests = async () => {
       try {
         setLoading(true)
@@ -46,7 +60,7 @@ function Requests() {
     }
 
     fetchRequests()
-  }, [])
+  }, [qsId])
 
   // Filter requests based on selected filters
   useEffect(() => {

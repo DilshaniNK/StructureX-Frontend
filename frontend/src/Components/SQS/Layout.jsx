@@ -1,17 +1,55 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Outlet } from 'react-router-dom'
-import Navbar from './Navbar'
-import Sidebar from "./Sidebar";
+import { jwtDecode } from 'jwt-decode';
+import Navbar from '../Employee/Navbar'
+import Sidebar from "../SQS/Sidebar";
 
 const Layout = () => {
-    const userRole = 'SeniorQSOfficer'; // Change this based on your user's actual role
-    const userName = 'Malith'; // Get this from your user context/state
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [userName, setUserName] = useState('Senior QS Officer');
+    const userRole = 'SeniorQSOfficer';
+    const { employeeId } = useParams();
 
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Extract user info from JWT token
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                // You can set userName from JWT if available
+                setUserName(decoded.name || decoded.email || 'Senior QS Officer');
+            } catch (error) {
+                console.error('Error decoding token:', error);
+                navigate('/unauthorized');
+            }
+        } else {
+            navigate('/unauthorized');
+        }
+    }, [navigate]);
 
     const handleSidebarNavigate = (id, path) => {
-        navigate(path); // This will navigate when a Sidebar item is clicked
+        // Path already includes employeeId from Sidebar, just navigate directly
+        navigate(path);
+    };
+
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen);
+    };
+
+    // Determine active item based on current path
+    const getActiveItem = () => {
+        const path = location.pathname;
+        if (path.includes('/projects')) return 'projects';
+        if (path.includes('/purchasing')) return 'purchasing';
+        if (path.includes('/boq')) return 'boq';
+        if (path.includes('/requests')) return 'request';
+        if (path.includes('/notifications')) return 'notification';
+        if (path.includes('/chat')) return 'chat';
+        return 'home';
     };
 
     return (
@@ -19,14 +57,18 @@ const Layout = () => {
             <Navbar
                 userRole={userRole}
                 userName={userName}
+                isSidebarOpen={isSidebarOpen}
+                toggleSidebar={toggleSidebar}
             />
             <Sidebar
                 userRole={userRole}
-                activeItem="dashboard"
+                activeItem={getActiveItem()}
                 onNavigate={handleSidebarNavigate}
+                isSidebarOpen={isSidebarOpen}
+                setIsSidebarOpen={setIsSidebarOpen}
             />
 
-            <div className="pt-20 p-8 ml-18">
+            <div className="pt-20 p-8 ml-20 lg:ml-20">
                 <Outlet/>
             </div>
         </div>

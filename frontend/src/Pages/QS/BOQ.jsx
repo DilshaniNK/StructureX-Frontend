@@ -14,53 +14,21 @@ import {
   Eye,
   Download,
   Filter,
-  MoreVertical
+  MoreVertical,
+  AlertCircle
 } from 'lucide-react';
 
 
 function BOQ() {
+  // TODO: Replace with actual employee ID from login token/session
+  const QS_EMPLOYEE_ID = 'EMP_001';
+  
   const [activeTab, setActiveTab] = useState('create'); // 'create' or 'edit'
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showViewForm, setShowViewForm] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  // Sample data for existing BOQs
-  const existingBOQs = [
-    {
-      id: 'BOQ001',
-      projectName: 'Luxury Villa Complex',
-      projectId: 'PROJ001',
-      clientName: 'ABC Holdings',
-      status: 'Draft',
-      totalAmount: 2500000,
-      lastModified: '2024-01-15',
-      createdBy: 'John Doe',
-      itemsCount: 45
-    },
-    {
-      id: 'BOQ002',
-      projectName: 'Commercial Tower',
-      projectId: 'PROJ002',
-      clientName: 'XYZ Developers',
-      status: 'Approved',
-      totalAmount: 8750000,
-      lastModified: '2024-01-10',
-      createdBy: 'Jane Smith',
-      itemsCount: 78
-    },
-    {
-      id: 'BOQ003',
-      projectName: 'Residential Apartments',
-      projectId: 'PROJ003',
-      clientName: 'HomeLife',
-      status: 'Under Review',
-      totalAmount: 4200000,
-      lastModified: '2024-01-08',
-      createdBy: 'Mike Johnson',
-      itemsCount: 56
-    }
-  ];
 
   // Project lists fetched from backend
   const [projectsWithoutBOQ, setProjectsWithoutBOQ] = useState([]);
@@ -68,62 +36,103 @@ function BOQ() {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [projectError, setProjectError] = useState(null);
 
-  // Fetch all projects with BOQ data when component mounts
-  useEffect(() => {
+  // Function to fetch projects data
+  const fetchProjectsData = async () => {
     setLoadingProjects(true);
     setProjectError(null);
-    fetch('http://localhost:8086/api/v1/qs/projects-with-data/EMP_001')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch projects');
-        return res.json();
-      })
-      .then(data => {
-        // Separate projects based on whether they have BOQs
-        const withoutBOQ = [];
-        const withBOQ = [];
-        
-        data.forEach(project => {
-          if (project.boq_data && project.boq_data.boq) {
-            // Project has BOQ - add to edit list
-            const boq = project.boq_data.boq;
-            const items = project.boq_data.items || [];
-            const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0);
-            
-            withBOQ.push({
-              id: boq.boqId,
-              projectName: project.name,
-              projectId: project.project_id,
-              clientName: `${project.client_data?.first_name || ''} ${project.client_data?.last_name || ''}`.trim() || 'Unknown Client',
-              status: boq.status || 'Draft',
-              totalAmount: totalAmount,
-              lastModified: boq.date || new Date().toISOString().split('T')[0],
-              createdBy: boq.qsId || 'Unknown',
-              itemsCount: items.length,
-              boqData: {
-                ...boq,
-                items: items,
-                createdDate: boq.date
-              },
-              projectData: project
-            });
-          } else {
-            // Project has no BOQ - add to create list
+    console.log('[QS BOQ] Starting fetch...');
+    
+    try {
+      // Add timeout to the fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const res = await fetch(`http://localhost:8086/api/v1/qs/projects-with-data/${QS_EMPLOYEE_ID}`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) {
+        const errorMessage = `Failed to fetch projects: ${res.status} ${res.statusText}`;
+        console.error('[QS BOQ] HTTP Error:', errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      const data = await res.json();
+      console.log('[QS BOQ] Data received:', data);
+      
+      // Separate projects based on whether they have BOQs
+      const withoutBOQ = [];
+      const withBOQ = [];
+      
+      data.forEach(project => {
+        if (project.boq_data && project.boq_data.boq) {
+          // Project has BOQ - add to edit list
+          const boq = project.boq_data.boq;
+          const items = project.boq_data.items || [];
+          const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+          
+          withBOQ.push({
+            id: boq.boqId,
+            projectName: project.name,
+            projectId: project.project_id,
+            clientName: `${project.client_data?.first_name || ''} ${project.client_data?.last_name || ''}`.trim() || 'Unknown Client',
+            status: boq.status || 'Draft',
+            totalAmount: totalAmount,
+            lastModified: boq.date || new Date().toISOString().split('T')[0],
+            createdBy: 'QS Officer', // Default value
+            itemsCount: items.length,
+            boqData: {
+              boqId: boq.boqId,
+              createdDate: boq.date,
+              items: items
+            }
+          });
+        } else {
+          // Project doesn't have BOQ and has "ongoing" status - add to create list
+          if (project.status?.toLowerCase() === 'ongoing') {
             withoutBOQ.push({
               id: project.project_id,
               name: project.name,
               client: `${project.client_data?.first_name || ''} ${project.client_data?.last_name || ''}`.trim() || 'Unknown Client'
             });
           }
-        });
-        
-        setProjectsWithoutBOQ(withoutBOQ);
-        setProjectsWithBOQ(withBOQ);
-      })
-      .catch(err => {
-        setProjectError('Could not load projects');
-        console.error('Error fetching projects:', err);
-      })
-      .finally(() => setLoadingProjects(false));
+        }
+      });
+      
+      setProjectsWithoutBOQ(withoutBOQ);
+      setProjectsWithBOQ(withBOQ);
+      console.log('[QS BOQ] Data processed successfully');
+    } catch (err) {
+      console.error('[QS BOQ] Error fetching BOQs:', err);
+      let errorMessage = 'Could not load BOQs';
+      
+      if (err.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setProjectError(errorMessage);
+      
+      // Clear data on error - let user see the error
+      setProjectsWithoutBOQ([]);
+      setProjectsWithBOQ([]);
+    } finally {
+      setLoadingProjects(false);
+      console.log('[QS BOQ] Fetch completed');
+    }
+  };
+
+  // Function to refresh data manually
+  const handleRefresh = () => {
+    fetchProjectsData();
+  };
+
+  // Fetch all projects with BOQ data when component mounts
+  useEffect(() => {
+    fetchProjectsData();
   }, []);
 
   // State for create form fields
@@ -349,7 +358,7 @@ function BOQ() {
     const boqObj = {
       projectId: projectId,
       date: formatDate(boqDate),
-      qsId: "EMP_001",
+      qsId: QS_EMPLOYEE_ID,
       status: status
     };
     if (isEdit && selectedProject && selectedProject.id) boqObj.boqId = selectedProject.id;
@@ -375,10 +384,16 @@ function BOQ() {
         console.error("[BOQ Save] Backend error:", errorText);
         throw new Error("Failed to save BOQ: " + errorText);
       }
+      // Show success message
+      alert(isEdit ? "BOQ updated successfully!" : "BOQ created successfully!");
+      
       setShowCreateForm(false);
       setShowEditForm(false);
       setSelectedProject(null);
       clearBOQForm();
+      
+      // Refresh the data to show updated list
+      await fetchProjectsData();
     } catch (err) {
       alert("Error saving BOQ: " + err.message);
       console.error("[BOQ Save] Exception:", err);
@@ -477,6 +492,16 @@ function BOQ() {
                         className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FAAD00] focus:border-transparent"
                       />
                     </div>
+                    <button 
+                      onClick={handleRefresh}
+                      disabled={loadingProjects}
+                      className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50"
+                      title="Refresh BOQs"
+                    >
+                      <svg className={`w-4 h-4 text-gray-600 ${loadingProjects ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
                     <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
                       <Filter className="w-4 h-4 text-gray-600" />
                     </button>
@@ -485,6 +510,34 @@ function BOQ() {
               </div>
             </div>
 
+            {/* Loading State */}
+            {loadingProjects && (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FAAD00] mx-auto mb-4"></div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Loading BOQs...</h3>
+                <p className="text-gray-500">Please wait while we fetch the data.</p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {projectError && !loadingProjects && (
+              <div className="text-center py-12">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+                  <div className="text-red-600 font-medium mb-2">Error Loading BOQs</div>
+                  <div className="text-red-500 text-sm">{projectError}</div>
+                  <button 
+                    onClick={handleRefresh}
+                    className="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* BOQ Content - Only show when not loading and no error */}
+            {!loadingProjects && !projectError && (
+              <>
             {/* Editable BOQs Section */}
             {editableBOQs.length > 0 && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -727,9 +780,11 @@ function BOQ() {
                 </div>
               </div>
             )}
+              </>
+            )}
 
-            {/* No BOQs Message */}
-            {filteredBOQs.length === 0 && (
+            {/* No BOQs Message - Show when not loading, no error, but no BOQs found */}
+            {!loadingProjects && !projectError && filteredBOQs.length === 0 && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div className="p-12 text-center">
                   <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />

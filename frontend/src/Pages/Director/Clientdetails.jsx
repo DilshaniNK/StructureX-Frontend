@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Mail, User, Lock } from 'lucide-react'; // Import your icons
+import { Mail, User, Lock, Link } from 'lucide-react'; // Import your icons
 import SuccessAlert from '../../Components/Employee/SuccessAlert';
 import ErrorAlert from '../../Components/Employee/ErrorAlert';
 import ClientDetailsDisplay from '../../Components/Director/ClientDetailsDisplay';
@@ -8,12 +8,13 @@ import ClientDetailsDisplay from '../../Components/Director/ClientDetailsDisplay
 const Clientdetails = () => {
   const location = useLocation();
   const [clientData, setClientData] = useState({
-    first_name: '',
-    last_name: '',
+    name: '',
     email: '',
     is_have_plan: '0',
-    contact_number: '',
-    type: ''
+    phone_number: '',
+    type: '',
+    address: '',
+    design_link: ''
   });
 
   const [showSuccess,setShowSuccess] = useState(false);
@@ -112,25 +113,24 @@ const Clientdetails = () => {
               </div>
               <input
                 type="text"
-                name="first_name"
-                placeholder="First Name"
-                value={clientData.first_name}
+                name="name"
+                placeholder="name"
+                value={clientData.name}
                 onChange={handleChange}
                 className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-md"
                 required
               />
             </div>
-
-            {/* Last Name */}
+            {/* address */}
             <div className="relative">
               <div className="absolute left-0 top-0 bottom-0 w-12 bg-black rounded-l-md flex items-center justify-center">
                 <User className="w-5 h-5 text-white" />
               </div>
               <input
                 type="text"
-                name="last_name"
-                placeholder="Last Name"
-                value={clientData.last_name}
+                name="address"
+                placeholder="Address"
+                value={clientData.address}
                 onChange={handleChange}
                 className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-md"
                 required
@@ -144,9 +144,9 @@ const Clientdetails = () => {
               </div>
               <input
                 type="text"
-                name="contact_number"
+                name="phone_number"
                 placeholder="Contact Number"
-                value={clientData.contact_number}
+                value={clientData.phone_number}
                 onChange={handleChange}
                 className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-md"
                 required
@@ -179,6 +179,23 @@ const Clientdetails = () => {
                 </label>
               ))}
             </div>
+
+            {clientData.is_have_plan === '1' && (
+              <div className="relative">
+                <div className="absolute left-0 top-0 bottom-0 w-12 bg-black rounded-l-md flex items-center justify-center">
+                  <Link className="w-5 h-5 text-white" />
+                </div>
+                <input
+                  type="url"
+                  name="design_link"
+                  placeholder="Design link (e.g., Google Drive URL)"
+                  value={clientData.design_link}
+                  onChange={handleChange}
+                  className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-md"
+                  required={clientData.is_have_plan === '1'}
+                />
+              </div>
+            )}
 
     
 

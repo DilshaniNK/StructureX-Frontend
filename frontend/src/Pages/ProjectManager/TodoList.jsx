@@ -1,77 +1,159 @@
-import React, { useState } from 'react';
-import { Plus, Calendar, Flag, Search, Filter, CheckCircle, Circle, AlertTriangle, Clock } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Plus, Calendar, Flag, Search, Filter, CheckCircle, Circle, AlertTriangle, Clock, Edit3, Trash2 } from 'lucide-react';
+import axios from 'axios';
+import SuccessAlert from '../../Components/Employee/SuccessAlert';
+import ErrorAlert from '../../Components/Employee/ErrorAlert';
+import { useParams } from 'react-router-dom';
+
 
 const TodoList = () => {
+  // Custom CSS animations
+  const customStyles = `
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    .animate-scaleIn {
+      animation: scaleIn 0.3s ease-out forwards;
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.6s ease-out forwards;
+      opacity: 0;
+    }
+  `;
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
+  const [getTodo, setGetTodo] = useState(false);
+  const [todos, setTodos] = useState([]);
 
-  const [todos, setTodos] = useState([
-    {
-      id: 1,
-      title: 'Review foundation blueprints',
-      description: 'Review and approve the updated foundation blueprints from the architect',
-      priority: 'high',
-      dueDate: '2024-11-25',
-      completed: false,
-      project: 'Downtown Office Complex',
-      assignee: 'John Smith'
-    },
-    {
-      id: 2,
-      title: 'Schedule material delivery',
-      description: 'Coordinate with suppliers for steel beam delivery next week',
-      priority: 'high',
-      dueDate: '2024-11-23',
-      completed: false,
-      project: 'Residential Towers',
-      assignee: 'Sarah Johnson'
-    },
-    {
-      id: 3,
-      title: 'Update project timeline',
-      description: 'Update the project timeline based on recent progress and delays',
-      priority: 'medium',
-      dueDate: '2024-11-28',
-      completed: true,
-      project: 'Shopping Mall Renovation',
-      assignee: 'Mike Chen'
-    },
-    {
-      id: 4,
-      title: 'Safety equipment inspection',
-      description: 'Conduct monthly safety equipment inspection across all sites',
-      priority: 'high',
-      dueDate: '2024-11-22',
-      completed: false,
-      project: 'All Projects',
-      assignee: 'Lisa Wong'
-    },
-    {
-      id: 5,
-      title: 'Client meeting preparation',
-      description: 'Prepare presentation materials for upcoming client meeting',
-      priority: 'medium',
-      dueDate: '2024-11-26',
-      completed: false,
-      project: 'Downtown Office Complex',
-      assignee: 'David Park'
-    },
-    {
-      id: 6,
-      title: 'Invoice processing',
-      description: 'Process and approve vendor invoices for October',
-      priority: 'low',
-      dueDate: '2024-11-30',
-      completed: true,
-      project: 'Administration',
-      assignee: 'You'
+
+  // New form state for creating a todo
+  const [newDescription, setNewDescription] = useState('');
+  const [newDate, setNewDate] = useState('');
+  const [newStatus, setNewStatus] = useState('Pending');
+
+  // Edit state
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editTodoId, setEditTodoId] = useState(null);
+  const [editDescription, setEditDescription] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editStatus, setEditStatus] = useState('Pending');
+  // Delete confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deleteTargetTitle, setDeleteTargetTitle] = useState('');
+
+  // Alert states
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Date validation states
+  const [newDateError, setNewDateError] = useState('');
+  const [editDateError, setEditDateError] = useState('');
+
+  // helper to map server TodoDTO -> UI todo shape used in this component
+  const mapTodoFromServer = (t) => ({
+    // preserve server id separately so we always call backend with the correct id
+    serverId: t.taskId ?? t.id ?? t.task_id ?? t.taskID ?? null,
+    id: (t.taskId ?? t.id) || Math.floor(Math.random() * 1000000),
+    title: t.title ?? (t.description ? t.description.substring(0, 30) : `Task ${t.taskId ?? ''}`),
+    description: t.description ?? '',
+    priority: t.priority ?? (t.status ? t.status.toLowerCase() : 'low'),
+    dueDate: t.date ?? t.dueDate ?? new Date().toISOString().split('T')[0],
+    completed: t.status ? (String(t.status).toLowerCase() === 'completed') : false,
+    project: t.project ?? '',
+    assignee: t.assignee ?? ''
+  });
+
+  // Get today's date in YYYY-MM-DD format for validation
+  const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
+  // Validate if the selected date is not in the past
+  const validateDate = (dateValue, setErrorCallback) => {
+    if (!dateValue) {
+      setErrorCallback('Date is required');
+      return false;
     }
-  ]);
+    
+    const selectedDate = new Date(dateValue);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    
+    if (selectedDate < today) {
+      setErrorCallback('Due date cannot be in the past');
+      return false;
+    }
+    
+    setErrorCallback('');
+    return true;
+  };
+
+  const { employeeId } = useParams();
+  console.log("UserID from params:", employeeId);
+
+  useEffect(() => {
+    if (employeeId) {
+      axios
+        .get(`http://localhost:8086/api/v1/project_manager/todo/${employeeId}`)
+        .then((response) => {
+          console.log("✅ Data from backend:", response.data);
+          setGetTodo(response.data);
+          // if server returned an array of todos, map them into the UI shape
+          const data = response.data;
+          if (Array.isArray(data)) {
+            setTodos(data.map(mapTodoFromServer));
+          }
+        })
+        .catch((error) => {
+          console.error("❌ Error fetching todos:", error);
+          setErrorMessage('Failed to fetch todo list');
+          setShowErrorAlert(true);
+        });
+    }
+  }, [employeeId]);
+
 
   const toggleTodo = (id) => {
-    setTodos(todos.map(todo => 
+    setTodos(todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     ));
   };
@@ -108,15 +190,15 @@ const TodoList = () => {
 
   const filteredTodos = todos.filter(todo => {
     const matchesSearch = todo.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         todo.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         todo.project.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'completed' && todo.completed) ||
-                         (filterStatus === 'pending' && !todo.completed);
-    
+      todo.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      todo.project.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = filterStatus === 'all' ||
+      (filterStatus === 'completed' && todo.completed) ||
+      (filterStatus === 'pending' && !todo.completed);
+
     const matchesPriority = filterPriority === 'all' || todo.priority === filterPriority;
-    
+
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
@@ -127,6 +209,9 @@ const TodoList = () => {
 
   return (
     <div className="space-y-8">
+      {/* Inject custom CSS animations */}
+      <style>{customStyles}</style>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <button
           onClick={() => setShowAddForm(true)}
@@ -230,28 +315,25 @@ const TodoList = () => {
 
       <div className="space-y-4">
         {filteredTodos.map((todo) => (
-          <div key={todo.id} className={`bg-white p-6 rounded-xl shadow-sm border transition-all duration-200 ${
-            todo.completed 
-              ? 'border-green-200 bg-green-50' 
-              : isOverdue(todo.dueDate) 
-                ? 'border-red-200 bg-red-50' 
-                : 'border-gray-100 hover:shadow-md'
-          }`}>
+          <div key={todo.id} className={`bg-white p-6 rounded-xl shadow-sm border transition-all duration-200 ${todo.completed
+            ? 'border-green-200 bg-green-50'
+            : isOverdue(todo.dueDate)
+              ? 'border-red-200 bg-red-50'
+              : 'border-gray-100 hover:shadow-md'
+            }`}>
             <div className="flex items-start space-x-4">
               <button
                 onClick={() => toggleTodo(todo.id)}
-                className={`mt-1 flex-shrink-0 ${
-                  todo.completed ? 'text-green-600' : 'text-gray-400 hover:text-primary-600'
-                } transition-colors`}
+                className={`mt-1 flex-shrink-0 ${todo.completed ? 'text-green-600' : 'text-gray-400 hover:text-primary-600'
+                  } transition-colors`}
               >
                 {todo.completed ? <CheckCircle size={24} /> : <Circle size={24} />}
               </button>
-              
+
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className={`text-lg font-medium ${
-                    todo.completed ? 'text-gray-500 line-through' : 'text-gray-900'
-                  }`}>
+                  <h3 className={`text-lg font-medium ${todo.completed ? 'text-gray-500 line-through' : 'text-gray-900'
+                    }`}>
                     {todo.title}
                   </h3>
                   <div className="flex items-center space-x-2 ml-4">
@@ -259,13 +341,39 @@ const TodoList = () => {
                       {todo.priority}
                     </span>
                     {getPriorityIcon(todo.priority)}
+                    <button
+                      onClick={() => {
+                        // open edit modal and populate fields
+                        // prefer serverId when available
+                        setEditTodoId(todo.serverId ?? todo.id);
+                        setEditDescription(todo.description || '');
+                        setEditDate(todo.dueDate ? new Date(todo.dueDate).toISOString().split('T')[0] : '');
+                        setEditStatus(todo.completed ? 'Completed' : 'Pending');
+                        setShowEditForm(true);
+                      }}
+                      className="ml-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-sm font-medium"
+                    >
+                      <Edit3 size={14} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDeleteTargetId(todo.serverId ?? todo.id);
+                        setDeleteTargetTitle(todo.title || todo.description || 'this task');
+                        setShowDeleteConfirm(true);
+                      }}
+                      className="ml-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 text-red-700 hover:bg-red-100 transition-colors text-sm font-medium"
+                    >
+                      <Trash2 size={14} />
+                      Delete
+                    </button>
                   </div>
                 </div>
-                
+
                 <p className={`text-gray-600 mb-3 ${todo.completed ? 'opacity-60' : ''}`}>
                   {todo.description}
                 </p>
-                
+
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                   <div className="flex items-center">
                     <Calendar size={16} className="mr-1" />
@@ -274,7 +382,7 @@ const TodoList = () => {
                       {isOverdue(todo.dueDate) && !todo.completed && ' (Overdue)'}
                     </span>
                   </div>
-                  
+
                 </div>
               </div>
             </div>
@@ -283,54 +391,389 @@ const TodoList = () => {
       </div>
 
       {showAddForm && (
-        <div className="fixed inset-0  backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Task</h3>
-            <form className="space-y-4">
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border-2 border-amber-400 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out animate-scaleIn">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <span className="inline-block w-1.5 h-6 bg-amber-400 rounded-full mr-3"></span>
+                Add New Task
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAddForm(false);
+                  setNewDateError('');
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                aria-label="Close modal"
+              >
+                <Plus className="h-5 w-5 rotate-45" />
+              </button>
+            </div>
+
+            <form className="p-6 space-y-6">
+              {/* Description Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Task Description <span className="text-red-500">*</span>
+                </label>
                 <textarea
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Enter task description"
-                ></textarea>
+                  id="description"
+                  rows={4}
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Enter detailed task description..."
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 placeholder-gray-400 shadow-sm"
+                />
               </div>
-              
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-              
+
+              {/* Date Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                  <option>Pending</option>
-                  <option>Completed</option>
-                  <option>Reject</option>
+                <label htmlFor="due_date" className="block text-sm font-medium text-gray-700 mb-2">
+                  Due Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="due_date"
+                  value={newDate}
+                  min={getTodayDate()}
+                  onChange={(e) => {
+                    setNewDate(e.target.value);
+                    validateDate(e.target.value, setNewDateError);
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 shadow-sm ${
+                    newDateError ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {newDateError && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertTriangle size={16} className="mr-1" />
+                    {newDateError}
+                  </p>
+                )}
+              </div>
+
+              {/* Status Field */}
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="status"
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem"
+                  }}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="in_progress">In Progress</option>
                 </select>
               </div>
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-primary-500 bg-amber-400 text-black rounded-lg py-2 hover:bg-primary-600 transition-colors"
-                >
-                  Add Task
-                </button>
+
+              {/* Buttons */}
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
                 <button
                   type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 hover:bg-gray-50 transition-colors"
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setNewDateError('');
+                  }}
+                  className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    
+                    // Validate all required fields
+                    if (!newDescription.trim()) {
+                      setErrorMessage('Task description is required');
+                      setShowErrorAlert(true);
+                      return;
+                    }
+                    
+                    if (!validateDate(newDate, setNewDateError)) {
+                      setErrorMessage('Please select a valid future date');
+                      setShowErrorAlert(true);
+                      return;
+                    }
+                    
+                    // Build payload expected by your controller/DAO
+                    const payload = {
+                      // controller sets employeeId from path variable, but include for clarity
+                      employeeId: employeeId,
+                      status: newStatus,
+                      description: newDescription,
+                      date: newDate
+                    };
+                    try {
+                      const res = await axios.post(`http://localhost:8086/api/v1/project_manager/todo/${employeeId}`, payload);
+                      console.log('✅ Created todo:', res.data);
+                      // map returned DTO into the UI shape and prepend to list
+                      const created = mapTodoFromServer(res.data);
+                      setTodos(prev => [created, ...prev]);
+                      // reset form and close
+                      setNewDescription('');
+                      setNewDate('');
+                      setNewStatus('Pending');
+                      setNewDateError('');
+                      setShowAddForm(false);
+                      // Show success alert
+                      setSuccessMessage('Task added successfully!');
+                      setShowSuccessAlert(true);
+                    } catch (err) {
+                      console.error('❌ Error creating todo:', err);
+                      setErrorMessage('Failed to add task. Please try again.');
+                      setShowErrorAlert(true);
+                    }
+                  }}
+                  className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 shadow-md font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 flex items-center justify-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Task
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {showEditForm && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border-2 border-amber-400 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out animate-scaleIn">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <span className="inline-block w-1.5 h-6 bg-amber-400 rounded-full mr-3"></span>
+                Edit Task
+              </h2>
+              <button
+                onClick={() => {
+                  setShowEditForm(false);
+                  setEditDateError('');
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                aria-label="Close modal"
+              >
+                <Plus className="h-5 w-5 rotate-45" />
+              </button>
+            </div>
+
+            <form className="p-6 space-y-6">
+              {/* Description Field */}
+              <div>
+                <label htmlFor="edit_description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Task Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="edit_description"
+                  rows={4}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Enter detailed task description..."
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 placeholder-gray-400 shadow-sm"
+                />
+              </div>
+
+              {/* Date Field */}
+              <div>
+                <label htmlFor="edit_due_date" className="block text-sm font-medium text-gray-700 mb-2">
+                  Due Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="edit_due_date"
+                  value={editDate}
+                  min={getTodayDate()}
+                  onChange={(e) => {
+                    setEditDate(e.target.value);
+                    validateDate(e.target.value, setEditDateError);
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 shadow-sm ${
+                    editDateError ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {editDateError && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertTriangle size={16} className="mr-1" />
+                    {editDateError}
+                  </p>
+                )}
+              </div>
+
+              {/* Status Field */}
+              <div>
+                <label htmlFor="edit_status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="edit_status"
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem"
+                  }}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="in_progress">In Progress</option>
+                </select>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditForm(false);
+                    setEditDateError('');
+                  }}
+                  className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    
+                    // Validate all required fields
+                    if (!editDescription.trim()) {
+                      setErrorMessage('Task description is required');
+                      setShowErrorAlert(true);
+                      return;
+                    }
+                    
+                    if (!validateDate(editDate, setEditDateError)) {
+                      setErrorMessage('Please select a valid future date');
+                      setShowErrorAlert(true);
+                      return;
+                    }
+                    
+                    const taskId = editTodoId;
+                    const payload = {
+                      // controller will set taskId from path; include fields that update
+                      status: editStatus,
+                      description: editDescription,
+                      date: editDate
+                    };
+                    try {
+                      const res = await axios.put(`http://localhost:8086/api/v1/project_manager/todo/${taskId}`, payload);
+                      if (res.status === 200) {
+                        // update local todo with edited values
+                        setTodos(prev => prev.map(t => (t.serverId === taskId || t.id === taskId) ? {
+                          ...t,
+                          description: editDescription,
+                          dueDate: editDate,
+                          completed: String(editStatus).toLowerCase() === 'completed'
+                        } : t));
+                        setShowEditForm(false);
+                        setEditTodoId(null);
+                        setEditDateError('');
+                        console.log('✅ Todo updated');
+                        // Show success alert
+                        setSuccessMessage('Task updated successfully!');
+                        setShowSuccessAlert(true);
+                      } else {
+                        console.warn('Unexpected update response', res);
+                        setErrorMessage('Failed to update task. Please try again.');
+                        setShowErrorAlert(true);
+                      }
+                    } catch (err) {
+                      console.error('❌ Error updating todo:', err);
+                      setErrorMessage('An error occurred while updating the task.');
+                      setShowErrorAlert(true);
+                    }
+                  }}
+                  className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 shadow-md font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 flex items-center justify-center"
+                >
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-6 border border-gray-100">
+            <h4 className="text-lg font-semibold text-gray-900">Confirm delete</h4>
+            <p className="text-sm text-gray-600 mt-2">Are you sure you want to delete <span className="font-medium text-gray-800">{deleteTargetTitle}</span>? This action cannot be undone.</p>
+            <div className="mt-4 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteTargetId(null);
+                  setDeleteTargetTitle('');
+                }}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!deleteTargetId) return;
+                  try {
+                    const res = await axios.delete(`http://localhost:8086/api/v1/project_manager/todo/${deleteTargetId}`);
+                    if (res.status === 200) {
+                      setTodos(prev => prev.filter(t => !(t.serverId === deleteTargetId || t.id === deleteTargetId)));
+                      console.log('✅ Todo deleted');
+                      // Show success alert
+                      setSuccessMessage('Task deleted successfully!');
+                      setShowSuccessAlert(true);
+                    } else {
+                      console.warn('Unexpected delete response', res);
+                      setErrorMessage('Failed to delete task. Please try again.');
+                      setShowErrorAlert(true);
+                    }
+                  } catch (err) {
+                    console.error('❌ Error deleting todo:', err);
+                    setErrorMessage('An error occurred while deleting the task.');
+                    setShowErrorAlert(true);
+                  } finally {
+                    setShowDeleteConfirm(false);
+                    setDeleteTargetId(null);
+                    setDeleteTargetTitle('');
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Alert */}
+      <SuccessAlert
+        show={showSuccessAlert}
+        onClose={() => setShowSuccessAlert(false)}
+        title="Success!"
+        message={successMessage}
+      />
+
+      {/* Error Alert */}
+      <ErrorAlert
+        show={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Error!"
+        message={errorMessage}
+      />
     </div>
   );
 };

@@ -14,6 +14,8 @@ import Designer from './Pages/Designer/Designer'
 import Director from './Pages/Director/Director';
 import DirectorCont from './Pages/Director/DirectorCont';
 
+import ForgotPassword from './Components/Employee/ForgotPassword'
+import ResetPassword from './Components/Employee/ResetPassword'
 
 import QS from './Pages/QS/QS'
 import SQS from './Pages/SQS/SQS'
@@ -78,8 +80,16 @@ const App = () => {
               </ProtectedRoute>
             } />
 
-            <Route path='/director/:employeeId/*' element={<Director />} />
-            <Route path='/directorcont/:employeeId/*' element={<DirectorCont />} />
+            <Route path='/director/:employeeId/*' element={
+              <ProtectedRoute allowedRoles={['Director']}>
+                  <Director />
+              </ProtectedRoute>
+              } />
+            <Route path='/directorcont/:employeeId/*' element={
+              
+                   <DirectorCont />
+              
+             } />
 
 
           </Route>

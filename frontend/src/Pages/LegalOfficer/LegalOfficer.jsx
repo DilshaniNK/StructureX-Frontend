@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import Navbar from '../../Components/Employee/Navbar';
 import Sidebar from '../../Components/Employee/Sidebar';
 import Main from './Dashboard';
@@ -7,10 +7,28 @@ import Main from './Dashboard';
 import Notification from '../../Components/Employee/Notification'
 import Chat from './Chat';
 import ProjectDetails from './ProjectDetails';
+import ProjectList from './ProjectList';
+import Profile from '../../Components/Employee/Profile';
+
+// Create a wrapper component for ProjectDetails to handle params
+function ProjectDetailsWrapper() {
+  const { projectId, employeeId } = useParams();
+  const navigate = useNavigate();
+  const userRole = 'Legal_Officer';
+  const userName = 'Ramesh Peshala';
+  
+  return (
+    <ProjectDetails 
+      projectId={projectId}
+      user={{ name: userName, role: userRole }}
+      onBack={() => navigate(`/legalofficer/${employeeId}/action`)}
+    />
+  );
+}
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const userRole = 'LegalOfficer';
+  const userRole = 'Legal_Officer';
   const userName = 'Ramesh Peshala';
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,12 +37,17 @@ export default function Home() {
     navigate(path);
   };
 
+  const {employeeId} = useParams()
+
   // Determine active item based on current path
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path.includes('/legalofficer/dashboard') || path === '/') return 'dashboard';
-    if (path.includes('/legalofficer/chat')) return 'chat';
-    if (path.includes('/legalofficer/notifications')) return 'notifications';
+
+    if (path.includes('/dashboard') || path === '/') return 'dashboard';
+    if (path.includes('/chat')) return 'chat';
+    if (path.includes('/notifications')) return 'notifications';
+    if (path.includes('/profile')) return 'profile';
+
     return 'home'; // default
   };
 
@@ -50,11 +73,12 @@ export default function Home() {
         <div className="p-6">
           <Routes>
             <Route path="/" element={<Main />} />
-            <Route path="/dashboard" element={<Main />} >
-              <Route path='projectdetails' element={<ProjectDetails />} />
-            </Route>
+            <Route path="/home" element={<Main />} />
+            <Route path='/action' element={<ProjectList />} />
+            <Route path='/action/:projectId' element={<ProjectDetailsWrapper />} />
             <Route path='/chat' element={<Chat />} />
             <Route path="/notifications" element={<Notification />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </div>
       </div>

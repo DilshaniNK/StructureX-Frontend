@@ -1,42 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { FileText, Send, Plus, Clock, CheckCircle, XCircle, AlertCircle, Calendar, DollarSign, Package } from 'lucide-react'
 import { cn } from '../../Utils/cn'
-
-const mockPendingOrders = [
-  {
-    id: "ORD-001",
-    project: "Downtown Office Complex",
-    amount: 2150.0,
-    deliveryDate: "2024-01-16",
-    status: "delivered",
-  },
-  {
-    id: "ORD-004",
-    project: "Shopping Mall Extension",
-    amount: 1875.0,
-    deliveryDate: "2024-01-17",
-    status: "delivered",
-  },
-]
-
-const mockSubmittedInvoices = [
-  {
-    id: "INV-001",
-    orderId: "ORD-003",
-    project: "Highway Bridge Construction",
-    amount: 8750.0,
-    submissionDate: "2024-01-15",
-    status: "approved",
-  },
-  {
-    id: "INV-002",
-    orderId: "ORD-002",
-    project: "Residential Tower Phase 2",
-    amount: 1500.0,
-    submissionDate: "2024-01-14",
-    status: "pending",
-  },
-]
 
 // Custom Button Component
 const Button = ({ children, variant = "default", size = "default", className, disabled, onClick, ...props }) => {
@@ -208,12 +172,104 @@ const AlertDescription = ({ children, className, ...props }) => (
 )
 
 const Invoices = () => {
-  const [pendingOrders, setPendingOrders] = useState(mockPendingOrders)
-  const [submittedInvoices, setSubmittedInvoices] = useState(mockSubmittedInvoices)
+  const [pendingOrders, setPendingOrders] = useState([])
+  const [submittedInvoices, setSubmittedInvoices] = useState([])
   const [selectedOrder, setSelectedOrder] = useState("")
   const [invoiceAmount, setInvoiceAmount] = useState("")
   const [description, setDescription] = useState("")
   const [uploadedFile, setUploadedFile] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [submittingInvoice, setSubmittingInvoice] = useState(false)
+
+  // Fetch pending orders (delivered orders without invoices)
+  useEffect(() => {
+    const fetchPendingOrders = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        // Fetch supplier orders with delivered status
+        const response = await fetch('http://localhost:8086/api/v1/supplier/orders')
+        if (!response.ok) {
+          throw new Error('Failed to fetch orders')
+        }
+        const data = await response.json()
+        console.log('Fetched orders:', data)
+
+        // Filter orders that are delivered and don't have invoices yet
+        const deliveredOrders = data
+          .filter(order => order.status === 'delivered' || order.orderStatus === 'delivered')
+          .map(order => ({
+            id: order.orderId || order.id,
+            project: order.projectName || order.project || 'Unknown Project',
+            amount: order.totalAmount || order.amount || 0,
+            deliveryDate: order.deliveryDate || order.orderDate || new Date().toISOString().split('T')[0],
+            status: order.status || order.orderStatus || 'delivered',
+          }))
+
+        setPendingOrders(deliveredOrders)
+      } catch (err) {
+        setError(err.message)
+        console.error('Error fetching pending orders:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPendingOrders()
+  }, [])
+
+  // Fetch submitted invoices
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        // Try to fetch invoices - if endpoint doesn't exist yet, just use empty array
+        const response = await fetch('http://localhost:8086/api/v1/supplier/invoice')
+
+        // If endpoint returns error or doesn't exist, just set empty array
+        if (!response.ok) {
+          console.warn('Invoices endpoint not available yet, using empty list')
+          setSubmittedInvoices([])
+          return
+        }
+
+        const data = await response.json()
+        console.log('Fetched invoices:', data)
+
+        // Handle both array and object responses
+        let invoicesArray = []
+        if (Array.isArray(data)) {
+          invoicesArray = data
+        } else if (data && typeof data === 'object') {
+          if (data.invoices) {
+            invoicesArray = data.invoices
+          } else if (data.data) {
+            invoicesArray = data.data
+          } else {
+            invoicesArray = [data]
+          }
+        }
+
+        // Map backend data to frontend format
+        const mappedInvoices = invoicesArray.map(invoice => ({
+          id: invoice.invoiceId || invoice.id,
+          orderId: invoice.orderId || 'N/A',
+          project: invoice.projectName || invoice.project || 'Unknown Project',
+          amount: invoice.amount || invoice.totalAmount || 0,
+          submissionDate: invoice.submissionDate || invoice.createdDate || new Date().toISOString().split('T')[0],
+          status: invoice.status || 'pending',
+        }))
+
+        setSubmittedInvoices(mappedInvoices)
+      } catch (err) {
+        // Don't show error for invoices - just log it and use empty array
+        console.warn('Could not fetch invoices (endpoint may not be ready):', err.message)
+        setSubmittedInvoices([])
+      }
+    }
+
+    fetchInvoices()
+  }, [])
 
   const handleFileUpload = (event) => {
     const file = event.target.files?.[0]
@@ -222,31 +278,70 @@ const Invoices = () => {
     }
   }
 
-  const handleSubmitInvoice = () => {
+  const handleSubmitInvoice = async () => {
     if (!selectedOrder || !invoiceAmount || !uploadedFile) {
+      alert('Please fill all required fields')
       return
     }
 
     const order = pendingOrders.find((o) => o.id === selectedOrder)
-    if (!order) return
-
-    const newInvoice = {
-      id: `INV-${String(submittedInvoices.length + 3).padStart(3, "0")}`,
-      orderId: selectedOrder,
-      project: order.project,
-      amount: Number.parseFloat(invoiceAmount),
-      submissionDate: new Date().toISOString().split("T")[0],
-      status: "pending",
+    if (!order) {
+      alert('Order not found')
+      return
     }
 
-    setSubmittedInvoices([newInvoice, ...submittedInvoices])
-    setPendingOrders(pendingOrders.filter((o) => o.id !== selectedOrder))
+    setSubmittingInvoice(true)
 
-    // Reset form
-    setSelectedOrder("")
-    setInvoiceAmount("")
-    setDescription("")
-    setUploadedFile(null)
+    try {
+      // Create FormData for file upload
+      const formData = new FormData()
+      formData.append('orderId', selectedOrder)
+      formData.append('amount', invoiceAmount)
+      formData.append('description', description)
+      formData.append('file', uploadedFile)
+      formData.append('projectName', order.project)
+
+      // Submit invoice to backend
+      const response = await fetch('http://localhost:8086/api/v1/supplier/invoice/create', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to submit invoice')
+      }
+
+      const newInvoice = await response.json()
+      console.log('Invoice created:', newInvoice)
+
+      // Map the response to match our frontend format
+      const mappedInvoice = {
+        id: newInvoice.invoiceId || newInvoice.id,
+        orderId: newInvoice.orderId || selectedOrder,
+        project: newInvoice.projectName || order.project,
+        amount: newInvoice.amount || Number.parseFloat(invoiceAmount),
+        submissionDate: newInvoice.submissionDate || new Date().toISOString().split("T")[0],
+        status: newInvoice.status || "pending",
+      }
+
+      // Update state
+      setSubmittedInvoices([mappedInvoice, ...submittedInvoices])
+      setPendingOrders(pendingOrders.filter((o) => o.id !== selectedOrder))
+
+      // Reset form
+      setSelectedOrder("")
+      setInvoiceAmount("")
+      setDescription("")
+      setUploadedFile(null)
+
+      alert('Invoice submitted successfully!')
+    } catch (err) {
+      console.error('Error submitting invoice:', err)
+      alert(`Failed to submit invoice: ${err.message}`)
+    } finally {
+      setSubmittingInvoice(false)
+    }
   }
 
   const getStatusVariant = (status) => {
@@ -277,6 +372,43 @@ const Invoices = () => {
       default:
         return <Clock className="h-4 w-4" />
     }
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#FAAD00]"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading invoice data...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Data</h3>
+              <p className="text-red-700">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -427,11 +559,20 @@ const Invoices = () => {
             
             <Button
               onClick={handleSubmitInvoice}
-              disabled={!selectedOrder || !invoiceAmount || !uploadedFile}
+              disabled={!selectedOrder || !invoiceAmount || !uploadedFile || submittingInvoice}
               className="w-full bg-[#FAAD00] hover:bg-[#FAAD00]/90 text-white shadow-md hover:shadow-lg transition-all duration-200 font-medium"
             >
-              <Send className="mr-2 h-4 w-4" />
-              Submit Invoice
+              {submittingInvoice ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Submit Invoice
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>

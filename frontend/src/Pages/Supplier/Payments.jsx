@@ -1,68 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { slideUpVariants } from '../../Components/Home/animation'
 import { DollarSign, Clock, CheckCircle, Calendar, AlertCircle, CreditCard } from 'lucide-react'
 import { cn } from '../../Utils/cn'
 
-const mockPayments = [
-  {
-    id: "INV-001",
-    orderId: "ORD-001",
-    project: "Downtown Office Complex",
-    amount: 2150.0,
-    date: "2024-01-16",
-    dueDate: "2024-01-30",
-    status: "pending",
-  },
-  {
-    id: "INV-002",
-    orderId: "ORD-002",
-    project: "Residential Tower Phase 2",
-    amount: 1500.0,
-    date: "2024-01-15",
-    dueDate: "2024-01-29",
-    status: "paid",
-    paidDate: "2024-01-16",
-  },
-  {
-    id: "INV-003",
-    orderId: "ORD-003",
-    project: "Highway Bridge Construction",
-    amount: 8750.0,
-    date: "2024-01-14",
-    dueDate: "2024-01-28",
-    status: "paid",
-    paidDate: "2024-01-15",
-  },
-  {
-    id: "INV-004",
-    orderId: "ORD-004",
-    project: "Shopping Mall Extension",
-    amount: 1875.0,
-    date: "2024-01-13",
-    dueDate: "2024-01-27",
-    status: "pending",
-  },
-  {
-    id: "INV-005",
-    orderId: "ORD-005",
-    project: "School Building Renovation",
-    amount: 862.5,
-    date: "2024-01-12",
-    dueDate: "2024-01-26",
-    status: "overdue",
-  },
-  {
-    id: "INV-006",
-    orderId: "ORD-006",
-    project: "Medical Center Expansion",
-    amount: 3200.0,
-    date: "2024-01-11",
-    dueDate: "2024-01-25",
-    status: "paid",
-    paidDate: "2024-01-14",
-  },
-]
+// Remove mockPayments, will fetch from backend
 
 // Custom Button Component
 const Button = ({ children, variant = "default", size = "default", className, disabled, onClick, ...props }) => {
@@ -177,8 +119,51 @@ const Badge = ({ children, variant = "default", className, ...props }) => {
 }
 
 const Payments = () => {
-  const [payments, setPayments] = useState(mockPayments)
+  const [payments, setPayments] = useState([])
   const [statusFilter, setStatusFilter] = useState("all")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [stats, setStats] = useState({
+    totalPending: 0,
+    totalPaid: 0,
+    lastPayment: null,
+    overdueCount: 0,
+  })
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch('http://localhost:8086/api/v1/api/supplier/payments')
+        if (!res.ok) throw new Error('Failed to fetch payments')
+        const data = await res.json()
+        // Map backend fields to frontend fields
+        const mappedPayments = data.map(p => ({
+          id: p.invoiceId ?? p.supplierPaymentId,
+          project: p.projectName,
+          amount: p.amount,
+          date: p.invoiceDate,
+          dueDate: p.dueDate,
+          paidDate: p.payedDate,
+          status: p.status,
+          // keep other fields if needed
+        }))
+        setPayments(mappedPayments)
+        // Calculate stats for cards
+        const totalPending = mappedPayments.filter((p) => p.status === "pending" || p.status === "overdue").reduce((sum, p) => sum + p.amount, 0)
+        const totalPaid = mappedPayments.filter((p) => p.status === "paid").reduce((sum, p) => sum + p.amount, 0)
+        const lastPayment = mappedPayments.filter((p) => p.status === "paid" && p.paidDate).sort((a, b) => new Date(b.paidDate).getTime() - new Date(a.paidDate).getTime())[0]
+        const overdueCount = mappedPayments.filter((p) => p.status === "overdue").length
+        setStats({ totalPending, totalPaid, lastPayment, overdueCount })
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPayments()
+  }, [])
 
   const filteredPayments =
     statusFilter === "all" ? payments : payments.filter((payment) => payment.status === statusFilter)
@@ -222,28 +207,42 @@ const Payments = () => {
     }
   }
 
-  const handleMarkAsPaid = (paymentId) => {
-    const currentDate = new Date().toISOString().split('T')[0]
-    setPayments(prevPayments =>
-      prevPayments.map(payment =>
-        payment.id === paymentId
-          ? { ...payment, status: "paid", paidDate: currentDate }
-          : payment
-      )
-    )
+  const handleMarkAsPaid = async (paymentId) => {
+    try {
+      const res = await fetch(`http://localhost:8086/api/v1/api/supplier/payments/${paymentId}/pay`, {
+        method: 'POST',
+      })
+      if (!res.ok) throw new Error('Failed to mark as paid')
+      // Refresh payments after marking as paid
+      const updatedRes = await fetch('http://localhost:8086/api/v1/api/supplier/payments')
+      const updatedData = await updatedRes.json()
+      const mappedPayments = updatedData.map(p => ({
+        id: p.invoiceId ?? p.supplierPaymentId,
+        project: p.projectName,
+        amount: p.amount,
+        date: p.invoiceDate,
+        dueDate: p.dueDate,
+        paidDate: p.payedDate,
+        status: p.status,
+      }))
+      setPayments(mappedPayments)
+      // Update stats
+      const totalPending = mappedPayments.filter((p) => p.status === "pending" || p.status === "overdue").reduce((sum, p) => sum + p.amount, 0)
+      const totalPaid = mappedPayments.filter((p) => p.status === "paid").reduce((sum, p) => sum + p.amount, 0)
+      const lastPayment = mappedPayments.filter((p) => p.status === "paid" && p.paidDate).sort((a, b) => new Date(b.paidDate).getTime() - new Date(a.paidDate).getTime())[0]
+      const overdueCount = mappedPayments.filter((p) => p.status === "overdue").length
+      setStats({ totalPending, totalPaid, lastPayment, overdueCount })
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
-  const totalPending = payments
-    .filter((p) => p.status === "pending" || p.status === "overdue")
-    .reduce((sum, p) => sum + p.amount, 0)
-
-  const totalPaid = payments.filter((p) => p.status === "paid").reduce((sum, p) => sum + p.amount, 0)
-
-  const lastPayment = payments
-    .filter((p) => p.status === "paid" && p.paidDate)
-    .sort((a, b) => new Date(b.paidDate).getTime() - new Date(a.paidDate).getTime())[0]
-
-  const overdueCount = payments.filter((p) => p.status === "overdue").length
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Loading payments...</div>
+  }
+  if (error) {
+    return <div className="p-8 text-center text-red-500">{error}</div>
+  }
 
   return (
     <motion.div 
@@ -269,7 +268,7 @@ const Payments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              Rs.{totalPending.toLocaleString()}
+              Rs.{stats.totalPending.toLocaleString()}
             </div>
             <p className="text-xs text-gray-600 mt-1">
               {payments.filter((p) => p.status === "pending" || p.status === "overdue").length} invoices
@@ -286,7 +285,7 @@ const Payments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              Rs.{totalPaid.toLocaleString()}
+              Rs.{stats.totalPaid.toLocaleString()}
             </div>
             <p className="text-xs text-gray-600 mt-1">
               {payments.filter((p) => p.status === "paid").length} invoices
@@ -303,10 +302,10 @@ const Payments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {lastPayment ? lastPayment.paidDate : "N/A"}
+              {stats.lastPayment ? stats.lastPayment.paidDate : "N/A"}
             </div>
             <p className="text-xs text-gray-600 mt-1">
-              {lastPayment ? `Rs.${lastPayment.amount.toLocaleString()}` : "No payments yet"}
+              {stats.lastPayment ? `Rs.${stats.lastPayment.amount.toLocaleString()}` : "No payments yet"}
             </p>
           </CardContent>
         </Card>
@@ -319,7 +318,7 @@ const Payments = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{overdueCount}</div>
+            <div className="text-2xl font-bold text-red-600">{stats.overdueCount}</div>
             <p className="text-xs text-gray-600 mt-1">Requires attention</p>
           </CardContent>
         </Card>

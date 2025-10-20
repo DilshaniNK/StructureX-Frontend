@@ -1,20 +1,221 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { jwtDecode } from 'jwt-decode'
+import DailyUpdatesView from '../../Components/QS/DailyUpdatesView'
+import SiteVisitList from '../../Components/QS/SiteVisitList'
 
 function Projects() {
+  // TODO: Replace with actual employee ID from authentication/route params
+  const QS_EMPLOYEE_ID = 'EMP_001'
+  
+  const { employeeId } = useParams()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('ongoing')
   const [selectedProject, setSelectedProject] = useState(null)
   const [activeSection, setActiveSection] = useState('overview')
+  const [allProjects, setAllProjects] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [userRole, setUserRole] = useState('')
+  const [showMyProjects, setShowMyProjects] = useState(false) // For SQS filtering
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [parentTaskId, setParentTaskId] = useState(null)
+  
+  // Design files state
+  const [designFiles, setDesignFiles] = useState([])
+  const [loadingDesigns, setLoadingDesigns] = useState(false)
+  const [designError, setDesignError] = useState(null)
+  const [selectedDesign, setSelectedDesign] = useState(null)
+  const [showDesignOverlay, setShowDesignOverlay] = useState(false)
+  
+  // Toggle states for Client Info and Project Team
+  const [showClientInfo, setShowClientInfo] = useState(false)
+  const [showProjectTeam, setShowProjectTeam] = useState(false)
+  
+  // BOQ state
+  const [boqData, setBoqData] = useState(null)
+  const [loadingBoq, setLoadingBoq] = useState(false)
+  const [boqError, setBoqError] = useState(null)
+  
   const [taskFormData, setTaskFormData] = useState({
     name: '',
-    status: 'Pending',
+    status: 'pending',
     startDate: '',
     deadline: '',
     progress: 0,
     isMilestone: false
   })
+  
+  const [showBulkTaskModal, setShowBulkTaskModal] = useState(false)
+  const [bulkTasks, setBulkTasks] = useState([
+    { name: '', status: 'pending', milestone: false, parentId: null }
+  ])
+  const [bulkSubtaskParent, setBulkSubtaskParent] = useState(null)
+  
+  // Fetch user role from JWT token
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const decoded = jwtDecode(token)
+        setUserRole(decoded.role || '')
+      } catch (err) {
+        console.error('Error decoding token:', err)
+      }
+    }
+  }, [])
+
+  // Fetch projects from API - QS gets only their own projects
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoading(true)
+      setError(null)
+      
+      try {
+        // QS gets only their own projects by employee ID
+        const currentEmployeeId = employeeId || QS_EMPLOYEE_ID
+        const url = `http://localhost:8086/api/v1/qs/projects/employee/${currentEmployeeId}`
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects')
+        }
+        
+        const data = await response.json()
+        setAllProjects(data)
+      } catch (err) {
+        console.error('Error fetching projects:', err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchProjects()
+  }, [employeeId])
+  
+  // Fetch design files when a project is selected and design section is active
+  useEffect(() => {
+    const fetchDesignFiles = async () => {
+      if (!selectedProject || activeSection !== 'design') return
+      
+      setLoadingDesigns(true)
+      setDesignError(null)
+      
+      try {
+        const response = await fetch(
+          `http://localhost:8086/api/v1/qs/projects/design/${selectedProject.project_id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        )
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch design files')
+        }
+        
+        const data = await response.json()
+        setDesignFiles(data)
+      } catch (err) {
+        console.error('Error fetching design files:', err)
+        setDesignError(err.message)
+      } finally {
+        setLoadingDesigns(false)
+      }
+    }
+    
+    fetchDesignFiles()
+  }, [selectedProject, activeSection])
+  
+  // Fetch BOQ data when project is selected and BOQ section is active
+  useEffect(() => {
+    const fetchBoqData = async () => {
+      if (!selectedProject || activeSection !== 'boq') return
+      
+      setLoadingBoq(true)
+      setBoqError(null)
+      
+      try {
+        const response = await fetch(
+          `http://localhost:8086/api/v1/boq/project/${selectedProject.project_id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        )
+        
+        if (response.status === 404) {
+          // BOQ doesn't exist yet
+          setBoqData(null)
+          setBoqError(null)
+        } else if (!response.ok) {
+          throw new Error('Failed to fetch BOQ data')
+        } else {
+          const data = await response.json()
+          setBoqData(data)
+        }
+      } catch (err) {
+        console.error('Error fetching BOQ data:', err)
+        setBoqError(err.message)
+      } finally {
+        setLoadingBoq(false)
+      }
+    }
+    
+    fetchBoqData()
+  }, [selectedProject, activeSection])
+  
+  // Fetch WBS data when project is selected and WBS section is active
+  useEffect(() => {
+    const fetchWBSData = async () => {
+      if (!selectedProject || activeSection !== 'wbs') return
+      
+      setLoading(true)
+      setError(null)
+      
+      try {
+        const response = await fetch(
+          `http://localhost:8086/api/v1/wbs/project/${selectedProject.project_id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        )
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            // No WBS data found, start with empty array
+            setWbsData([])
+            return
+          }
+          throw new Error('Failed to fetch WBS data')
+        }
+        
+        const data = await response.json()
+        // Transform API data to component format
+        const transformedData = transformWBSFromAPI(data)
+        setWbsData(transformedData)
+      } catch (err) {
+        console.error('Error fetching WBS data:', err)
+        setError(err.message)
+        setWbsData([]) // Reset to empty on error
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchWBSData()
+  }, [selectedProject, activeSection])
   
   // WBS Data with milestones and sub-tasks
   const [wbsData, setWbsData] = useState([
@@ -253,48 +454,30 @@ function Projects() {
     return dailyUpdates.filter(update => update.date === dateString)
   }
 
-  // Sample data - replace with actual API calls
-  const projectsData = {
-    ongoing: [
-      {
-        id: 'P001',
-        name: 'Luxury Villa Construction',
-        code: 'LVC-2024-001',
-        location: 'Colombo 07',
-        startDate: '2024-01-15',
-        estimatedEndDate: '2024-12-30',
-        status: 'In Progress',
-        owner: 'John Smith',
-        teamMembers: ['Site Supervisor: Mike Johnson', 'QS Officer: Sarah Davis'],
-        image: "/Projects/site1.jpg"
-      },
-      {
-        id: 'P002',
-        name: 'Office Complex',
-        code: 'OFC-2024-002',
-        location: 'Galle Road',
-        startDate: '2024-03-01',
-        estimatedEndDate: '2025-02-28',
-        status: 'Delayed',
-        owner: 'ABC Corporation',
-        teamMembers: ['Site Supervisor: Tom Wilson', 'QS Officer: Lisa Brown'],
-        image: '/Projects/site2.png'
-      }
-    ],
-    finished: [
-      {
-        id: 'P003',
-        name: 'Residential Apartment',
-        code: 'RES-2023-003',
-        location: 'Nugegoda',
-        startDate: '2023-01-10',
-        estimatedEndDate: '2023-11-30',
-        status: 'Completed',
-        owner: 'XYZ Holdings',
-        teamMembers: ['Site Supervisor: James Lee', 'QS Officer: Emma White'],
-        image: "/Projects/site3.jpg"
-      }
-    ]
+  // Filter projects based on status and user role
+  const getFilteredProjects = () => {
+    let filtered = allProjects
+    
+    // For SQS, filter by showMyProjects toggle
+    const currentEmployeeId = employeeId || QS_EMPLOYEE_ID
+    if (userRole === 'Senior_QS_Officer' && showMyProjects) {
+      filtered = filtered.filter(project => project.qs_id === currentEmployeeId)
+    }
+    
+    // Filter by status (ongoing or finished)
+    if (activeTab === 'ongoing') {
+      filtered = filtered.filter(project => 
+        project.status?.toLowerCase() === 'ongoing' || 
+        project.status?.toLowerCase() === 'in progress'
+      )
+    } else {
+      filtered = filtered.filter(project => 
+        project.status?.toLowerCase() === 'completed' || 
+        project.status?.toLowerCase() === 'finished'
+      )
+    }
+    
+    return filtered
   }
 
   const handleProjectSelect = (project) => {
@@ -302,6 +485,64 @@ function Projects() {
     setActiveSection('overview')
   }
 
+  // Helper function to transform WBS data from API format to component format
+  const transformWBSFromAPI = (apiData) => {
+    if (!Array.isArray(apiData)) return []
+    
+    // Build a map of tasks by ID
+    const taskMap = {}
+    apiData.forEach(task => {
+      taskMap[task.taskId] = {
+        id: task.taskId,
+        name: task.name,
+        status: task.status,
+        startDate: task.startDate || '',
+        deadline: task.deadline || '',
+        progress: task.progress || 0,
+        isMilestone: task.milestone || false,
+        isExpanded: false,
+        subTasks: [],
+        parentId: task.parentId
+      }
+    })
+    
+    // Build hierarchy
+    const rootTasks = []
+    Object.values(taskMap).forEach(task => {
+      if (!task.parentId) {
+        rootTasks.push(task)
+      } else {
+        const parent = taskMap[task.parentId]
+        if (parent) {
+          parent.subTasks.push(task)
+        }
+      }
+    })
+    
+    return rootTasks
+  }
+  
+  // Helper function to transform component format to API format
+  const transformWBSToAPI = (componentData, projectId, parentId = null) => {
+    const apiData = []
+    
+    componentData.forEach(task => {
+      apiData.push({
+        projectId: projectId,
+        parentId: parentId,
+        name: task.name,
+        status: task.status,
+        milestone: task.isMilestone
+      })
+      
+      if (task.subTasks && task.subTasks.length > 0) {
+        apiData.push(...transformWBSToAPI(task.subTasks, projectId, task.id))
+      }
+    })
+    
+    return apiData
+  }
+  
   // Helper function to generate unique ID
   const generateTaskId = () => {
     return Date.now() + Math.random()
@@ -410,13 +651,16 @@ function Projects() {
     setEditingTask(null)
     setTaskFormData({
       name: '',
-      status: 'Pending',
-      startDate: '',
-      deadline: '',
-      progress: 0,
+      status: 'pending',
       isMilestone: false
     })
     setShowTaskForm(true)
+  }
+  
+  const handleOpenBulkSubtaskForm = (parentId) => {
+    setBulkSubtaskParent(parentId)
+    setBulkTasks([{ name: '', status: 'pending', milestone: false, parentId: parentId }])
+    setShowBulkTaskModal(true)
   }
 
   const handleEditTask = (task) => {
@@ -425,40 +669,146 @@ function Projects() {
     setTaskFormData({
       name: task.name,
       status: task.status,
-      startDate: task.startDate,
-      deadline: task.deadline,
-      progress: task.progress,
       isMilestone: task.isMilestone
     })
     setShowTaskForm(true)
   }
 
-  const handleDeleteTask = (taskId) => {
-    if (window.confirm('Are you sure you want to delete this task and all its subtasks?')) {
-      setWbsData(prevData => deleteTaskAtLevel(prevData, taskId))
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm('Are you sure you want to delete this task and all its subtasks?')) {
+      return
+    }
+    
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/wbs/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete task')
+      }
+      
+      // Refresh WBS data
+      await refreshWBSData()
+    } catch (err) {
+      console.error('Error deleting task:', err)
+      alert('Failed to delete task. Please try again.')
+    }
+  }
+  
+  const handleDeleteAllWBS = async () => {
+    if (!selectedProject) return
+    
+    if (!window.confirm('Are you sure you want to delete the entire WBS for this project? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/wbs/project/${selectedProject.project_id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete WBS')
+      }
+      
+      // Clear local state
+      setWbsData([])
+      alert('WBS deleted successfully')
+    } catch (err) {
+      console.error('Error deleting WBS:', err)
+      alert('Failed to delete WBS. Please try again.')
     }
   }
 
-  const handleTaskFormSubmit = (e) => {
+  const handleTaskFormSubmit = async (e) => {
     e.preventDefault()
     
-    if (editingTask) {
-      // Update existing task
-      setWbsData(prevData => updateTaskAtLevel(prevData, editingTask.id, taskFormData))
-    } else {
-      // Add new task
-      const newTask = {
-        id: generateTaskId(),
-        ...taskFormData,
-        isExpanded: false,
-        subTasks: []
-      }
-      setWbsData(prevData => addTaskAtLevel(prevData, parentTaskId, newTask))
-    }
+    if (!selectedProject) return
     
-    setShowTaskForm(false)
-    setEditingTask(null)
-    setParentTaskId(null)
+    try {
+      if (editingTask) {
+        // Update existing task - use PUT for all fields
+        const response = await fetch('http://localhost:8086/api/v1/wbs/update', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            taskId: editingTask.id,
+            projectId: selectedProject.project_id,
+            parentId: editingTask.parentId || null,
+            name: taskFormData.name,
+            status: taskFormData.status,
+            milestone: taskFormData.isMilestone
+          })
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Failed to update task: ${errorText}`)
+        }
+        
+        // Try to parse JSON response, but don't fail if there's no body
+        try {
+          const updatedTask = await response.json()
+          console.log('Task updated:', updatedTask)
+        } catch (jsonError) {
+          // Response might not have a JSON body, which is fine
+          console.log('Task updated successfully (no JSON response)')
+        }
+        
+        // Refresh WBS data
+        await refreshWBSData()
+      } else {
+        // Create new task
+        const response = await fetch('http://localhost:8086/api/v1/wbs/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            projectId: selectedProject.project_id,
+            parentId: parentTaskId,
+            name: taskFormData.name,
+            status: taskFormData.status,
+            milestone: taskFormData.isMilestone
+          })
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Failed to create task: ${errorText}`)
+        }
+        
+        // Try to parse JSON response, but don't fail if there's no body
+        try {
+          const newTask = await response.json()
+          console.log('Task created:', newTask)
+        } catch (jsonError) {
+          // Response might not have a JSON body, which is fine
+          console.log('Task created successfully (no JSON response)')
+        }
+        
+        // Refresh WBS data
+        await refreshWBSData()
+      }
+      
+      setShowTaskForm(false)
+      setEditingTask(null)
+      setParentTaskId(null)
+    } catch (err) {
+      console.error('Error saving task:', err)
+      alert('Failed to save task. Please try again.')
+    }
   }
 
   const handleTaskFormCancel = () => {
@@ -466,10 +816,177 @@ function Projects() {
     setEditingTask(null)
     setParentTaskId(null)
   }
+  
+  const handleBulkTaskSubmit = async () => {
+    if (!selectedProject) return
+    
+    // Validate that at least one task has a name
+    const validTasks = bulkTasks.filter(task => task.name.trim() !== '')
+    
+    if (validTasks.length === 0) {
+      alert('Please add at least one task with a name')
+      return
+    }
+    
+    try {
+      // Format tasks for API
+      const formattedTasks = validTasks.map(task => ({
+        projectId: selectedProject.project_id,
+        parentId: task.parentId || bulkSubtaskParent || null,
+        name: task.name.trim(),
+        status: task.status,
+        milestone: task.milestone
+      }))
+      
+      const response = await fetch('http://localhost:8086/api/v1/wbs/bulk-create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(formattedTasks)
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to create bulk tasks')
+      }
+      
+      // Refresh WBS data
+      await refreshWBSData()
+      
+      setShowBulkTaskModal(false)
+      setBulkTasks([{ name: '', status: 'pending', milestone: false, parentId: null }])
+      setBulkSubtaskParent(null)
+      alert(`Successfully created ${validTasks.length} task(s)!`)
+    } catch (err) {
+      console.error('Error creating bulk tasks:', err)
+      alert(`Failed to create bulk tasks: ${err.message}`)
+    }
+  }
+  
+  const handleAddBulkTaskRow = () => {
+    setBulkTasks([...bulkTasks, { name: '', status: 'pending', milestone: false, parentId: null }])
+  }
+  
+  const handleRemoveBulkTaskRow = (index) => {
+    if (bulkTasks.length > 1) {
+      setBulkTasks(bulkTasks.filter((_, i) => i !== index))
+    }
+  }
+  
+  const handleBulkTaskChange = (index, field, value) => {
+    const updatedTasks = [...bulkTasks]
+    updatedTasks[index][field] = value
+    setBulkTasks(updatedTasks)
+  }
+  
+  const getAllTasksForParentDropdown = (tasks, level = 0, prefix = '') => {
+    let options = []
+    tasks.forEach(task => {
+      options.push({
+        id: task.id,
+        name: `${prefix}${task.name}`,
+        level: level
+      })
+      if (task.subTasks && task.subTasks.length > 0) {
+        options = options.concat(getAllTasksForParentDropdown(task.subTasks, level + 1, prefix + '  ↳ '))
+      }
+    })
+    return options
+  }
 
-  // Updated toggle functions
-  const toggleMilestone = (taskId) => {
-    setWbsData(prevData => toggleMilestoneAtLevel(prevData, taskId))
+  // Updated toggle functions with confirmation
+  const toggleMilestone = async (taskId, currentValue, taskName) => {
+    const action = currentValue ? 'remove milestone status from' : 'mark as milestone'
+    const confirmed = window.confirm(`Are you sure you want to ${action} "${taskName}"?`)
+    
+    if (!confirmed) {
+      return
+    }
+    
+    try {
+      const response = await fetch(`http://localhost:8086/api/v1/wbs/${taskId}/milestone?milestone=${!currentValue}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update milestone status')
+      }
+      
+      // Refresh WBS data from API
+      await refreshWBSData()
+    } catch (err) {
+      console.error('Error updating milestone:', err)
+      alert('Failed to update milestone status. Please try again.')
+    }
+  }
+  
+  const handleStatusUpdate = async (taskId, newStatus, taskName) => {
+    const confirmed = window.confirm(`Update "${taskName}" status to "${formatStatusDisplay(newStatus)}"?`)
+    
+    if (!confirmed) {
+      return
+    }
+    
+    try {
+      // Find the task to get its current data
+      const task = findTaskById(wbsData, taskId)
+      if (!task) {
+        throw new Error('Task not found')
+      }
+      
+      const response = await fetch('http://localhost:8086/api/v1/wbs/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          taskId: taskId,
+          projectId: selectedProject.project_id,
+          parentId: task.parentId || null,
+          name: task.name,
+          status: newStatus,
+          milestone: task.isMilestone
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update task status')
+      }
+      
+      // Refresh WBS data from API
+      await refreshWBSData()
+    } catch (err) {
+      console.error('Error updating status:', err)
+      alert('Failed to update task status. Please try again.')
+    }
+  }
+  
+  const refreshWBSData = async () => {
+    if (!selectedProject) return
+    
+    try {
+      const response = await fetch(
+        `http://localhost:8086/api/v1/wbs/project/${selectedProject.project_id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      )
+      
+      if (response.ok) {
+        const data = await response.json()
+        const transformedData = transformWBSFromAPI(data)
+        setWbsData(transformedData)
+      }
+    } catch (err) {
+      console.error('Error refreshing WBS data:', err)
+    }
   }
 
   const toggleExpanded = (taskId) => {
@@ -513,17 +1030,6 @@ function Projects() {
 
           {/* Action Buttons */}
           <div className="absolute top-2 right-2 flex space-x-1">
-            {/* Add Sub-task Button */}
-            <button
-              onClick={() => handleOpenTaskForm(task.id)}
-              className="p-1.5 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors duration-200"
-              title="Add sub-task"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-            </button>
-
             {/* Edit Button */}
             <button
               onClick={() => handleEditTask(task)}
@@ -548,7 +1054,7 @@ function Projects() {
 
             {/* Milestone Toggle Button */}
             <button
-              onClick={() => toggleMilestone(task.id)}
+              onClick={() => toggleMilestone(task.id, task.isMilestone, task.name)}
               className={`p-1.5 rounded-full transition-all duration-200 ${
                 task.isMilestone 
                   ? 'bg-yellow-500 text-white shadow-md hover:bg-yellow-600' 
@@ -558,6 +1064,17 @@ function Projects() {
             >
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </button>
+            
+            {/* Add Bulk Subtasks Button */}
+            <button
+              onClick={() => handleOpenBulkSubtaskForm(task.id)}
+              className="p-1.5 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors duration-200"
+              title="Add subtasks"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </button>
           </div>
@@ -588,26 +1105,18 @@ function Projects() {
                     <h4 className={`font-semibold ${level === 0 ? 'text-base' : 'text-sm'} ${task.isMilestone ? 'text-yellow-900' : 'text-gray-900'}`}>
                       {task.name}
                     </h4>
-                    <div className="mt-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-500 ${
-                              task.status === 'Completed' ? 'bg-green-500' :
-                              task.status === 'In Progress' ? 'bg-blue-500' : 'bg-gray-400'
-                            }`}
-                            style={{ width: `${task.progress}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs text-gray-600 min-w-0">{task.progress}%</span>
-                      </div>
-                    </div>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(task.status)}`}>
-                      {task.status}
-                    </span>
-                    <span className="text-sm text-gray-600">Due: {task.deadline}</span>
+                    <select
+                      value={task.status}
+                      onChange={(e) => handleStatusUpdate(task.id, e.target.value, task.name)}
+                      className={`text-xs px-2 py-1 rounded-full border-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 ${getStatusColor(task.status)}`}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="delayed">Delayed</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -626,40 +1135,97 @@ function Projects() {
   }
 
   const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
+    const statusLower = status?.toLowerCase() || ''
+    switch (statusLower) {
       case 'in progress':
+      case 'in_progress':
         return 'bg-blue-100 text-blue-800'
       case 'completed':
         return 'bg-green-100 text-green-800'
       case 'delayed':
         return 'bg-red-100 text-red-800'
+      case 'pending':
       case 'not started':
         return 'bg-yellow-100 text-yellow-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
   }
+  
+  const formatStatusDisplay = (status) => {
+    const statusMap = {
+      'pending': 'Pending',
+      'in_progress': 'In Progress',
+      'completed': 'Completed',
+      'delayed': 'Delayed'
+    }
+    return statusMap[status] || status
+  }
 
   const renderProjectList = () => {
-    const projects = projectsData[activeTab]
+    const projects = getFilteredProjects()
+    
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      )
+    }
+    
+    if (error) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">Error loading projects: {error}</p>
+        </div>
+      )
+    }
+    
+    if (projects.length === 0) {
+      return (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-gray-600">No {activeTab} projects found.</p>
+        </div>
+      )
+    }
+    
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map(project => (
           <div 
-            key={project.id} 
+            key={project.project_id} 
             className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition duration-200 cursor-pointer transform hover:-translate-y-1"
             onClick={() => handleProjectSelect(project)}
           >
-            <img 
-              src={project.image} 
-              alt={project.name} 
-              className="w-full h-48 object-cover rounded-lg mb-4"
-            />
+            {project.project_images && project.project_images.length > 0 ? (
+              <img 
+                src={project.project_images[0]} 
+                alt={project.name} 
+                className="w-full h-48 object-cover rounded-lg mb-4"
+              />
+            ) : (
+              <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                <span className="text-gray-400">No image available</span>
+              </div>
+            )}
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">{project.name}</h3>
-              <p className="text-sm text-gray-600 mb-2"><span className="font-medium">ID:</span> {project.code}</p>
-              <p className="text-sm text-gray-600 mb-2"><span className="font-medium">Location:</span> {project.location}</p>
-              <div className="flex justify-between items-center">
+              <p className="text-sm text-gray-600 mb-2">
+                <span className="font-medium">ID:</span> {project.project_id}
+              </p>
+              <p className="text-sm text-gray-600 mb-2">
+                <span className="font-medium">Location:</span> {project.location}
+              </p>
+              <p className="text-sm text-gray-600 mb-2">
+                <span className="font-medium">Category:</span> {project.category}
+              </p>
+              <p className="text-sm text-gray-600 mb-2">
+                <span className="font-medium">Client:</span> {project.client_name}
+              </p>
+              <p className="text-sm text-gray-600 mb-2">
+                <span className="font-medium">Budget:</span> Rs {project.budget?.toLocaleString()}
+              </p>
+              <div className="flex justify-between items-center mt-3">
                 <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(project.status)}`}>
                   {project.status}
                 </span>
@@ -698,21 +1264,210 @@ function Projects() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">Design / Plan / Drawing Section</h3>
-              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm">
-                + Add New Plans
-              </button>
             </div>
-            <div className="space-y-4">
-              {['Architectural Plan v1.pdf', 'Structural Drawing v2.dwg', 'Electrical Layout v1.pdf'].map((file, index) => (
-                <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-gray-900">{file}</span>
-                  <div className="space-x-2">
-                    <button className="text-blue-600 hover:text-blue-800 text-sm">Preview</button>
-                    <button className="text-blue-600 hover:text-blue-800 text-sm">Download</button>
+            
+            {loadingDesigns ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : designError ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-800">Error loading design files: {designError}</p>
+              </div>
+            ) : designFiles.length === 0 ? (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                <p className="text-gray-600">No design files available for this project.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {designFiles.map((design, index) => (
+                  <div key={design.design_id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h4 className="font-semibold text-gray-900">{design.name}</h4>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            design.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            design.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {design.status}
+                          </span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            design.priority === 'high' ? 'bg-red-100 text-red-800' :
+                            design.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {design.priority} priority
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{design.description}</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-500">
+                          <div>
+                            <span className="font-medium">Type:</span> {design.type}
+                          </div>
+                          <div>
+                            <span className="font-medium">Due:</span> {design.due_date}
+                          </div>
+                          <div>
+                            <span className="font-medium">Price:</span> Rs {design.price?.toLocaleString()}
+                          </div>
+                          <div>
+                            <span className="font-medium">By:</span> {design.employee_name}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col space-y-2 ml-4">
+                        <button 
+                          onClick={() => {
+                            setSelectedDesign(design)
+                            setShowDesignOverlay(true)
+                          }}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 border border-blue-600 rounded hover:bg-blue-50 transition-colors"
+                        >
+                          View
+                        </button>
+                        <a
+                          href={`http://localhost:8086/${design.design_link}`}
+                          download
+                          className="text-green-600 hover:text-green-800 text-sm font-medium px-3 py-1 border border-green-600 rounded hover:bg-green-50 transition-colors text-center"
+                        >
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Design Details Overlay */}
+            {showDesignOverlay && selectedDesign && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                  {/* Header */}
+                  <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedDesign.name}</h3>
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          selectedDesign.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          selectedDesign.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {selectedDesign.status}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          selectedDesign.priority === 'high' ? 'bg-red-100 text-red-800' :
+                          selectedDesign.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {selectedDesign.priority} priority
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowDesignOverlay(false)
+                        setSelectedDesign(null)
+                      }}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="p-6 space-y-6">
+                    {/* Description */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+                      <p className="text-gray-600">{selectedDesign.description}</p>
+                    </div>
+                    
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500 mb-1">Design ID</p>
+                        <p className="font-semibold text-gray-900">{selectedDesign.design_id}</p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500 mb-1">Project ID</p>
+                        <p className="font-semibold text-gray-900">{selectedDesign.project_id}</p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500 mb-1">Type</p>
+                        <p className="font-semibold text-gray-900 capitalize">{selectedDesign.type}</p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500 mb-1">Due Date</p>
+                        <p className="font-semibold text-gray-900">{selectedDesign.due_date}</p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500 mb-1">Price</p>
+                        <p className="font-semibold text-gray-900">Rs {selectedDesign.price?.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500 mb-1">Client ID</p>
+                        <p className="font-semibold text-gray-900">{selectedDesign.client_id}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Employee Info */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-900 mb-2">Created By</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                        <div>
+                          <p className="text-blue-600">Name</p>
+                          <p className="font-semibold text-blue-900">{selectedDesign.employee_name}</p>
+                        </div>
+                        <div>
+                          <p className="text-blue-600">Position</p>
+                          <p className="font-semibold text-blue-900">{selectedDesign.employee_position?.replace('_', ' ')}</p>
+                        </div>
+                        <div>
+                          <p className="text-blue-600">Employee ID</p>
+                          <p className="font-semibold text-blue-900">{selectedDesign.employee_id}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Additional Notes */}
+                    {selectedDesign.additional_note && selectedDesign.additional_note !== 'nothing' && (
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-2">Additional Notes</h4>
+                        <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">{selectedDesign.additional_note}</p>
+                      </div>
+                    )}
+                    
+                    {/* Download Button */}
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          setShowDesignOverlay(false)
+                          setSelectedDesign(null)
+                        }}
+                        className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                      >
+                        Close
+                      </button>
+                      <a
+                        href={`http://localhost:8086/${selectedDesign.design_link}`}
+                        download
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center space-x-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Download Design</span>
+                      </a>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         )
       
@@ -721,12 +1476,28 @@ function Projects() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">Work Breakdown Structure (WBS) & Milestones</h3>
-              <button 
-                onClick={() => handleOpenTaskForm()}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
-              >
-                + Add New Task
-              </button>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => setShowBulkTaskModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm flex items-center space-x-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>Add Tasks</span>
+                </button>
+                {wbsData.length > 0 && (
+                  <button 
+                    onClick={handleDeleteAllWBS}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm flex items-center space-x-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Delete All</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Task Form Modal */}
@@ -760,51 +1531,11 @@ function Projects() {
                         onChange={(e) => setTaskFormData({ ...taskFormData, status: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="Pending">Pending</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Delayed">Delayed</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="delayed">Delayed</option>
                       </select>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Start Date
-                        </label>
-                        <input
-                          type="date"
-                          value={taskFormData.startDate}
-                          onChange={(e) => setTaskFormData({ ...taskFormData, startDate: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Deadline
-                        </label>
-                        <input
-                          type="date"
-                          value={taskFormData.deadline}
-                          onChange={(e) => setTaskFormData({ ...taskFormData, deadline: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Progress (%)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={taskFormData.progress}
-                        onChange={(e) => setTaskFormData({ ...taskFormData, progress: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
                     </div>
                     
                     <div className="flex items-center">
@@ -839,33 +1570,172 @@ function Projects() {
                 </div>
               </div>
             )}
-            
-            {/* Render Tasks */}
-            <div className="space-y-4">
-              {wbsData.map((task) => renderTaskRecursive(task, 0))}
-            </div>
 
-            {/* Milestone Summary */}
-            <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <h4 className="font-semibold text-yellow-900 mb-3 flex items-center">
-                <span className="mr-2">🏆</span>
-                Milestone Summary
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {getAllMilestones(wbsData).map(milestone => (
-                  <div key={milestone.id} className="flex items-center space-x-3 p-2 bg-white rounded border border-yellow-200">
-                    <div className={`w-3 h-3 rounded-full ${
-                      milestone.status === 'Completed' ? 'bg-green-500' : 
-                      milestone.status === 'In Progress' ? 'bg-blue-500' : 'bg-gray-300'
-                    }`}></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-yellow-900">{milestone.name}</p>
-                      <p className="text-xs text-yellow-700">Due: {milestone.deadline}</p>
+            {/* Bulk Task Modal */}
+            {showBulkTaskModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-lg font-semibold">
+                      {bulkSubtaskParent ? 'Add Multiple Subtasks' : 'Add Multiple Tasks'}
+                    </h4>
+                    <button
+                      onClick={() => {
+                        setShowBulkTaskModal(false)
+                        setBulkTasks([{ name: '', status: 'pending', milestone: false, parentId: null }])
+                        setBulkSubtaskParent(null)
+                      }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Show parent task if adding subtasks */}
+                    {bulkSubtaskParent && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                        <p className="text-sm font-medium text-blue-900">
+                          Adding subtasks to: <span className="font-bold">
+                            {findTaskById(wbsData, bulkSubtaskParent)?.name || 'Selected Task'}
+                          </span>
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task Name</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Parent Task</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Milestone</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {bulkTasks.map((task, index) => (
+                            <tr key={index}>
+                              <td className="px-4 py-3 text-sm text-gray-900">{index + 1}</td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="text"
+                                  value={task.name}
+                                  onChange={(e) => handleBulkTaskChange(index, 'name', e.target.value)}
+                                  placeholder="Enter task name"
+                                  className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <select
+                                  value={task.status}
+                                  onChange={(e) => handleBulkTaskChange(index, 'status', e.target.value)}
+                                  className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="pending">Pending</option>
+                                  <option value="in_progress">In Progress</option>
+                                  <option value="completed">Completed</option>
+                                  <option value="delayed">Delayed</option>
+                                </select>
+                              </td>
+                              <td className="px-4 py-3">
+                                <select
+                                  value={task.parentId || ''}
+                                  onChange={(e) => handleBulkTaskChange(index, 'parentId', e.target.value || null)}
+                                  className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  disabled={bulkSubtaskParent !== null}
+                                >
+                                  <option value="">Root Level</option>
+                                  {getAllTasksForParentDropdown(wbsData).map(option => (
+                                    <option key={option.id} value={option.id}>
+                                      {option.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={task.milestone}
+                                  onChange={(e) => handleBulkTaskChange(index, 'milestone', e.target.checked)}
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <button
+                                  onClick={() => handleRemoveBulkTaskRow(index)}
+                                  className="text-red-600 hover:text-red-800"
+                                  disabled={bulkTasks.length === 1}
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <button
+                      onClick={handleAddBulkTaskRow}
+                      className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                    >
+                      + Add Another Task
+                    </button>
+
+                    <div className="flex justify-end space-x-3 pt-4 border-t">
+                      <button
+                        onClick={() => {
+                          setShowBulkTaskModal(false)
+                          setBulkTasks([{ name: '', status: 'pending', milestone: false, parentId: null }])
+                          setBulkSubtaskParent(null)
+                        }}
+                        className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleBulkTaskSubmit}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      >
+                        Create All Tasks
+                      </button>
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
+            )}
+            
+            {/* Render Tasks */}
+            {wbsData.length === 0 ? (
+              <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+                <div className="mb-4">
+                  <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No WBS Tasks Yet</h3>
+                <p className="text-gray-600 mb-6">Start building your Work Breakdown Structure by adding tasks.</p>
+                <div className="flex justify-center space-x-3">
+                  <button 
+                    onClick={() => setShowBulkTaskModal(true)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
+                  >
+                    Add Tasks
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {wbsData.map((task) => renderTaskRecursive(task, 0))}
+              </div>
+            )}
           </div>
         )
       
@@ -874,137 +1744,176 @@ function Projects() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">Bill of Quantities (BOQ)</h3>
-              <div className="flex space-x-2">
-                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm">
-                  + Add Item
-                </button>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
-                  Export BOQ
-                </button>
-              </div>
             </div>
 
-            {/* Total Value Summary */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h4 className="text-lg font-semibold text-blue-900">Total Project Value</h4>
-                  <p className="text-sm text-blue-700">Complete Bill of Quantities Summary</p>
+            {loadingBoq ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : boqError ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-800">Error loading BOQ: {boqError}</p>
+              </div>
+            ) : boqData ? (
+              <>
+                {/* BOQ Header */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h4 className="text-lg font-semibold text-blue-900">BOQ Details</h4>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          boqData.boq?.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                          boqData.boq?.status === 'FINAL' ? 'bg-blue-100 text-blue-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {boqData.boq?.status || 'DRAFT'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-blue-600">BOQ ID</p>
+                          <p className="font-medium text-blue-900">{boqData.boq?.boqId || boqData.boq_id || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-blue-600">Date</p>
+                          <p className="font-medium text-blue-900">{boqData.boq?.date || new Date().toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-blue-600">QS Officer</p>
+                          <p className="font-medium text-blue-900">{boqData.boq?.qsId || selectedProject?.qs_id || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-blue-600">Total Items</p>
+                          <p className="font-medium text-blue-900">{boqData.items?.length || 0}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-blue-700 mb-1">Total Value</p>
+                      <p className="text-3xl font-bold text-blue-900">
+                        Rs {boqData.items?.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString() || '0'}
+                      </p>
+                      {/* Only show Edit button if the project's qs_id matches the current QS employee ID */}
+                      {selectedProject?.qs_id === (employeeId || QS_EMPLOYEE_ID) ? (
+                        <button 
+                          onClick={() => navigate('/qs/boq', { 
+                            state: { 
+                              editBoqId: boqData.boq?.boqId || boqData.boq_id, 
+                              projectId: selectedProject.project_id 
+                            } 
+                          })}
+                          className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm flex items-center space-x-1"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span>Edit BOQ</span>
+                        </button>
+                      ) : (
+                        <div className="mt-3 text-xs text-gray-600 bg-gray-100 px-3 py-2 rounded-md">
+                          <p>BOQ managed by QS: {boqData.boq?.qsId || selectedProject?.qs_id || 'N/A'}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-3xl font-bold text-blue-900">Rs 374,250,000.00</p>
-                  <p className="text-sm text-blue-600">Including all materials and labor</p>
+
+                {/* BOQ Items Table */}
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            #
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Item Description
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Unit
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Quantity
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Rate (LKR)
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount (LKR)
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {boqData.items?.map((item, index) => (
+                          <tr key={item.itemId || item.boq_item_id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {index + 1}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {item.itemDescription || item.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              {item.unit}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              {item.quantity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              Rs {item.rate?.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                              Rs {item.amount?.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-gray-100">
+                        <tr>
+                          <td colSpan="5" className="px-6 py-4 text-right text-sm font-bold text-gray-900">
+                            Grand Total:
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-900">
+                            Rs {boqData.items?.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString() || '0'}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 </div>
+              </>
+            ) : (
+              <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+                <div className="mb-4">
+                  <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No BOQ Found</h3>
+                <p className="text-gray-600 mb-6">This project doesn't have a Bill of Quantities yet.</p>
+                {/* Only show Add BOQ button if the project's qs_id matches the current QS employee ID */}
+                {selectedProject?.qs_id === (employeeId || QS_EMPLOYEE_ID) ? (
+                  <button 
+                    onClick={() => navigate('/qs/boq', { state: { createForProject: selectedProject.project_id } })}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md text-sm font-medium inline-flex items-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span>Add BOQ</span>
+                  </button>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                    <p className="text-sm text-blue-800">
+                      <span className="font-semibold">BOQ hasn't been created yet.</span>
+                      <br />
+                      This project is assigned to another QS officer (ID: {selectedProject?.qs_id || 'N/A'}).
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
-
-            {/* BOQ Table */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        #
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Material Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Brand
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Quantity
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Rate (LKR)
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Value (LKR)
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {[
-                      { id: 1, material: 'Cement (OPC 53 Grade)', brand: 'ACC', quantity: '500 bags', rate: 135000, value: 67500000 },
-                      { id: 2, material: 'Steel Reinforcement Bars', brand: 'Tata Steel', quantity: '25 tons', rate: 19500000, value: 487500000 },
-                      { id: 3, material: 'Concrete Blocks', brand: 'Buildmate', quantity: '2000 blocks', rate: 13500, value: 27000000 },
-                      { id: 4, material: 'Sand (River Sand)', brand: 'Local Supplier', quantity: '150 cubic ft', rate: 10500, value: 1575000 },
-                      { id: 5, material: 'Gravel/Aggregate', brand: 'Holcim', quantity: '200 cubic ft', rate: 12000, value: 2400000 },
-                      { id: 6, material: 'Paint (Exterior)', brand: 'Asian Paints', quantity: '50 liters', rate: 96000, value: 4800000 },
-                      { id: 7, material: 'Roofing Tiles', brand: 'Monier', quantity: '1200 tiles', rate: 25500, value: 30600000 },
-                      { id: 8, material: 'PVC Pipes', brand: 'Finolex', quantity: '500 meters', rate: 37500, value: 18750000 },
-                      { id: 9, material: 'Electrical Wiring', brand: 'Havells', quantity: '2000 meters', rate: 13500, value: 27000000 },
-                      { id: 10, material: 'Floor Tiles', brand: 'Kajaria', quantity: '150 sqm', rate: 255000, value: 38250000 }
-                    ].map((item, index) => (
-                      <tr key={item.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {item.id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {item.material}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {item.brand}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {item.quantity}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                          Rs {item.rate.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          Rs {item.value.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex space-x-2">
-                            <button className="text-blue-600 hover:text-blue-800 text-xs">
-                              Edit
-                            </button>
-                            <button className="text-red-600 hover:text-red-800 text-xs">
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-gray-100">
-                    <tr>
-                      <td colSpan="5" className="px-6 py-4 text-right text-sm font-bold text-gray-900">
-                        Grand Total:
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-900">
-                        Rs 705,375,000
-                      </td>
-                      <td className="px-6 py-4"></td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <h4 className="font-medium text-green-900">Total Items</h4>
-                <p className="text-2xl font-bold text-green-700">10</p>
-                <p className="text-sm text-green-600">Materials listed</p>
-              </div>
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h4 className="font-medium text-blue-900">Average Rate</h4>
-                <p className="text-2xl font-bold text-blue-700">Rs 70,537,500</p>
-                <p className="text-sm text-blue-600">Per material type</p>
-              </div>
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                <h4 className="font-medium text-yellow-900">Last Updated</h4>
-                <p className="text-2xl font-bold text-yellow-700">Today</p>
-                <p className="text-sm text-yellow-600">June 19, 2025</p>
-              </div>
-            </div>
+            )}
           </div>
         )
       
@@ -1205,252 +2114,20 @@ function Projects() {
       case 'visits':
         return (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Site Visit Logs</h3>
-              <div className='flex space-x-2'>
-                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm">
-                  Setup A Visit
-                </button>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
-                  Add Visit Log
-                </button>
-              </div>
-            </div>
-            <div className="space-y-4">
-              {[
-                { date: 'June 15, 2024', officer: 'Mike Johnson', notes: 'Foundation work progressing well. No issues identified.' },
-                { date: 'June 10, 2024', officer: 'Sarah Davis', notes: 'Material delivery completed on schedule.' }
-              ].map((visit, index) => (
-                <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-gray-900">{visit.date} - {visit.officer}</h4>
-                    <button className="text-blue-600 hover:text-blue-800 text-sm">View Photos</button>
-                  </div>
-                  <p className="text-gray-600">{visit.notes}</p>
-                </div>
-              ))}
-            </div>
+            <SiteVisitList projectId={selectedProject?.project_id} />
           </div>
         )
       
       case 'updates':
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Daily Site Updates</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Calendar Section */}
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      {calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                    </h4>
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                      >
-                        <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                      >
-                        <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Calendar Grid */}
-                  <div className="grid grid-cols-7 gap-1 mb-2">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                      <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-                        {day}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="grid grid-cols-7 gap-1">
-                    {generateCalendarDays().map((day, index) => {
-                      const hasUpdate = dailyUpdates.some(update => 
-                        new Date(update.date).toDateString() === day?.toDateString()
-                      );
-                      const isSelected = selectedDate && day && 
-                        day.toDateString() === selectedDate.toDateString();
-                      const isToday = day && day.toDateString() === new Date().toDateString();
-                      
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => day && setSelectedDate(day)}
-                          disabled={!day}
-                          className={`
-                            aspect-square flex items-center justify-center text-sm rounded transition-colors relative
-                            ${!day ? 'invisible' : ''}
-                            ${isSelected ? 'bg-blue-500 text-white' : ''}
-                            ${!isSelected && isToday ? 'bg-blue-100 text-blue-700 font-semibold' : ''}
-                            ${!isSelected && !isToday ? 'hover:bg-gray-100 text-gray-700' : ''}
-                            ${day && day.getMonth() !== calendarDate.getMonth() ? 'text-gray-400' : ''}
-                          `}
-                        >
-                          {day?.getDate()}
-                          {hasUpdate && (
-                            <div className={`absolute bottom-1 right-1 w-2 h-2 rounded-full ${
-                              isSelected ? 'bg-white' : 'bg-green-500'
-                            }`}></div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  
-                  <div className="mt-4 text-xs text-gray-500">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span>Has updates</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span>Selected</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Updates Section */}
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      {selectedDate ? 
-                        `Updates for ${selectedDate.toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}` : 
-                        'Select a date to view updates'
-                      }
-                    </h4>
-                    {selectedDate && (
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm">
-                        Add Update
-                      </button>
-                    )}
-                  </div>
-                  
-                  {selectedDate ? (
-                    <div className="space-y-4">
-                      {getUpdatesForDate(selectedDate).length > 0 ? (
-                        getUpdatesForDate(selectedDate).map((update, index) => (
-                          <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium text-gray-900">{update.time}</span>
-                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                                  {update.type}
-                                </span>
-                              </div>
-                              <div className="flex space-x-2">
-                                <button className="text-blue-600 hover:text-blue-800 text-xs">Edit</button>
-                                <button className="text-red-600 hover:text-red-800 text-xs">Delete</button>
-                              </div>
-                            </div>
-                            <p className="text-gray-700 mb-2">{update.description}</p>
-                            {update.author && (
-                              <div className="text-xs text-gray-500">
-                                Updated by: <span className="font-medium">{update.author}</span>
-                              </div>
-                            )}
-                            {update.attachments && update.attachments.length > 0 && (
-                              <div className="mt-2">
-                                <div className="flex flex-wrap gap-2">
-                                  {update.attachments.map((attachment, idx) => (
-                                    <button
-                                      key={idx}
-                                      className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
-                                    >
-                                      📎 {attachment}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-8">
-                          <div className="text-gray-400 mb-2">
-                            <svg className="w-12 h-12 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <p className="text-gray-500 text-sm">No updates recorded for this date</p>
-                          <button className="mt-2 text-blue-600 hover:text-blue-800 text-sm">
-                            Add the first update
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <div className="text-gray-400 mb-4">
-                        <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <p className="text-gray-500">Click on a date in the calendar to view daily updates</p>
-                      <p className="text-gray-400 text-sm mt-1">Dates with updates are marked with a green dot</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <DailyUpdatesView projectId={selectedProject?.project_id} />
           </div>
         )
       
 
       
-      case 'todos':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">To-Do Tasks</h3>
-            <div className="space-y-4">
-              {[
-                { task: 'Review material delivery schedule', priority: 'High', due: 'June 20, 2024', completed: false },
-                { task: 'Submit weekly progress report', priority: 'Medium', due: 'June 18, 2024', completed: true },
-                { task: 'Coordinate with electrical contractor', priority: 'Low', due: 'June 25, 2024', completed: false }
-              ].map((todo, index) => (
-                <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                  <input 
-                    type="checkbox" 
-                    defaultChecked={todo.completed}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <div className="flex-1">
-                    <span className={`${todo.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                      {todo.task}
-                    </span>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    todo.priority === 'High' ? 'bg-red-100 text-red-800' :
-                    todo.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {todo.priority}
-                  </span>
-                  <span className="text-sm text-gray-600">Due: {todo.due}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
+
       
       default:
         return <div>Select a section to view details</div>
@@ -1471,29 +2148,39 @@ function Projects() {
         
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex flex-col lg:flex-row gap-6 mb-8">
-            <img 
-              src={selectedProject.image} 
-              alt={selectedProject.name} 
-              className="w-full lg:w-80 h-64 object-cover rounded-lg"
-            />
+            {selectedProject.project_images && selectedProject.project_images.length > 0 ? (
+              <img 
+                src={selectedProject.project_images[0]} 
+                alt={selectedProject.name} 
+                className="w-full lg:w-80 h-64 object-cover rounded-lg"
+              />
+            ) : (
+              <div className="w-full lg:w-80 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                <span className="text-gray-400">No image available</span>
+              </div>
+            )}
             <div className="flex-1 space-y-4">
               <h2 className="text-2xl font-bold text-gray-900">{selectedProject.name}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <span className="font-medium text-gray-700">Project ID:</span>
-                  <p className="text-gray-600">{selectedProject.code}</p>
+                  <p className="text-gray-600">{selectedProject.project_id}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Location:</span>
                   <p className="text-gray-600">{selectedProject.location}</p>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-700">Start Date:</span>
-                  <p className="text-gray-600">{selectedProject.startDate}</p>
+                  <span className="font-medium text-gray-700">Category:</span>
+                  <p className="text-gray-600">{selectedProject.category}</p>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-700">Estimated End Date:</span>
-                  <p className="text-gray-600">{selectedProject.estimatedEndDate}</p>
+                  <span className="font-medium text-gray-700">Start Date:</span>
+                  <p className="text-gray-600">{selectedProject.start_date}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Due Date:</span>
+                  <p className="text-gray-600">{selectedProject.due_date}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Status:</span>
@@ -1502,13 +2189,124 @@ function Projects() {
                   </span>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-700">Client:</span>
-                  <p className="text-gray-600">{selectedProject.owner}</p>
+                  <span className="font-medium text-gray-700">Budget:</span>
+                  <p className="text-gray-600">Rs {selectedProject.budget?.toLocaleString()}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Estimated Value:</span>
+                  <p className="text-gray-600">Rs {selectedProject.estimated_value?.toLocaleString()}</p>
                 </div>
                 <div className="md:col-span-2">
-                  <span className="font-medium text-gray-700">Assigned Team Members:</span>
-                  <p className="text-gray-600">{selectedProject.teamMembers.join(', ')}</p>
+                  <span className="font-medium text-gray-700">Description:</span>
+                  <p className="text-gray-600">{selectedProject.description}</p>
                 </div>
+                
+                {/* Toggle Buttons for Client Info and Project Team */}
+                <div className="md:col-span-2 flex gap-4 mt-4">
+                  <button
+                    onClick={() => setShowClientInfo(!showClientInfo)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    View Client Information
+                    <svg 
+                      className={`w-4 h-4 transition-transform duration-200 ${showClientInfo ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowProjectTeam(!showProjectTeam)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    View Project Team
+                    <svg 
+                      className={`w-4 h-4 transition-transform duration-200 ${showProjectTeam ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Client Information - Collapsible */}
+                {showClientInfo && (
+                  <div className="md:col-span-2 border-t pt-4 mt-2 animate-fadeIn">
+                    <h3 className="font-semibold text-gray-900 mb-2">Client Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <span className="font-medium text-gray-700">Name:</span>
+                        <p className="text-gray-600">{selectedProject.client_name}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Type:</span>
+                        <p className="text-gray-600">{selectedProject.client_type}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Email:</span>
+                        <p className="text-gray-600">{selectedProject.client_email}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Phone:</span>
+                        <p className="text-gray-600">{selectedProject.client_phone}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <span className="font-medium text-gray-700">Address:</span>
+                        <p className="text-gray-600">{selectedProject.client_address}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Project Team - Collapsible */}
+                {showProjectTeam && (
+                  <div className="md:col-span-2 border-t pt-4 mt-2 animate-fadeIn">
+                    <h3 className="font-semibold text-gray-900 mb-2">Project Team</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <div className="flex items-center mb-2">
+                          <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="font-semibold text-blue-900">Project Manager</span>
+                        </div>
+                        <p className="text-sm text-blue-700 font-medium">{selectedProject.pm_name || 'Not Assigned'}</p>
+                        <p className="text-xs text-blue-600">ID: {selectedProject.pm_id || 'N/A'}</p>
+                      </div>
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <div className="flex items-center mb-2">
+                          <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span className="font-semibold text-green-900">QS Officer</span>
+                        </div>
+                        <p className="text-sm text-green-700 font-medium">{selectedProject.qs_name || 'Not Assigned'}</p>
+                        <p className="text-xs text-green-600">ID: {selectedProject.qs_id || 'N/A'}</p>
+                      </div>
+                      <div className="bg-orange-50 p-3 rounded-lg">
+                        <div className="flex items-center mb-2">
+                          <svg className="w-5 h-5 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                          <span className="font-semibold text-orange-900">Site Supervisor</span>
+                        </div>
+                        <p className="text-sm text-orange-700 font-medium">{selectedProject.ss_name || 'Not Assigned'}</p>
+                        <p className="text-xs text-orange-600">ID: {selectedProject.ss_id || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1523,8 +2321,7 @@ function Projects() {
                 { id: 'financial', label: 'Financial' },
                 { id: 'materials', label: 'Materials' },
                 { id: 'visits', label: 'Site Visits' },
-                { id: 'updates', label: 'Daily Updates' },
-                { id: 'todos', label: 'To-Do Tasks' }
+                { id: 'updates', label: 'Daily Updates' }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1555,10 +2352,6 @@ function Projects() {
         {!selectedProject ? (
           <>
             <div className="flex justify-between items-center mb-8">
-              {/* <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Projects</h1>
-                               <p className="text-gray-600">Manage and track your construction projects</p>
-              </div> */}
               <div className="flex space-x-2">
                 <button 
                   onClick={() => setActiveTab('ongoing')}
@@ -1581,16 +2374,30 @@ function Projects() {
                   Finished Projects
                 </button>
               </div>
+              
+              {/* Filter button for SQS to show only their projects */}
+              {userRole === 'Senior_QS_Officer' && (
+                <button 
+                  onClick={() => setShowMyProjects(!showMyProjects)}
+                  className={`px-4 py-2 rounded-md font-medium transition duration-200 ${
+                    showMyProjects 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-white text-green-600 border border-green-600 hover:bg-green-50'
+                  }`}
+                >
+                  {showMyProjects ? 'Showing My Projects' : 'Show My Projects Only'}
+                </button>
+              )}
             </div>
             
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">
                   {activeTab === 'ongoing' ? 'Ongoing Projects' : 'Finished Projects'}
+                  {userRole === 'Senior_QS_Officer' && showMyProjects && (
+                    <span className="ml-2 text-sm text-green-600">(My Projects)</span>
+                  )}
                 </h2>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200">
-                  Add New Project
-                </button>
               </div>
               
               {renderProjectList()}

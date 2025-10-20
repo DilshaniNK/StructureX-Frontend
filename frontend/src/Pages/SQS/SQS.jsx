@@ -11,6 +11,7 @@ import Projects from './Projects';
 import Purchasing from './Purchasing';
 import Requests from './Requests';
 import Notifications from './Notifications';
+import Profile from '../../Components/Employee/Profile';
 
 export default function SQS() {
   return (
@@ -22,7 +23,8 @@ export default function SQS() {
           <Route path="projects" element={<Projects/>} />
           <Route path="purchasing" element={<Purchasing/>} />
           <Route path="requests" element={<Requests/>} />
-          <Route path="notifications" element={<Notifications/>} />"
+          <Route path="notifications" element={<Notifications/>} />
+          <Route path="profile" element={<Profile/>} />
         </Route>
       </Routes>
     </ThemeProvider>

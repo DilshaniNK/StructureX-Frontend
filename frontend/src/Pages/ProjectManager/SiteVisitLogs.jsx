@@ -17,8 +17,10 @@ import {
   User,
   Edit,
   X,
-  Save
+  Save,
+  AlertCircle
 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 const SiteVisitLogs = ({ setShowAddForm }) => {
   // Custom CSS animations
@@ -93,6 +95,16 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
       background-size: 200px 100%;
       animation: shimmer 1.5s infinite;
     }
+
+    /* Disabled button styles */
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    button:disabled:hover {
+      background-color: inherit !important;
+    }
   `;
 
   const [showAddForme, setShowAddForme] = useState(false);
@@ -109,7 +121,9 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
   const [visitRequests, setVisitRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
 
-
+  // Project IDs state
+  const [projectIds, setProjectIds] = useState([]);
+  const [projectIdsLoading, setProjectIdsLoading] = useState(false);
 
   // Alert states
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
@@ -131,12 +145,14 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
     status: '',
   });
 
+  const { employeeId } = useParams();
+  console.log('Project Manager ID from params:', employeeId);
 
   // Fetch visits data from database
   const fetchVisits = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:8086/api/v1/project_manager/visits', {
+      const response = await axios.get(`http://localhost:8086/api/v1/project_manager/site-visits/${employeeId}`, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -160,7 +176,7 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
   const fetchVisitRequests = async () => {
     try {
       setRequestsLoading(true);
-      const response = await axios.get('http://localhost:8086/api/v1/project_manager/request', {
+      const response = await axios.get(`http://localhost:8086/api/v1/project_manager/request/${employeeId}`, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -172,6 +188,11 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
         if (response.data && response.data.length > 0) {
           console.log('First request object structure:', response.data[0]);
           console.log('Available keys in first request:', Object.keys(response.data[0]));
+
+          // Log all unique status values in the response
+          const statuses = response.data.map(req => req.status).filter(Boolean);
+          const uniqueStatuses = [...new Set(statuses)];
+          console.log('Unique status values in API response:', uniqueStatuses);
         }
         setVisitRequests(response.data || []);
       }
@@ -184,12 +205,47 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
     }
   };
 
+  // Fetch project IDs for dropdown
+  const fetchProjectIds = async () => {
+    try {
+      setProjectIdsLoading(true);
+      const response = await axios.get('http://localhost:8086/api/v1/project_manager/projects/ongoing/ids', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
+      if (response.status === 200) {
+        console.log('Project IDs response:', response.data);
+        // Handle different response structures
+        let projectData = [];
+        if (Array.isArray(response.data)) {
+          projectData = response.data;
+        } else if (response.data && Array.isArray(response.data.projectIds)) {
+          projectData = response.data.projectIds;
+        } else if (response.data && Array.isArray(response.data.ids)) {
+          projectData = response.data.ids;
+        } else if (response.data && response.data.data) {
+          projectData = Array.isArray(response.data.data) ? response.data.data : [response.data.data];
+        }
+        
+        setProjectIds(projectData);
+        console.log('Processed project IDs:', projectData);
+      }
+    } catch (error) {
+      console.error('Error fetching project IDs:', error);
+      setErrorMessage('Failed to fetch project IDs');
+      setShowErrorAlert(true);
+    } finally {
+      setProjectIdsLoading(false);
+    }
+  };
 
   // Fetch visits on component mount
   useEffect(() => {
     fetchVisits();
     fetchVisitRequests();
+    fetchProjectIds();
   }, []);
 
 
@@ -205,6 +261,24 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
 
     return matchesSearch && matchesDate;
   });
+
+  // Filter visit requests to only show pending requests
+  const filteredVisitRequests = visitRequests.filter(request => {
+    const status = request.status?.toLowerCase();
+    console.log('Filtering request with status:', status, 'for request:', request);
+
+    // Show requests that are pending, have no status, or are in a 'new' state
+    const shouldShow = status === 'pending' ||
+      status === 'new' ||
+      status === 'submitted' ||
+      !status ||
+      status === '';
+
+    console.log(`Request ${request.id || request._id || 'unknown'} - Status: "${status}" - Should show: ${shouldShow}`);
+    return shouldShow;
+  });
+
+  console.log(`Total visit requests: ${visitRequests.length}, Filtered (pending): ${filteredVisitRequests.length}`);
 
 
 
@@ -290,9 +364,9 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
     setShowEditForm(true);
   };
 
-  const generateReport = () => {
-    setShowReport(true);
-  };
+  // const generateReport = () => {
+  //   setShowReport(true);
+  // };
 
   const downloadReport = () => {
     setSuccessMessage('Site Visit Report downloaded successfully!');
@@ -321,9 +395,21 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
       });
 
       if (response.status === 200) {
+        console.log('Request accepted successfully:', response.data);
         setSuccessMessage('Visit request accepted and marked as completed!');
         setShowSuccessAlert(true);
-        fetchVisitRequests(); // Refresh the requests list
+
+        // Immediately update local state to remove the request from pending list
+        setVisitRequests(prevRequests =>
+          prevRequests.map(req => {
+            const reqId = req.id || req._id || req.requestId || req.visitRequestId ||
+              req.request_id || req.visitId || req.visit_id || req.siteVisitId || req.site_visit_id;
+            return reqId === requestId ? { ...req, status: 'accepted' } : req;
+          })
+        );
+
+        // Also refresh from server
+        fetchVisitRequests();
       } else {
         setErrorMessage('Failed to accept visit request');
         setShowErrorAlert(true);
@@ -356,9 +442,21 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
       });
 
       if (response.status === 200) {
+        console.log('Request rejected successfully:', response.data);
         setSuccessMessage('Visit request rejected and marked as cancelled!');
         setShowSuccessAlert(true);
-        fetchVisitRequests(); // Refresh the requests list
+
+        // Immediately update local state to remove the request from pending list
+        setVisitRequests(prevRequests =>
+          prevRequests.map(req => {
+            const reqId = req.id || req._id || req.requestId || req.visitRequestId ||
+              req.request_id || req.visitId || req.visit_id || req.siteVisitId || req.site_visit_id;
+            return reqId === requestId ? { ...req, status: 'rejected' } : req;
+          })
+        );
+
+        // Also refresh from server
+        fetchVisitRequests();
       } else {
         setErrorMessage('Failed to reject visit request');
         setShowErrorAlert(true);
@@ -430,13 +528,13 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div className="flex space-x-3 mt-4 sm:mt-0">
-          <button
+          {/* <button
             onClick={generateReport}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
           >
             <Download size={20} className="mr-2" />
             Generate Report
-          </button>
+          </button> */}
           <button
             onClick={() => setShowAddForme(true)}
             className="px-4 py-2 bg-primary-500 bg-amber-400 text-gray-900 rounded-lg cursor-pointer hover:bg-amber-200 transition-colors flex items-center"
@@ -552,10 +650,10 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
               <p className="text-gray-500">Loading visit requests...</p>
             </div>
           </div>
-        ) : visitRequests.length === 0 ? (
+        ) : filteredVisitRequests.length === 0 ? (
           <div className="p-6">
             <div className="text-center py-8">
-              <p className="text-gray-500">No visit requests found.</p>
+              <p className="text-gray-500">No pending visit requests found.</p>
             </div>
           </div>
         ) : (
@@ -571,14 +669,30 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {visitRequests.map((request, index) => {
+                {filteredVisitRequests.map((request, index) => {
                   // Enhanced logging to debug the request object
                   console.log(`Request ${index}:`, request);
-                  
+                  console.log('Available keys:', Object.keys(request));
+
                   // Try to get the ID from various possible field names
-                  const requestId = request.id || request._id || request.requestId || request.visitRequestId;
+                  // Add more possible field names based on your API response
+                  const requestId = request.id ||
+                    request._id ||
+                    request.requestId ||
+                    request.visitRequestId ||
+                    request.request_id ||
+                    request.visitId ||
+                    request.visit_id ||
+                    request.siteVisitId ||
+                    request.site_visit_id;
+
                   console.log(`Request ${index} ID:`, requestId);
-                  
+
+                  // If still no ID found, warn about it
+                  if (!requestId) {
+                    console.warn(`No valid ID found for request ${index}:`, request);
+                  }
+
                   return (
                     <tr key={requestId || index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -610,9 +724,16 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                               onClick={() => {
                                 console.log('Accept button clicked for request:', request);
                                 console.log('Using ID:', requestId);
+                                if (!requestId) {
+                                  console.error('Cannot accept request - ID is undefined');
+                                  setErrorMessage('Cannot process request - Invalid or missing ID');
+                                  setShowErrorAlert(true);
+                                  return;
+                                }
                                 handleAcceptRequest(requestId);
                               }}
                               className="flex items-center px-3 py-2 bg-green-500 text-white cursor-pointer hover:bg-green-600 rounded-lg text-sm font-medium transition-colors"
+                              disabled={!requestId}
                             >
                               <CircleCheckBig size={16} className="mr-1" />
                               Accept
@@ -621,9 +742,16 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                               onClick={() => {
                                 console.log('Reject button clicked for request:', request);
                                 console.log('Using ID:', requestId);
+                                if (!requestId) {
+                                  console.error('Cannot reject request - ID is undefined');
+                                  setErrorMessage('Cannot process request - Invalid or missing ID');
+                                  setShowErrorAlert(true);
+                                  return;
+                                }
                                 showRejectConfirmation(requestId);
                               }}
                               className="flex items-center px-3 py-2 bg-red-500 text-white cursor-pointer hover:bg-red-600 rounded-lg text-sm font-medium transition-colors"
+                              disabled={!requestId}
                             >
                               <CircleMinus size={16} className="mr-1" />
                               Reject
@@ -631,9 +759,9 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                           </div>
                         ) : (
                           <span className="text-gray-500 text-sm">
-                            {request.status === 'completed' ? 'Completed' : 
-                             request.status === 'cancelled' ? 'Cancelled' : 
-                             request.status === 'accepted' ? 'Accepted' : 'Rejected'}
+                            {request.status === 'completed' ? 'Completed' :
+                              request.status === 'cancelled' ? 'Cancelled' :
+                                request.status === 'accepted' ? 'Accepted' : 'Rejected'}
                           </span>
                         )}
                       </td>
@@ -740,84 +868,148 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
 
       {/* Add Visit Form Modal */}
       {showAddForme && (
-        <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Log New Site Visit</h3>
-            <form className="space-y-4" onSubmit={handleSubmit}>
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border-2 border-amber-400 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out animate-scaleIn">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <span className="inline-block w-1.5 h-6 bg-amber-400 rounded-full mr-3"></span>
+                Log New Site Visit
+              </h2>
+              <button
+                onClick={() => setShowAddForme(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                aria-label="Close modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
               {/* Project ID Field */}
               <div>
-                <label className="block text-sm font-medium mb-1">Project ID</label>
+                <label htmlFor="project_id" className="block text-sm font-medium text-gray-700 mb-2">
+                  Project ID <span className="text-red-500">*</span>
+                </label>
                 <select
+                  id="project_id"
                   name="project_id"
                   value={formData.project_id}
                   onChange={handleChange}
                   required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  disabled={projectIdsLoading}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem"
+                  }}
                 >
-                  <option value="">Select Project</option>
-                  <option value="PJT001">PJT001</option>
-                  <option value="PJT002">PJT002</option>
-                  <option value="PJT003">PJT003</option>
-                  <option value="PJT004">PJT004</option>
-                  <option value="PJT005">PJT005</option>
+                  <option value="">
+                    {projectIdsLoading ? 'Loading projects...' : 'Select Project'}
+                  </option>
+                  {projectIds.map((project, index) => {
+                    // Handle different possible data structures
+                    const projectId = typeof project === 'string' ? project : 
+                                    project.project_id || project.id || project.projectId || 
+                                    project.code || project.name || `Project_${index + 1}`;
+                    const projectName = typeof project === 'object' ? 
+                                      (project.project_names || project.name || project.title || projectId) : 
+                                      project;
+                    
+                    return (
+                      <option key={projectId || index} value={projectId}>
+                        {projectId}
+                      </option>
+                    );
+                  })}
                 </select>
+                {projectIdsLoading && (
+                  <div className="mt-1 flex items-center text-sm text-gray-500">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600 mr-2"></div>
+                    Loading project IDs...
+                  </div>
+                )}
+                {!projectIdsLoading && projectIds.length === 0 && (
+                  <p className="mt-1 text-sm text-red-600">
+                    No projects found. Please contact your administrator.
+                  </p>
+                )}
               </div>
 
               {/* Date Field */}
               <div>
-                <label className="block text-sm font-medium mb-1">Date</label>
+                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+                  Visit Date <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
+                  id="date"
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
                   required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 shadow-sm"
                 />
               </div>
 
               {/* Description Field */}
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
                 <textarea
+                  id="description"
                   name="description"
                   rows={4}
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="Detailed observations..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                ></textarea>
+                  placeholder="Detailed observations and findings..."
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 placeholder-gray-400 shadow-sm"
+                />
               </div>
 
               {/* Status Field */}
               <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status <span className="text-red-500">*</span>
+                </label>
                 <select
+                  id="status"
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem"
+                  }}
                 >
                   <option>Completed</option>
                   <option>Follow-up Required</option>
-                  <option>Pending</option>
+                  <option>pending</option>
                 </select>
               </div>
 
               {/* Buttons */}
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-amber-400 text-gray-900 rounded-lg py-2 hover:bg-amber-500"
-                >
-                  Log Visit
-                </button>
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
                 <button
                   type="button"
                   onClick={() => setShowAddForme(false)}
-                  className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 hover:bg-gray-50"
+                  className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 shadow-md font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 flex items-center justify-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Log Visit
                 </button>
               </div>
             </form>
@@ -827,77 +1019,102 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
 
       {/* Edit Visit Form Modal */}
       {showEditForm && editingVisit && (
-        <div className="fixed inset-0 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white border-2 border-amber-400 rounded-xl p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Edit Site Visit</h3>
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white border-2 border-amber-400 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out animate-scaleIn">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <span className="inline-block w-1.5 h-6 bg-amber-400 rounded-full mr-3"></span>
+                Edit Site Visit
+              </h2>
               <button
                 onClick={() => setShowEditForm(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                aria-label="Close modal"
               >
-                <X size={20} className="text-gray-600" />
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <form className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <form className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
+                  <label htmlFor="edit_project_id" className="block text-sm font-medium text-gray-700 mb-2">
+                    Project ID <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
+                    id="edit_project_id"
                     value={editingVisit.project_id}
                     onChange={(e) => setEditingVisit({ ...editingVisit, project_id: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <label htmlFor="edit_date" className="block text-sm font-medium text-gray-700 mb-2">
+                    Visit Date <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="date"
+                    id="edit_date"
                     value={editingVisit.date}
                     onChange={(e) => setEditingVisit({ ...editingVisit, date: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 shadow-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label htmlFor="edit_description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
                 <textarea
+                  id="edit_description"
                   rows={4}
                   value={editingVisit.description}
                   onChange={(e) => setEditingVisit({ ...editingVisit, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                ></textarea>
+                  placeholder="Detailed observations and findings..."
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 placeholder-gray-400 shadow-sm"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label htmlFor="edit_status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status <span className="text-red-500">*</span>
+                </label>
                 <select
+                  id="edit_status"
                   value={editingVisit.status}
                   onChange={(e) => setEditingVisit({ ...editingVisit, status: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 border-gray-300 appearance-none bg-white shadow-sm"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                    backgroundPosition: "right 0.5rem center",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "1.5em 1.5em",
+                    paddingRight: "2.5rem"
+                  }}
                 >
                   <option>Completed</option>
                   <option>Follow-up Required</option>
-                  <option>Pending</option>
+                  <option>pending</option>
                 </select>
               </div>
 
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={handleSaveEdit}
-                  className="flex-1 bg-primary-500 text-gray-900 bg-amber-400 rounded-lg py-2 hover:bg-primary-600 transition-colors flex items-center justify-center"
-                >
-                  <Save size={20} className="mr-2" />
-                  Save Changes
-                </button>
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-8">
                 <button
                   type="button"
                   onClick={() => setShowEditForm(false)}
-                  className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 hover:bg-gray-50 transition-colors"
+                  className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  className="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-200 shadow-md font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 flex items-center justify-center"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -962,41 +1179,6 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                   </div>
                 </div>
               </div>
-
-              {/* Visit Details */}
-              {/* <div className="mb-8">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Visit Details</h3>
-                <div className="space-y-4">
-                  {visits.map((visit) => (
-                    <div key={visit.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-gray-900">{visit.visitor} - {visit.role}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(visit.status)}`}>
-                          {visit.status}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-2">
-                        <div>
-                          <p className="text-gray-600">Date & Time</p>
-                          <p className="font-medium">{visit.date} at {visit.time}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Purpose</p>
-                          <p className="font-medium">{visit.purpose}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Weather</p>
-                          <p className="font-medium">{visit.weather}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-sm">Remarks</p>
-                        <p className="text-gray-900">{visit.remarks}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div> */}
 
               {/* Report Footer */}
               <div className="border-t border-gray-200 pt-6">

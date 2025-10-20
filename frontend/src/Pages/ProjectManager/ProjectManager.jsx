@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import Navbar from '../../Components/Employee/Navbar';
 import Sidebar from '../../Components/Employee/Sidebar';
 import Main from './Home';
@@ -11,6 +11,7 @@ import Chat from './Chat';
 
 import Notification from '../../Components/Employee/Notification'
 import Projects from './Projects';
+import Profile from '../../Components/Employee/Profile';
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -23,17 +24,20 @@ export default function Home() {
     navigate(path);
   };
 
+  const {employeeId} = useParams()
+
   // Determine active item based on current path
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path.includes('/projectmanager/home') || path === '/') return 'home';
-    if (path.includes('/projectmanager/dailyupdates')) return 'dailyupdates';
-    if (path.includes('/projectmanager/projects')) return 'projects';
-    if (path.includes('/projectmanager/materials')) return 'materials';
-    if (path.includes('/projectmanager/sitevisitlogs')) return 'sitevisitlogs';
-    if (path.includes('/projectmanager/todolist')) return 'todolist';
-    if (path.includes('/projectmanager/chat')) return 'chat';
-    if (path.includes('/projectmanager/notifications')) return 'notifications';
+    if (path.includes('/home') || path === '/') return 'home';
+    if (path.includes('/dailyupdates')) return 'dailyupdates';
+    if (path.includes('/projects')) return 'projects';
+    if (path.includes('/materials')) return 'materials';
+    if (path.includes('/sitevisitlogs')) return 'sitevisitlogs';
+    if (path.includes('/todolist')) return 'todolist';
+    if (path.includes('/chat')) return 'chat';
+    if (path.includes('/notifications')) return 'notifications';
+    if (path.includes('/profile')) return 'profile';
     return 'home'; // default
   };
 
@@ -67,6 +71,7 @@ export default function Home() {
             <Route path="/sitevisitlogs" element={<SiteVisitLogs />} />
             <Route path="/todolist" element={<TodoList />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/profile" element={<Profile />} />
             {/* Add more routes as needed */}
 
           </Routes>

@@ -9,6 +9,7 @@ import ProjectDetails from './ProjectDetails';
 import Calendar from './Calender';
 import Labors from './Labors';
 import Payments from './Payments';
+import PettyCash from './PettyCash'
 
 export default function Financial_officer() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -31,6 +32,7 @@ export default function Financial_officer() {
     if (path.includes('/calendar')) return 'calendar';
     if (path.includes('/payments')) return 'payments';
     if (path.includes('/daily_labors')) return 'labors';
+    if (path.includes('/petty_cash')) return 'petty_cash'
     return 'home'; // default
   };
 
@@ -62,6 +64,7 @@ export default function Financial_officer() {
             <Route path="/payments" element={<Payments />} />
             <Route path="/daily_labors" element={<Labors/>} />
             <Route path="/calendar" element={<Calendar/>} />
+            <Route path="/petty_cash" element={<PettyCash/>} />
           </Routes>
         </div>
       </div>

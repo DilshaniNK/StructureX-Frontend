@@ -562,11 +562,11 @@ const fetchProjectMaterials = async (projectId) =>{
           >
             {/* Project Image - use default if not available */}
             <img
-              src={project.image || project.projectImage || '/Projects/site1.jpg'}
+              src={project.image || project.projectImage || 'https://edenchristianacademy.co.nz/wp-content/uploads/2013/11/dummy-image-square.jpg'}
               alt={project.project_names || project.name || 'Project'}
               className="w-full h-48 object-cover rounded-lg mb-4"
               onError={(e) => {
-                e.target.src = '/Projects/site1.jpg'; // fallback image
+                e.target.src = 'https://edenchristianacademy.co.nz/wp-content/uploads/2013/11/dummy-image-square.jpg'; // fallback image
               }}
             />
 
@@ -1462,16 +1462,6 @@ const fetchProjectMaterials = async (projectId) =>{
                 </>
               )}
             </div>
-
-            {/* Debug info (remove in production) */}
-            {projectMaterials.length > 0 && (
-              <details className="mt-4">
-                <summary className="text-xs text-gray-400 cursor-pointer">Debug Materials Data</summary>
-                <pre className="text-xs bg-gray-100 p-2 rounded mt-2 overflow-auto max-h-32">
-                  {JSON.stringify(projectMaterials, null, 2)}
-                </pre>
-              </details>
-            )}
           </div>
         )
 
@@ -1499,11 +1489,11 @@ const fetchProjectMaterials = async (projectId) =>{
             {/* Only show image for non-pending projects */}
             {selectedProject.status !== 'Pending' && (
               <img
-                src={selectedProject.image || selectedProject.projectImage || '/Projects/site1.jpg'}
+                src={selectedProject.image || selectedProject.projectImage || 'https://edenchristianacademy.co.nz/wp-content/uploads/2013/11/dummy-image-square.jpg'}
                 alt={selectedProject.project_names || selectedProject.name || 'Project'}
                 className="w-full lg:w-80 h-64 object-cover rounded-lg"
                 onError={(e) => {
-                  e.target.src = '/Projects/site1.jpg'; // fallback image
+                  e.target.src = 'https://edenchristianacademy.co.nz/wp-content/uploads/2013/11/dummy-image-square.jpg'; // fallback image
                 }}
               />
             )}

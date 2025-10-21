@@ -16,6 +16,7 @@ import LabourRequest from './LabourRequest';
 import DailyUpdates from './DailyUpdates';
 import Wbs from './Wbs';
 import PettyCash from './PettyCash';
+import Profile from '../../Components/Employee/Profile';
 
 export default function SiteSupervisor() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -45,6 +46,7 @@ export default function SiteSupervisor() {
     if (path.includes('/wbs')) return 'wbs';
     if (path.includes('/petty_cash')) return 'PettyCash';
     if (path.includes('/calendar')) return 'S_calendar';
+    if (path.includes('/profile')) return 'profile';
 
 
     return 'home';
@@ -86,6 +88,7 @@ export default function SiteSupervisor() {
             <Route path="/petty_cash" element={<PettyCash employeeId={employeeId} />} />
             <Route path="/labour_request" element={<LabourRequest />} />
             <Route path="/inventory" element={<Inventory />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </div>
       </div>

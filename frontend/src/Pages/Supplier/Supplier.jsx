@@ -69,8 +69,8 @@ export default function Supplier() {
       <div className="pt-20 ml-20 transition-all duration-300">
         <div className="p-6">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/home" element={<Dashboard />} />
+            <Route path="/" element={<Catalogue />} />
+            {/* <Route path="/home" element={<Dashboard />} /> */}
             <Route path="/catalogue" element={<Catalogue />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/delivery" element={<Delivery />} />

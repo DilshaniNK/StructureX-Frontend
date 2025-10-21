@@ -78,15 +78,15 @@ const Sidebar = ({
       { id: 'to do', label: 'To-Do', icon: TodoList, path: `/site_supervisor/${employeeId}/to-do`, badge: null }
     ],
     Supplier: [
-      { id: 'home', label: 'Home', icon: Home, path: `/supplier/${supplierId}/home`, badge: null },
+      // { id: 'home', label: 'Home', icon: Home, path: `/supplier/${supplierId}/home`, badge: null },
       { id: 'catalogue', label: 'Product Catalogue', icon: Projects, path: `/supplier/${supplierId}/catalogue` },
       { id: 'quotations', label: 'Quotations', icon: FileText, path: `/supplier/${supplierId}/quotations`, badge: null },
-      { id: 'orders', label: 'Material Orders', icon: Materials, path: `/supplier/${supplierId}/orders`, badge: '12' },
-      { id: 'delivery', label: 'Delivery Information', icon: Truck, path: `/supplier/${supplierId}/delivery`, badge: '5' },
-      { id: 'payments', label: 'Payments', icon: Payments, path: `/supplier/${supplierId}/payments`, badge: '10' },
-      { id: 'shistory', label: 'Supply History', icon: Package, path: `/supplier/${supplierId}/shistory`, badge: '5' },
-      { id: 'invoices', label: 'Invoices', icon: Receipt, path: `/supplier/${supplierId}/invoices`, badge: null },
-      { id: 'messages', label: 'Messages', icon: MessageSquare, path: `/supplier/${supplierId}/messages`, badge: null }
+      { id: 'orders', label: 'Material Orders', icon: Materials, path: `/supplier/${supplierId}/orders`, badge: null },
+      { id: 'delivery', label: 'Delivery Information', icon: Truck, path: `/supplier/${supplierId}/delivery`, badge: null },
+      { id: 'payments', label: 'Payments', icon: Payments, path: `/supplier/${supplierId}/payments`, badge: null },
+      { id: 'shistory', label: 'Supply History', icon: Package, path: `/supplier/${supplierId}/shistory`, badge: null },
+      { id: 'invoices', label: 'Invoices', icon: Receipt, path: `/supplier/${supplierId}/invoices`, badge: null }
+      // { id: 'messages', label: 'Messages', icon: MessageSquare, path: `/supplier/${supplierId}/messages`, badge: null }
     ],
     Director: [
 

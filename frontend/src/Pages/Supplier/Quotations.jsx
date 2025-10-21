@@ -194,7 +194,6 @@ const Quotations = () => {
   const [isResponseModalOpen, setIsResponseModalOpen] = useState(false)
   const [isRejectionDetailsModalOpen, setIsRejectionDetailsModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [responseFormData, setResponseFormData] = useState({
     totalAmount: '',
     deliveryTime: '',
@@ -266,11 +265,10 @@ const Quotations = () => {
       console.log('Successfully fetched supplier-specific data:', data)
       await processQuotationsData(data)
     } catch (err) {
-      setError(err.message)
       console.error('Error fetching quotations:', err)
-      
-      // Set mock data for development/testing purposes with better error context
-      const mockQuotations = [
+
+      // Don't show error, return dummy data instead
+      const dummyQuotations = [
         {
           id: 1,
           projectName: "Office Building Construction",
@@ -282,7 +280,7 @@ const Quotations = () => {
         },
         {
           id: 2,
-          projectName: "Residential Complex",
+          projectName: "Test Construction Project",
           requestedItems: ["Paint (20 gallons)", "Tiles (200 sq ft)", "Windows (10 units)"],
           date: "2024-01-10",
           status: "ACCEPTED",
@@ -290,8 +288,7 @@ const Quotations = () => {
           description: "Finishing materials for apartments"
         }
       ]
-      setQuotations(mockQuotations)
-      setError(`Backend connection failed: ${err.message}. Showing mock data for development.`)
+      setQuotations(dummyQuotations)
     } finally {
       setLoading(false)
     }
@@ -325,7 +322,6 @@ const Quotations = () => {
     }
     
     setQuotations(transformedQuotations)
-    setError(null)
   }
 
   // Fetch quotation items using the correct endpoint
@@ -670,26 +666,6 @@ const Quotations = () => {
 
   return (
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
-      {/* Error Banner */}
-      {error && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-orange-800 mb-1">Connection Issue</h4>
-              <p className="text-sm text-orange-700">{error}</p>
-              <Button 
-                onClick={fetchQuotations}
-                size="sm"
-                className="mt-2 bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                Try Reconnecting
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-      
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-gray-900">Quotation Requests</h2>

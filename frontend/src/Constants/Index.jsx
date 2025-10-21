@@ -19,11 +19,6 @@ export const navbarLinks = (adminId)=>[
                 path: `/admin/${adminId}`,
             },
             {
-                label: "Analytics",
-                icon: ChartColumn,
-                path: `/admin/${adminId}/analytics`,
-            },
-            {
                 label: "Reports",
                 icon: NotepadText,
                 path: `/admin/${adminId}/reports`,
@@ -100,26 +95,7 @@ export const navbarLinks = (adminId)=>[
             },
         ],
     },
-    {
-        title: "Support",
-        links: [
-            {
-                label: "Contact Support",
-                icon: HelpingHand,
-                path: `/admin/${adminId}/contact-support`,  
-            },
-        ],
-    },
-    {
-        title: "Notification",
-        links: [
-            {
-                label: "Notification",
-                icon: BellDot,
-                path: `/admin/${adminId}/notification`,  
-            },
-        ],
-    },
+    
 ];
 
 export const overviewData = [

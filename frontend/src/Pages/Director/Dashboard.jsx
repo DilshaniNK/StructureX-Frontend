@@ -41,7 +41,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50 to-yellow-100">
+    <div className="min-h-screen ">
       
       
 
@@ -55,7 +55,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <button 
             className="group bg-gradient-to-br from-[#FAAD00] via-amber-300 to-amber-400 hover:from-amber-500 hover:to-amber-400 text-white font-bold py-6 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1"
-            onClick={() => navigate(`/directorcont/clientdetails`, {state: {showForm: true}})}
+            onClick={() => navigate(`/directorcont/${EMPLOYEE_ID}/clientdetails`, {state: {showForm: true}})}
           >
             <div className="flex items-center justify-center space-x-3">
               <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
@@ -66,7 +66,7 @@ const Dashboard = () => {
 
           <button 
             className="group bg-gradient-to-br from-gray-500 via-gray-500 to-gray-800 hover:from-gray-400 hover:to-gray-400 text-white font-bold py-6 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1"
-            onClick={() => navigate(`/directorcont/clientdetails`)}
+            onClick={() => navigate(`/directorcont/${EMPLOYEE_ID}/clientdetails`)}
           >
             <div className="flex items-center justify-center space-x-3">
               <Eye className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />

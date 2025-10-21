@@ -54,7 +54,6 @@ export default function TeamAssignPage() {
       console.log('normalized', data);
       const grouped = {
         PM: data.filter(e => e.type === 'Project_Manager'),
-        SQO: data.filter(e => e.type === 'Senior_QS_Officer'),
         SS: data.filter(e => e.type === 'Site_Supervisor')
       };
       setEmployees(grouped);
@@ -79,7 +78,7 @@ export default function TeamAssignPage() {
     if (!selectedEmployees[projectId]) {
       setSelectedEmployees(prev => ({
         ...prev,
-        [projectId]: { pm_id: null, sq_id: null, ss_id: null }
+        [projectId]: { pm_id: null, ss_id: null }
       }));
     }
   };
@@ -87,7 +86,6 @@ export default function TeamAssignPage() {
   const handleSelectEmployee = (projectId, employee) => {
     const roleToKey = {
       'Project_Manager': 'pm_id',
-      'Senior_QS_Officer': 'sq_id',
       'Site_Supervisor': 'ss_id'
     };
     const key = roleToKey[employee.type];
@@ -105,7 +103,6 @@ export default function TeamAssignPage() {
       console.log('Selected Team Members for Project:', projectId);
       console.log({
         pm_id: selections.pm_id,
-        sq_id: selections.sq_id,
         ss_id: selections.ss_id
       });
 
@@ -115,7 +112,7 @@ export default function TeamAssignPage() {
 
   const isProjectReady = (projectId) => {
     const selected = selectedEmployees[projectId];
-    return selected && selected.pm_id && selected.sq_id && selected.ss_id;
+    return selected && selected.pm_id &&  selected.ss_id;
   };
 
   const handleStartProject = async (projectId) => {
@@ -123,7 +120,7 @@ export default function TeamAssignPage() {
       const selected = selectedEmployees[projectId];
       console.log(projectId);
 
-      if (!selected?.pm_id || !selected?.sq_id || !selected?.ss_id) {
+      if (!selected?.pm_id ||  !selected?.ss_id) {
         showAlert('Incomplete Team', 'Please assign all required team members before starting the project', 'warning');
         return;
       }
@@ -133,7 +130,7 @@ export default function TeamAssignPage() {
         'Are you sure you want to start this project? This action cannot be undone.',
         async () => {
           const payload = {
-            qs_id: selected.sq_id,
+            
             pm_id: selected.pm_id,
             ss_id: selected.ss_id,
             status: 'ongoing'
@@ -175,7 +172,7 @@ export default function TeamAssignPage() {
   const getTabLabel = (tab) => {
     const labels = {
       'PM': 'Project Manager',
-      'SQO': 'Senior QS Officer',
+      
       'SS': 'Site Supervisor'
     };
     return labels[tab];
@@ -353,7 +350,7 @@ export default function TeamAssignPage() {
 
                       {/* Tabs */}
                       <div className="flex gap-2 border-b border-slate-200 mb-8">
-                        {['PM', 'SQO', 'SS'].map(tab => (
+                        {['PM', 'SS'].map(tab => (
                           <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -373,7 +370,7 @@ export default function TeamAssignPage() {
                         {employees[activeTab]?.map(employee => {
                           const roleToKey = {
                             'Project_Manager': 'pm_id',
-                            'Senior_QS_Officer': 'sq_id',
+                            
                             'Site_Supervisor': 'ss_id'
                           };
                           const key = roleToKey[employee.type];
@@ -427,7 +424,7 @@ export default function TeamAssignPage() {
                           <div className="grid grid-cols-3 gap-4">
                             {[
                               { label: 'Project Manager', key: 'pm_id', tab: 'PM' },
-                              { label: 'Senior QS Officer', key: 'sq_id', tab: 'SQO' },
+                              
                               { label: 'Site Supervisor', key: 'ss_id', tab: 'SS' }
                             ].map(role => {
                               const empId = selectedEmployees[project.project_id]?.[role.key];

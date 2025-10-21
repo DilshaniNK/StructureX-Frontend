@@ -21,12 +21,15 @@ useEffect(() => {
       const response = await axios.get('http://localhost:8086/api/v1/director/get_all_projects');
       const projectsData = response.data.map(project => ({
         ...project,
-        images: project.image_url || []
+        // Split comma-separated image URLs into an array
+        images: project.image_url?.[0] 
+          ? project.image_url[0].split(',').map(url => url.trim())
+          : []
       }));
 
       setProjects(projectsData);
 
-      // Fix: Update progress endpoint URL
+      // Fetch progress for each project
       const progressResponses = await Promise.all(
         projectsData.map(async (project) => {
           try {
@@ -152,7 +155,7 @@ useEffect(() => {
               
               navigate(`/directorcont/${employeeId}/project/${project.project_id}`, { state: { project } })
             }}
-            className="w-full bg-black hover:bg-[#FAAD00] text-white hover:text-black font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center group"
+            className="mt-[10px] w-full bg-black hover:bg-[#FAAD00] text-white hover:text-black font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center group"
           >
             <Eye className="w-4 h-4 mr-2" />
             View More

@@ -17,21 +17,42 @@ const Clientdetails = () => {
     design_link: ''
   });
 
+  const validatePhoneNumber = (phoneNumber) => {
+    // Must contain only digits and exactly 10 of them
+    const phoneRegex = /^\d{10}$/;
+    return phoneRegex.test(phoneNumber);
+  };
+
   const [showSuccess,setShowSuccess] = useState(false);
   const[showError,setShowError] = useState(false);
   const [showForm, setShowForm] = useState(location.state?.showForm ?? false);
   const [registeredClient, setRegisteredClient] = useState(null);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setClientData(prev => ({
+const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  if (name === 'phone_number') {
+    // Allow only numeric input
+    const cleaned = value.replace(/\D/g, '');
+    setClientData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: cleaned,
     }));
-  };
+  } else {
+    setClientData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+     // Validate phone number before submitting
+    if (!validatePhoneNumber(clientData.phone_number)) {
+      alert('Please enter a valid phone number in format: 0XX XXX XXXX');
+      return;
+    }
     const payload = {
       ...clientData,
       is_have_plan: Number(clientData.is_have_plan)
@@ -143,13 +164,16 @@ const Clientdetails = () => {
                 <Lock className="w-5 h-5 text-white" />
               </div>
               <input
-                type="text"
+                type="tel"
                 name="phone_number"
-                placeholder="Contact Number"
+                placeholder="Enter 10-digit Contact Number"
                 value={clientData.phone_number}
                 onChange={handleChange}
                 className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-md"
                 required
+                pattern="\d{10}"
+                title="Please enter a valid 10-digit phone number (numbers only)"
+                maxLength={10} // prevent typing more than 10 digits
               />
             </div>
 

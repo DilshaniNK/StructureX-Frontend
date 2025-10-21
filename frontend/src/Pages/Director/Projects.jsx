@@ -9,26 +9,57 @@ const Project = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
   const employeeId = useParams();
+  const [progress, setProgress] = useState(0);
+  const [progressMap, setProgressMap] = useState({});
+
 
   // ✅ Fetch projects from backend
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await axios.get('http://localhost:8086/api/v1/director/get_all_projects');
-         
-        setProjects(response.data.map(project => ({
-          ...project,
-          images:project.image_url || []
-            
-        })));
-        console.log(projects);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-      }
-    };
+// Fix the progress fetch URL in useEffect
+useEffect(() => {
+  const fetchProjects = async () => {
+    try {
+      const response = await axios.get('http://localhost:8086/api/v1/director/get_all_projects');
+      const projectsData = response.data.map(project => ({
+        ...project,
+        // Split comma-separated image URLs into an array
+        images: project.image_url?.[0] 
+          ? project.image_url[0].split(',').map(url => url.trim())
+          : []
+      }));
 
-    fetchProjects();
-  }, []);
+      setProjects(projectsData);
+
+      // Fetch progress for each project
+      const progressResponses = await Promise.all(
+        projectsData.map(async (project) => {
+          try {
+            const res = await axios.get(`http://localhost:8086/api/v1/director/${project.project_id}/progress`);
+            return { projectId: project.project_id, progress: res.data };
+          } catch (err) {
+            console.error(`Failed to fetch progress for ${project.project_id}`, err);
+            return { projectId: project.project_id, progress: 0 };
+          }
+        })
+      );
+
+      const progressObj = {};
+      progressResponses.forEach(p => {
+        progressObj[p.projectId] = p.progress;
+      });
+      setProgressMap(progressObj);
+
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
+  fetchProjects();
+}, []);
+
+// In ProjectCard component, remove the duplicate progress display:
+
+
+
 
   const categories = [
     { key: 'ongoing', label: 'Ongoing' },
@@ -109,25 +140,22 @@ const Project = () => {
           </h3>
           <p className="text-gray-600 mb-4 line-clamp-2">{project.description}</p>
 
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">Progress</span>
-              <span className="text-sm font-bold text-[#FAAD00]">{project.progress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-gradient-to-r from-[#FAAD00] to-yellow-500 h-2 rounded-full"
-                style={{ width: `${project.progress}%` }}
-              />
-            </div>
+           <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-gradient-to-r from-[#FAAD00] to-yellow-500 h-2 rounded-full"
+              style={{ width: `${progressMap[project.project_id] || 0}%` }}
+            />
           </div>
+            <div className="text-sm text-gray-600 mt-1 text-right">
+              {(progressMap[project.project_id] || 0).toFixed(1)}% Complete
+            </div>
 
           <button
             onClick={() => {
               
               navigate(`/directorcont/${employeeId}/project/${project.project_id}`, { state: { project } })
             }}
-            className="w-full bg-black hover:bg-[#FAAD00] text-white hover:text-black font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center group"
+            className="mt-[10px] w-full bg-black hover:bg-[#FAAD00] text-white hover:text-black font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center group"
           >
             <Eye className="w-4 h-4 mr-2" />
             View More
@@ -148,10 +176,7 @@ const Project = () => {
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Project Overview</h1>
             <p className="text-gray-600">Manage and track all your projects in one place</p>
           </div>
-          <button className="bg-[#FAAD00] hover:bg-yellow-500 text-black font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-            <Plus className="w-5 h-5 mr-2" />
-            Add Project
-          </button>
+          
         </div>
 
         <div className="flex space-x-2 mb-8">

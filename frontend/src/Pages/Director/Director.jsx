@@ -8,7 +8,7 @@ import TeamManagment from './TeamManagment';
 import SiteVisit from './SiteVisit';
 import Inventory from './Inventory';
 import Document from './Document';
-
+import Profile from '../../Components/Employee/Profile';
 
 
 
@@ -35,6 +35,7 @@ const Director = () => {
     if(path.includes('/teammanagment')) return 'teammanagment';
     if(path.includes('/sitevisit')) return 'sitevisit';
     if(path.includes('/inventory')) return 'inventory';
+    if(path.includes('/profile')) return 'profile';
    
     return 'home';
   }
@@ -66,6 +67,7 @@ const Director = () => {
             <Route path='/sitevisit' element={<SiteVisit/>}/>
             <Route path='/inventory' element={<Inventory/>}/>
             <Route path='/documents' element={<Document/>}/>
+            <Route path='/profile' element={<Profile/>}/>
             
           </Routes>
 

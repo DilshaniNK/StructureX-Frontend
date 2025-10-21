@@ -43,13 +43,22 @@ const App = () => {
               </ProtectedRoute>
             } />
             <Route path="/example/*" element={<Example />} />
-            <Route path="/qs/*" element={<QS />} />
-            <Route path="/sqs/*" element={<SQS />} />
+            <Route path="/qs/:employeeId/*" element={
+              <ProtectedRoute allowedRoles={['QS_Officer']}>
+                <QS />
+              </ProtectedRoute>
+            } />
+            <Route path="/sqs/:employeeId/*" element={
+              <ProtectedRoute allowedRoles={['Senior_QS_Officer']}>
+                <SQS />
+              </ProtectedRoute>
+            } />
             <Route path="/supplier/:supplierId/*" element={
               <ProtectedRoute allowedRoles={['Supplier']}>
                 <Supplier />
               </ProtectedRoute>
             } />
+
              <Route path="/project_owner/:clientId/*" element={
               <ProtectedRoute allowedRoles={['Client']}>
                 <ProjectOwner />
@@ -80,10 +89,12 @@ const App = () => {
               </ProtectedRoute>
             } />
 
-            <Route path='/director/:employeeId/*' element={<Director />} />
-            <Route path='/directorcont/:employeeId/*' element={<DirectorCont />} />
-            <Route path='/forgot-password' element={<ForgotPassword />} />
-            <Route path='/reset-password' element={<ResetPassword />} />
+            <Route path='/director/:employeeId/*' element={
+              <ProtectedRoute allowedRoles={['Director']}>
+                  <Director />
+              </ProtectedRoute>
+              } />
+            <Route path='/directorcont/:employeeId/*' element={<DirectorCont />}/>
 
 
           </Route>

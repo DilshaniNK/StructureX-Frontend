@@ -115,60 +115,14 @@ const SiteVisitManagement = () => {
     { id: "ENG001", name: "David Wilson", role: "Engineer" }
   ]);
 
-  const [showRequestModal, setShowRequestModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDate, setFilterDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const [requestForm, setRequestForm] = useState({
-    project: '',
-    visitor: '',
-    date: '',
-    time: '',
-    purpose: '',
-    location: '',
-    priority: 'medium',
-    specialInstructions: ''
-  });
+  
 
-  const handleRequestVisit = () => {
-    if (requestForm.project && requestForm.visitor && requestForm.date) {
-      const newVisit = {
-        id: siteVisits.length + 1,
-        project: requestForm.project,
-        date: requestForm.date,
-        time: requestForm.time,
-        visitor: teamMembers.find(m => m.id === requestForm.visitor),
-        status: 'scheduled',
-        requestedBy: 'Director',
-        requestDate: new Date().toISOString().split('T')[0],
-        purpose: requestForm.purpose,
-        location: requestForm.location,
-        priority: requestForm.priority,
-        findings: [],
-        images: [],
-        notes: '',
-        weatherConditions: '',
-        safetyIssues: [],
-        recommendations: []
-      };
-      
-      setSiteVisits(prev => [...prev, newVisit]);
-      setRequestForm({
-        project: '',
-        visitor: '',
-        date: '',
-        time: '',
-        purpose: '',
-        location: '',
-        priority: 'medium',
-        specialInstructions: ''
-      });
-      setShowRequestModal(false);
-    }
-  };
 
   const handleCompleteVisit = (visitId) => {
     setSiteVisits(prev => 
@@ -232,16 +186,7 @@ const SiteVisitManagement = () => {
   return (
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Site Visit Management</h1>
-        <button
-          onClick={() => setShowRequestModal(true)}
-          className="bg-yellow-500 text-black px-4 py-2 rounded-lg font-medium hover:bg-yellow-600 transition-colors flex items-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Request Site Visit</span>
-        </button>
-      </div>
+      
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -379,131 +324,7 @@ const SiteVisitManagement = () => {
         ))}
       </div>
 
-      {/* Request Visit Modal */}
-      {showRequestModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Request Site Visit</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
-                  <select
-                    value={requestForm.project}
-                    onChange={(e) => setRequestForm(prev => ({ ...prev, project: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select Project</option>
-                    {projects.map(project => (
-                      <option key={project} value={project}>{project}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign to</label>
-                  <select
-                    value={requestForm.visitor}
-                    onChange={(e) => setRequestForm(prev => ({ ...prev, visitor: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select Team Member</option>
-                    {teamMembers.map(member => (
-                      <option key={member.id} value={member.id}>
-                        {member.name} - {member.role}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                    <input
-                      type="date"
-                      value={requestForm.date}
-                      onChange={(e) => setRequestForm(prev => ({ ...prev, date: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                    <input
-                      type="time"
-                      value={requestForm.time}
-                      onChange={(e) => setRequestForm(prev => ({ ...prev, time: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                  <input
-                    type="text"
-                    value={requestForm.location}
-                    onChange={(e) => setRequestForm(prev => ({ ...prev, location: e.target.value }))}
-                    placeholder="e.g., Phase 1 - Block A"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
-                  <textarea
-                    value={requestForm.purpose}
-                    onChange={(e) => setRequestForm(prev => ({ ...prev, purpose: e.target.value }))}
-                    placeholder="Describe the purpose of this site visit..."
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                  <select
-                    value={requestForm.priority}
-                    onChange={(e) => setRequestForm(prev => ({ ...prev, priority: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
-                  <textarea
-                    value={requestForm.specialInstructions}
-                    onChange={(e) => setRequestForm(prev => ({ ...prev, specialInstructions: e.target.value }))}
-                    placeholder="Any special instructions or requirements..."
-                    rows={2}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowRequestModal(false)}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleRequestVisit}
-                  className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 flex items-center space-x-2"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>Request Visit</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+     
 
       {/* Visit Detail Modal */}
       {showDetailModal && selectedVisit && (

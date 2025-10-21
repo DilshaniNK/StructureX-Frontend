@@ -26,7 +26,7 @@ export default function Materials() {
       console.log("Accepting request with ID:", requestId);
       setLoading(true);
       // Make sure we're passing the correct request ID format
-      const response = await axios.put(`http://localhost:8086/api/v1/project_manager/requestSiteResources/${requestId}/accept`);
+      const response = await axios.put(`http://localhost:8086/api/v1/project_manager/requestSiteResources/${requestId}/Approved`);
       console.log("✅ Request accepted:", response.data);
       setError(null); // Clear any previous errors
       setSuccessMessage('Material request accepted successfully!');
@@ -48,7 +48,7 @@ export default function Materials() {
       console.log("Rejecting request with ID:", requestId);
       setLoading(true);
       // Make sure we're passing the correct request ID format
-      const response = await axios.put(`http://localhost:8086/api/v1/project_manager/requestSiteResources/${requestId}/reject`);
+      const response = await axios.put(`http://localhost:8086/api/v1/project_manager/requestSiteResources/${requestId}/Rejected`);
       console.log("✅ Request rejected:", response.data);
       setError(null); // Clear any previous errors
       setSuccessMessage('Material request rejected successfully!');

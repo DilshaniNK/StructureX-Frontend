@@ -9,7 +9,7 @@ import { Users, Plus, TrendingUp, Eye, BarChart3, Calendar, Building2 } from 'lu
 const Dashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const EMPLOYEE_ID = useParams().employeeId || EMPLOYEE_ID;
+  const EMPLOYEE_ID = useParams().employeeId || '';
   const BASE_URL = `/director/${EMPLOYEE_ID}`;
   
   useEffect(() => {
@@ -41,7 +41,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50 to-yellow-100">
+    <div className="min-h-screen ">
       
       
 

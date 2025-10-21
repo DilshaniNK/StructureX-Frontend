@@ -48,7 +48,6 @@ const Sidebar = ({
       { id: 'materials', label: 'Materials', icon: BadgeCheck, path: `/projectmanager/${employeeId}/materials`, badge: null },
       { id: 'sitevisitlogs', label: 'Site Visit Logs', icon: BookmarkCheck, path: `/projectmanager/${employeeId}/sitevisitlogs`, badge: null },
       { id: 'todolist', label: 'Todo List', icon: ClipboardPenLine, path: `/projectmanager/${employeeId}/todolist`, badge: null },
-      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: `/projectmanager/${employeeId}/chat`, badge: null },
     ],
 
     FinancialOfficer: [
@@ -63,7 +62,6 @@ const Sidebar = ({
 
       { id: 'home', label: 'Home', icon: Home, path: `/legalofficer/${employeeId}/home`, badge: null },
       { id: 'action', label: 'Action', icon: Loader, path: `/legalofficer/${employeeId}/action`, badge: null },
-      { id: 'chat', label: 'Chat', icon: UserRoundSearch, path: `/legalofficer/${employeeId}/chat`, badge: null },
 
     ],
     Site_Supervisor: [

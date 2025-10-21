@@ -1,23 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate ,useParams} from 'react-router-dom';
-import { 
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import {
   Bell, CreditCard, FileText, Home, MessageSquare, Settings, User, Hammer, AlertCircle, ChevronDown, Menu, X, LogOut
 } from 'lucide-react';
 
 import name from '../../assets/name.png';
 
-const Navbar = ({ 
-  activeTab = 'dashboard',
+const Navbar = ({
+  activeTab,
   setActiveTab,
-  userRole = 'Project_Owner', 
+  userRole = 'Project_Owner',
   userName = 'John Doe',
   isSidebarOpen,
-  toggleSidebar 
+  toggleSidebar
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  
+  const [currentActiveTab, setCurrentActiveTab] = useState(activeTab || 'dashboard');
+
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
   const { clientId } = useParams();
@@ -54,12 +56,25 @@ const Navbar = ({
   ]);
 
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home, path: `/project_owner/${clientId}/dashboard` },
+    // { id: "dashboard", label: "Dashboard", icon: Home, path: `/project_owner/${clientId}/dashboard` },
     { id: "project", label: "Project", icon: FileText, path: `/project_owner/${clientId}/project` },
     { id: "payments", label: "Payments", icon: CreditCard, path: `/project_owner/${clientId}/payments` },
     { id: "materials", label: "Materials", icon: Settings, path: `/project_owner/${clientId}/materials` },
-    { id: "communications", label: "Messages", icon: MessageSquare, path: `/project_owner/${clientId}/messages` },
+    // { id: "communications", label: "Messages", icon: MessageSquare, path: `/project_owner/${clientId}/messages` },
   ];
+
+  // Auto-detect active page based on current URL
+  useEffect(() => {
+    const currentPath = location.pathname;
+    const activeItem = navItems.find(item => currentPath.includes(item.id));
+
+    if (activeItem) {
+      setCurrentActiveTab(activeItem.id);
+      if (setActiveTab) {
+        setActiveTab(activeItem.id);
+      }
+    }
+  }, [location.pathname, clientId]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -81,7 +96,10 @@ const Navbar = ({
   }, [showNotifications, showProfileMenu]);
 
   const handleNavClick = (item) => {
-    setActiveTab(item.id);
+    setCurrentActiveTab(item.id);
+    if (setActiveTab) {
+      setActiveTab(item.id);
+    }
     if (item.path) {
       navigate(item.path);
     }
@@ -149,7 +167,7 @@ const Navbar = ({
         <div className="hidden lg:flex items-center space-x-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const isActive = currentActiveTab === item.id;
             return (
               <button
                 key={item.id}
@@ -310,7 +328,7 @@ const Navbar = ({
           <div className="px-4 pt-2 pb-3 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activeTab === item.id;
+              const isActive = currentActiveTab === item.id;
               return (
                 <button
                   key={item.id}

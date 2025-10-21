@@ -94,6 +94,8 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
       const adminId = decodedEmp.adminId;
       const supplierId = decodedEmp.supplierId;
 
+      console.log("Suppiler ID:", supplierId);
+
       switch (role) {
         case "Site_Supervisor":
           navigate(`/site_supervisor/${employeeId}`);
@@ -120,10 +122,10 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
           navigate(`/projectmanager/${employeeId}`);
           break;
         case "QS_Officer":
-          navigate(`/designer/${employeeId}`);
+          navigate(`/qs/${employeeId}`);
           break;
         case "Senior_QS_Officer":
-          navigate(`/designer/${employeeId}`);
+          navigate(`/sqs/${employeeId}`);
           break;
         case "Admin":
           navigate("/admin/dashboard");

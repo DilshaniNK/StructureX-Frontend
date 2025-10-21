@@ -43,17 +43,16 @@ const App = () => {
               </ProtectedRoute>
             } />
             <Route path="/example/*" element={<Example />} />
-
             <Route path="/qs/:employeeId/*" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['QS_Officer']}>
                 <QS />
               </ProtectedRoute>
             } />
             <Route path="/sqs/:employeeId/*" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['Senior_QS_Officer']}>
                 <SQS />
               </ProtectedRoute>
-              } />
+            } />
             <Route path="/supplier/:supplierId/*" element={
               <ProtectedRoute allowedRoles={['Supplier']}>
                 <Supplier />

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import { 
   Plus, 
   Edit3, 
@@ -20,8 +22,25 @@ import {
 
 
 function BOQ() {
-  // TODO: Replace with actual employee ID from login token/session
-  const QS_EMPLOYEE_ID = 'EMP_001';
+  const params = useParams();
+  const [QS_EMPLOYEE_ID, setQS_EMPLOYEE_ID] = useState(null);
+
+  // Get employeeId from URL params or JWT
+  useEffect(() => {
+    if (params.employeeId) {
+      setQS_EMPLOYEE_ID(params.employeeId);
+    } else {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          setQS_EMPLOYEE_ID(decoded.employeeId);
+        } catch (error) {
+          console.error('Error decoding token:', error);
+        }
+      }
+    }
+  }, [params.employeeId]);
   
   const [activeTab, setActiveTab] = useState('create'); // 'create' or 'edit'
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -127,13 +146,17 @@ function BOQ() {
 
   // Function to refresh data manually
   const handleRefresh = () => {
-    fetchProjectsData();
+    if (QS_EMPLOYEE_ID) {
+      fetchProjectsData();
+    }
   };
 
-  // Fetch all projects with BOQ data when component mounts
+  // Fetch all projects with BOQ data when component mounts and when employeeId is available
   useEffect(() => {
-    fetchProjectsData();
-  }, []);
+    if (QS_EMPLOYEE_ID) {
+      fetchProjectsData();
+    }
+  }, [QS_EMPLOYEE_ID]);
 
   // State for create form fields
   const [selectedProjectId, setSelectedProjectId] = useState('');

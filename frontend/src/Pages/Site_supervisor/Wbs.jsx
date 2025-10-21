@@ -107,9 +107,9 @@ const Wbs = () => {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
-                        <h1 className="text-3xl font-bold text-white">Work Breakdown Structure helloooooo</h1>
-                        <p className="text-blue-100 mt-1">Manage and track project tasks</p>
+                    <div className="bg-white px-8 py-6">
+                        <h1 className="text-3xl font-bold text-black">Work Breakdown Structure</h1>
+                        <p className="text-yellow-300 mt-1">Manage and track project tasks</p>
                     </div>
 
                     {wbs.length === 0 ? (

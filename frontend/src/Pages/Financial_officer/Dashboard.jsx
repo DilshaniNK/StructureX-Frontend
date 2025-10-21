@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import ProjectCostChart from "../../Components/Financial_officer/CostBarChart";
+import CostBarChart from "../../Components/Financial_officer/CostBarChart";
 import axios from "axios";
 import {
   Building2,
@@ -132,8 +132,7 @@ const Dashboard = () => {
       console.error("Error fetching recent payments:", err);
     }
   };
-
-  // 🟩 Call this once when component mounts
+  //Call this once when component mounts
   useEffect(() => {
     fetchPayments();
   }, []);
@@ -144,7 +143,7 @@ const Dashboard = () => {
   const summaryCards = [
     {
       title: "Ongoing Projects",
-      value: activeCount,
+      value: projects.length,
       icon: Building2,
       trend: "+2 from last month",
       bgColor: "bg-blue-50",
@@ -215,7 +214,7 @@ const Dashboard = () => {
             {/* Charts */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2">
-                <ProjectCostChart projects={projects} />
+                <CostBarChart projects={projects} />
               </div>
 
               <div>

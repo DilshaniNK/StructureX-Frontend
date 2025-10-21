@@ -94,6 +94,8 @@ const LoginForm = ({ onClose, onNavigateToContact }) => {
       const adminId = decodedEmp.adminId;
       const supplierId = decodedEmp.supplierId;
 
+      console.log("Suppiler ID:", supplierId);
+
       switch (role) {
         case "Site_Supervisor":
           navigate(`/site_supervisor/${employeeId}`);

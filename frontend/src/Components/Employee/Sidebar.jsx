@@ -56,10 +56,8 @@ const Sidebar = ({
       { id: 'home', label: 'Home', icon: Home, path: `/financial_officer/${employeeId}/home`, badge: null },
       { id: 'projects', label: 'Projects', icon: Projects, path: `/financial_officer/${employeeId}/projects` },
       { id: 'payments', label: 'Payments', icon: Payments, path: `/financial_officer/${employeeId}/payments`, badge: null },
-      { id: 'calendar', label: 'Calendar', icon: Calendar, path: `/financial_officer/${employeeId}/calendar`, badge: null },
-      { id: 'petty_cash', label: 'PettyCash', icon: Payments, path: `/financial_officer/${employeeId}/petty_cash`, badge: null },
-      { id: 'daily labors', label: 'Daily Labors', icon: Labors, path: `/financial_officer/${employeeId}/daily_labors`, badge: '12' },
-      { id: 'settings', label: 'Settings', icon: Settings, path: `/financial_officer/${employeeId}/settings`, badge: '5' }
+      { id: 'petty_cash', label: 'Petty Cash', icon: Payments, path: `/financial_officer/${employeeId}/petty_cash`, badge: null },
+      { id: 'daily labors', label: 'Daily Labors', icon: Labors, path: `/financial_officer/${employeeId}/daily_labors`, badge: null }
     ],
     Legal_Officer: [
 
@@ -73,15 +71,13 @@ const Sidebar = ({
       { id: 'projects', label: 'Projects', icon: Projects, path: `/site_supervisor/${employeeId}/projects` },
       { id: 'labors', label: 'Labors', icon: Labors, path: `/site_supervisor/${employeeId}/labors`, badge: null },
       { id: 'progress', label: 'Progress', icon: BadgeCheck, path: `/site_supervisor/${employeeId}/progress`, badge: null },
-      { id: 'materials', label: 'Materials', icon: Materials, path: `/site_supervisor/${employeeId}/materials`, badge: '12' },
-      { id: 'inventory', label: 'Inventory', icon: Inventory, path: `/site_supervisor/${employeeId}/inventory`, badge: '5' },
-      { id: 'labour_request', label: 'Labours Request', icon: Inventory, path: `/site_supervisor/${employeeId}/labour_request`, badge: '5' },
-      { id: 'daily updates', label: 'Daily Updates', icon: Update, path: `/site_supervisor/${employeeId}/daily_updates`, badge: '5' },
-      { id: 'wbs', label: 'WBS', icon: Calendar, path: `/site_supervisor/${employeeId}/wbs`, badge: '5' },
+      { id: 'materials', label: 'Materials', icon: Materials, path: `/site_supervisor/${employeeId}/materials`, badge: null},
+      { id: 'inventory', label: 'Inventory', icon: Inventory, path: `/site_supervisor/${employeeId}/inventory`, badge: null},
+      { id: 'labour_request', label: 'Labours Request', icon: Inventory, path: `/site_supervisor/${employeeId}/labour_request`, badge: null},
+      { id: 'daily updates', label: 'Daily Updates', icon: Update, path: `/site_supervisor/${employeeId}/daily_updates`, badge: null },
+      { id: 'wbs', label: 'WBS', icon: Calendar, path: `/site_supervisor/${employeeId}/wbs`, badge: null },
       { id: 'petty cash', label: 'Petty Cash', icon: TodoList, path: `/site_supervisor/${employeeId}/petty_cash`, badge: null },
-      { id: 'to do', label: 'To-Do', icon: TodoList, path: `/site_supervisor/${employeeId}/to-do`, badge: '5' },
-      { id: 'calendar', label: 'Calendar', icon: Calendar, path: `/site_supervisor/${employeeId}/calendar`, badge: null },
-      { id: 'settings', label: 'Settings', icon: Settings, path: `/site_supervisor/${employeeId}/settings`, badge: '5' }
+      { id: 'to do', label: 'To-Do', icon: TodoList, path: `/site_supervisor/${employeeId}/to-do`, badge: null }
     ],
     Supplier: [
       { id: 'home', label: 'Home', icon: Home, path: `/supplier/${supplierId}/home`, badge: null },

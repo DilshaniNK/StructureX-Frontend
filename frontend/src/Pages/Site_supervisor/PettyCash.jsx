@@ -81,19 +81,106 @@ const PettyCash = ({ employeeId }) => {
         const percentage = (totalSpent / parseFloat(pc.amount)) * 100;
         return { totalSpent, remaining, percentage };
     };
+    // validation helpers & state
+    const [validationMessage, setValidationMessage] = useState("");
 
+    const isFutureDate = (dateStr) => {
+        if (!dateStr) return false;
+        const given = new Date(dateStr);
+        const today = new Date();
+        given.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        return given > today;
+    };
+
+    // Validate new record inputs and auto-correct invalid values to prevent submission
+    useEffect(() => {
+        const msgs = [];
+
+        // Amount checks
+        if (newRecord.expenseAmount !== '' && newRecord.expenseAmount != null) {
+            const amt = Number(newRecord.expenseAmount);
+            if (isNaN(amt)) {
+                msgs.push('Amount must be a valid number.');
+                setNewRecord(nr => ({ ...nr, expenseAmount: '' }));
+            } else if (amt < 0) {
+                msgs.push('Amount cannot be negative.');
+                setNewRecord(nr => ({ ...nr, expenseAmount: '' }));
+            }
+        } else {
+            // if user has started filling other fields, show required message
+            if (newRecord.pettyCashId || newRecord.date || newRecord.description) {
+                msgs.push('Amount is required.');
+            }
+        }
+
+        // Date checks
+        if (newRecord.date && isFutureDate(newRecord.date)) {
+            msgs.push('Date cannot be in the future.');
+            // clear the invalid date so existing add handler's empty-date guard stops submission
+            setNewRecord(nr => ({ ...nr, date: '' }));
+        }
+
+        const combined = msgs.join(' ');
+        setValidationMessage(combined);
+        // Surface validation messages in the same errorMessage UI used elsewhere
+        // but keep precedence for server/total-exceeded messages set elsewhere by appending if needed.
+        setErrorMessage(prev => {
+            // if previous message mentions "exceed" keep it and append validation; otherwise replace
+            if (prev && prev.toLowerCase().includes('exceed') && combined) {
+                return prev + ' ' + combined;
+            }
+            return combined;
+        });
+    }, [newRecord]);
+
+    // Validate editing record inputs similarly
+    useEffect(() => {
+        if (!editingRecord) {
+            // clear validation for edit mode when not editing
+            if (validationMessage) {
+                setValidationMessage('');
+                setErrorMessage('');
+            }
+            return;
+        }
+
+        const msgs = [];
+
+        if (editingRecord.expenseAmount !== '' && editingRecord.expenseAmount != null) {
+            const amt = Number(editingRecord.expenseAmount);
+            if (isNaN(amt)) {
+                msgs.push('Amount must be a valid number.');
+                setEditingRecord(er => ({ ...er, expenseAmount: '' }));
+            } else if (amt < 0) {
+                msgs.push('Amount cannot be negative.');
+                setEditingRecord(er => ({ ...er, expenseAmount: '' }));
+            }
+        } else {
+            msgs.push('Amount is required.');
+        }
+
+        if (editingRecord.date && isFutureDate(editingRecord.date)) {
+            msgs.push('Date cannot be in the future.');
+            setEditingRecord(er => ({ ...er, date: '' }));
+        }
+
+        const combined = msgs.join(' ');
+        setValidationMessage(combined);
+        setErrorMessage(combined);
+    }, [editingRecord]);
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg p-8 text-white">
+                <div className="bg-white rounded-2xl shadow-lg p-8 text-black">
                     <div className="flex items-center gap-3">
                         <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
                             <DollarSign className="w-8 h-8" />
                         </div>
                         <div>
                             <h1 className="text-3xl font-bold">Petty Cash Dashboard</h1>
-                            <p className="text-blue-100 mt-1">Manage and track your project expenses</p>
+                            <p className="text-yellow-300 mt-1">Manage and track your project expenses</p>
                         </div>
                     </div>
                 </div>
@@ -124,7 +211,7 @@ const PettyCash = ({ employeeId }) => {
                             
                             <input
                                 type="number"
-                                placeholder="Expense Amount"
+                                placeholder="Expense Amount(LKR)"
                                 value={newRecord.expenseAmount}
                                 onChange={e => setNewRecord({ ...newRecord, expenseAmount: e.target.value })}
                                 className="border-2 border-gray-200 p-3 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
@@ -183,7 +270,7 @@ const PettyCash = ({ employeeId }) => {
                                                 <p className="text-sm text-gray-600">Petty Cash ID: #{pc.pettyCashId}</p>
                                             </div>
                                         </div>
-                                        
+                                         
                                         <div className="flex items-center gap-6">
                                             <div className="text-right">
                                                 <p className="text-sm text-gray-600 flex items-center gap-1">
@@ -199,16 +286,16 @@ const PettyCash = ({ employeeId }) => {
                                     <div className="mt-4 grid grid-cols-3 gap-4">
                                         <div className="bg-white rounded-xl p-4 shadow-sm">
                                             <p className="text-xs font-medium text-gray-600 uppercase mb-1">Total Budget</p>
-                                            <p className="text-2xl font-bold text-gray-800">${parseFloat(pc.amount).toFixed(2)}</p>
+                                            <p className="text-2xl font-bold text-gray-800">LKR {parseFloat(pc.amount).toFixed(2)}</p>
                                         </div>
                                         <div className="bg-white rounded-xl p-4 shadow-sm">
                                             <p className="text-xs font-medium text-gray-600 uppercase mb-1">Total Spent</p>
-                                            <p className="text-2xl font-bold text-orange-600">${totalSpent.toFixed(2)}</p>
+                                            <p className="text-2xl font-bold text-orange-600">LKR {totalSpent.toFixed(2)}</p>
                                         </div>
                                         <div className="bg-white rounded-xl p-4 shadow-sm">
                                             <p className="text-xs font-medium text-gray-600 uppercase mb-1">Remaining</p>
                                             <p className={`text-2xl font-bold ${isLow ? 'text-red-600' : 'text-green-600'}`}>
-                                                ${remaining.toFixed(2)}
+                                                LKR {remaining.toFixed(2)}
                                             </p>
                                         </div>
                                     </div>
@@ -286,7 +373,7 @@ const PettyCash = ({ employeeId }) => {
                                                         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                                                             <div>
                                                                 <p className="text-xs font-medium text-gray-500 uppercase mb-1">Amount</p>
-                                                                <p className="text-lg font-bold text-gray-800">${parseFloat(record.expenseAmount).toFixed(2)}</p>
+                                                                <p className="text-lg font-bold text-gray-800">LKR {parseFloat(record.expenseAmount).toFixed(2)}</p>
                                                             </div>
                                                             <div>
                                                                 <p className="text-xs font-medium text-gray-500 uppercase mb-1">Date</p>

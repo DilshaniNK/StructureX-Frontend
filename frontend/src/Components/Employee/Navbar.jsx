@@ -89,7 +89,7 @@ const Navbar = ({
 
   const navigate = useNavigate();
   const { employeeId, supplierId, clientId, adminId } = useParams();
-  const handleLogout = () => { localStorage.clear(); navigate('/'); setShowLogoutConfirm(false); };
+  const handleLogout = () => { localStorage.clear(); navigate('/'); };
 
   return (
     <nav className="bg-white h-16 flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50 border-b border-gray-200 shadow-sm">

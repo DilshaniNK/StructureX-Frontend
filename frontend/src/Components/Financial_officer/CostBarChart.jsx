@@ -6,7 +6,7 @@ const ProjectCostChart = ({ projects }) => {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    if (!projects.length) return;
+    if (!projects || !Array.isArray(projects) || projects.length === 0) return;
 
     const fetchExpenses = async () => {
       try {

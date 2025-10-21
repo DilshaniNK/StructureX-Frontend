@@ -133,6 +133,7 @@ const Dashboard = () => {
       try {
         const projectRes = await axios.get(`${API_BASE}/projects/${employeeId}`);
         setProjectData(projectRes.data);
+        console.log("Projects Data:", projectRes.data);
 
         const [materialsRes, laborsRes, toolsRes] = await Promise.all([
           axios.get(`${API_BASE}/material_requests`),

@@ -109,6 +109,7 @@ const Payments = () => {
       );
       const data = await res.json();
       setConfirmations(data);
+      console.log(data);
     } catch (err) {
       console.error(err);
     }
@@ -211,41 +212,59 @@ const Payments = () => {
   };
 
   const handleSubmitConfirmation = async (e) => {
-    e.preventDefault();
-    const payload = {
-      paymentId: Number(formConfirmation.payment_id),
-      projectId: formConfirmation.project_id,
-      amount: Number(formConfirmation.amount),
-      documentId: Number(formConfirmation.document_id),
-      status: formConfirmation.status,
-      confirmationDate: formConfirmation.confirmation_date,
-    };
-    if (isEditing) payload.confirmation_id = formConfirmation.confirmation_id;
+  e.preventDefault();
 
-    try {
-      if (isEditing) {
-        await fetch("http://localhost:8086/api/v1/financial_officer/payment_confirmation", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        alert("Confirmation updated!");
-      } else {
-        await fetch("http://localhost:8086/api/v1/financial_officer/payment_confirmation", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        alert("Confirmation added!");
-      }
-      setFormConfirmation({ confirmationId: "", paymentId: "", projectId: "", amount: "", documentId: "", status: "Pending", confirmationDate: "" });
-      setIsEditing(false);
-      fetchConfirmations();
-    } catch (err) {
-      console.error(err);
-      alert("Error saving confirmation.");
-    }
+  const payload = {
+    payment_id: Number(formConfirmation.payment_id),
+    project_id: formConfirmation.project_id,
+    amount: Number(formConfirmation.amount),
+    document_id: Number(formConfirmation.document_id),
+    status: formConfirmation.status,
+    confirmation_date: formConfirmation.confirmation_date,
   };
+
+  try {
+    if (isEditing) {
+      // Use PUT for editing
+      payload.confirmation_id = Number(formConfirmation.confirmation_id);
+
+      const res = await fetch("http://localhost:8086/api/v1/financial_officer/payment_confirmation", {
+        method: "PUT", // <-- was POST before
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const updatedConfirmation = await res.json();
+      // Update state with updated confirmation
+      setConfirmations(prev => prev.map(c =>
+        c.confirmation_id === updatedConfirmation.confirmation_id ? updatedConfirmation : c
+      ));
+      console.log(updatedConfirmation)
+      alert("Confirmation updated!");
+    } else {
+      // POST for new confirmation
+      const res = await fetch("http://localhost:8086/api/v1/financial_officer/payment_confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      setFormConfirmation(prev => ({
+        ...prev,
+        confirmation_id: data.confirmationId || data.confirmation_id // depending on backend
+      }));
+      setConfirmations(prev => [...prev, data]);
+      alert("Confirmation added!");
+    }
+
+    setFormConfirmation({ confirmation_id: "", payment_id: "", project_id: "", amount: "", document_id: "", status: "Pending", confirmation_date: "" });
+    setIsEditing(false);
+  } catch (err) {
+    console.error(err);
+    alert("Error saving confirmation.");
+  }
+};
+
+
 
   const handleEditConfirmation = (c) => {
     setFormConfirmation(c);
@@ -305,7 +324,7 @@ const Payments = () => {
             <option value="">All Projects</option>
             {projects.map(p => (
               <option key={p.projectId} value={p.projectId}>
-                {p.projectName} (ID: {p.projectId})
+                {p.name} (ID: {p.projectId})
               </option>
             ))}
           </select>
@@ -379,7 +398,7 @@ const Payments = () => {
                         <option value="">Select Project</option>
                         {projects.map(p => (
                           <option key={p.projectId} value={p.projectId}>
-                            {p.projectName} (ID: {p.projectId})
+                            {p.name} (ID: {p.projectId})
                           </option>
                         ))}
                       </select>
@@ -734,8 +753,9 @@ const Payments = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {filteredConfirmations.map(c => (
-                        <tr key={c.confirmation_id} className="hover:bg-gray-50">
+                      {filteredConfirmations.map((c, index) => (
+                        <tr key={c.confirmation_id || index} className="hover:bg-gray-50">
+
                           <td className="px-4 py-3 text-sm">{c.confirmation_id}</td>
                           <td className="px-4 py-3 text-sm">{c.payment_id}</td>
                           <td className="px-4 py-3 text-sm">{c.project_id}</td>

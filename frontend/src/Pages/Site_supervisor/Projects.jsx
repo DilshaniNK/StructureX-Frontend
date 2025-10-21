@@ -125,7 +125,7 @@ const Projects = () => {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Budget</p>
+                <p className="text-sm font-medium text-gray-600">Total Budget (LKR)</p>
                 {/*<p className="text-3xl font-bold text-purple-600">${stats.totalBudget.toFixed(1)}M</p>*/}
               </div>
               <div className="bg-purple-100 p-3 rounded-lg">

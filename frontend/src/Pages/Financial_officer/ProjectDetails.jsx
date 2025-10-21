@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation,useParams } from 'react-router-dom';  // or your routing lib
 import axios from 'axios';
 import ProjDetails from '../../Components/Employee/ProjDetails';
-
+import Projects from '../SQS/Projects'
 const ProjectDetails = () => {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,7 @@ console.log("projectId from query:", projectId);
 
   return (
     <div>
-      <ProjDetails project={project} userRole="financialOfficer" />
+      <Projects project={project} userRole="financialOfficer" />
     </div>
   );
 };

@@ -989,7 +989,7 @@ const SiteVisitLogs = ({ setShowAddForm }) => {
                     paddingRight: "2.5rem"
                   }}
                 >
-                  <option>Completed</option>
+                  <option>completed</option>
                   <option>Follow-up Required</option>
                   <option>pending</option>
                 </select>

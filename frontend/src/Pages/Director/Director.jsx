@@ -16,7 +16,7 @@ import Document from './Document';
 const Director = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const userRole = 'Director'; // Change this based on your user's actual role
-  const userName = 'John Doe'; // Get this from your user context/state
+  const userName = 'Dilshani Nadeesha'; // Get this from your user context/state
   const navigate = useNavigate();
   const location = useLocation();
 

@@ -15,7 +15,10 @@ const DirectorCont = () => {
        
   return (
     <div className='min-h-screen bg-gray-50'> 
-      <Navbar/>
+      <Navbar
+        userRole='Director'
+        userName='Dilshani Nadeesha'
+      />
       <Routes>
         <Route path='/project/:id' element={<ProjectDetails/>}/>
         <Route path='/clientdetails' element={<Clientdetails/>}/>

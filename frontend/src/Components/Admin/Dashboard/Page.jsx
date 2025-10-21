@@ -1,18 +1,23 @@
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { useEffect, useState } from "react";
-import { CreditCard, DollarSign, Package, PencilLine, Star, Trash, TrendingUp, Users } from "lucide-react";
+import { CreditCard, DollarSign, Package, PencilLine, Trash, TrendingUp, Users, TrendingDown, Briefcase } from "lucide-react";
 import defaultAvatar from "../../../assets/profile avatar.png";
 
 const DashboardPage = () => {
     const [clients, setClients] = useState([]);
     const [projects, setProjects] = useState([]);
+    const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [metrics, setMetrics] = useState({
         activeProjects: 0,
         totalRevenue: 0,
         activeWorkers: 324,
-        completedProjects: 0
+        completedProjects: 0,
+        totalProjects: 0,
+        numberOfEmployees: 0,
+        netRevenue: 0
     });
+    const [overviewData, setOverviewData] = useState([]);
 
     const API_BASE_URL = 'http://localhost:8086/api/v1';
 
@@ -31,16 +36,50 @@ const DashboardPage = () => {
                 const projectsData = await projectsResponse.json();
                 setProjects(projectsData);
 
+                const employeesResponse = await fetch(`${API_BASE_URL}/admin/get_employees`);
+                if (!employeesResponse.ok) throw new Error('Failed to fetch employees');
+                const employeesData = await employeesResponse.json();
+                setEmployees(employeesData);
+
+                const transactionsResponse = await fetch(`${API_BASE_URL}/transactions/all`);
+                if (!transactionsResponse.ok) throw new Error('Failed to fetch transactions');
+                const transactionsData = await transactionsResponse.json();
+
                 const activeProj = projectsData.filter(p => p.status === 'ongoing').length;
                 const completedProj = projectsData.filter(p => p.status === 'completed').length;
-                const totalRev = projectsData.reduce((sum, p) => sum + (p.budget || 0), 0);
+                const totalProj = projectsData.length;
+                const totalBudget = projectsData.reduce((sum, p) => sum + (p.budget || 0), 0);
+
+                // Calculate net revenue from transactions
+                let totalIncome = 0;
+                let totalExpenses = 0;
+                
+                transactionsData.forEach(transaction => {
+                    const amount = transaction.amount;
+                    
+                    if (transaction.transactionType === 'Client Payment') {
+                        totalIncome += amount;
+                    } else if (transaction.transactionType === 'Purchase' || 
+                               transaction.transactionType === 'Labor Payment' || 
+                               transaction.transactionType === 'Petty Cash') {
+                        totalExpenses += amount;
+                    }
+                });
+                
+                const netRevenue = totalIncome - totalExpenses;
 
                 setMetrics({
                     activeProjects: activeProj,
-                    totalRevenue: (totalRev / 1000000).toFixed(2),
+                    totalRevenue: (totalBudget / 1000000).toFixed(2),
                     activeWorkers: 324,
-                    completedProjects: completedProj
+                    completedProjects: completedProj,
+                    totalProjects: totalProj,
+                    numberOfEmployees: employeesData.length,
+                    netRevenue: (netRevenue / 1000000).toFixed(2)
                 });
+
+                const chartData = processTransactionsForChart(transactionsData);
+                setOverviewData(chartData);
 
                 setLoading(false);
             } catch (err) {
@@ -52,20 +91,55 @@ const DashboardPage = () => {
         fetchData();
     }, []);
 
+    const processTransactionsForChart = (transactions) => {
+        const monthlyData = {};
+        
+        transactions.forEach(transaction => {
+            const date = new Date(transaction.transactionDate);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const monthName = date.toLocaleString('default', { month: 'short' });
+            const sortKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+            
+            if (!monthlyData[sortKey]) {
+                monthlyData[sortKey] = {
+                    name: monthName,
+                    sortKey: sortKey,
+                    income: 0,
+                    expenses: 0
+                };
+            }
+            
+            const amount = transaction.amount;
+            
+            // Income: Client Payment
+            if (transaction.transactionType === 'Client Payment') {
+                monthlyData[sortKey].income += amount;
+            } 
+            // Expenses: Purchase, Labor Payment, Petty Cash
+            else if (transaction.transactionType === 'Purchase' || 
+                     transaction.transactionType === 'Labor Payment' || 
+                     transaction.transactionType === 'Petty Cash') {
+                monthlyData[sortKey].expenses += amount;
+            }
+        });
+        
+        const sortedData = Object.values(monthlyData).sort((a, b) => {
+            return a.sortKey.localeCompare(b.sortKey);
+        });
+        
+        return sortedData.map(item => ({
+            name: item.name,
+            income: Math.round(item.income / 1000),
+            expenses: Math.round(item.expenses / 1000)
+        }));
+    };
+
     const getImageUrl = (imageUrl) => {
         if (!imageUrl) return defaultAvatar;
         if (imageUrl.startsWith('http')) return imageUrl;
         return `${API_BASE_URL}${imageUrl}`;
     };
-
-    const overviewData = [
-        { name: 'Jan', total: 200 },
-        { name: 'Feb', total: 350 },
-        { name: 'Mar', total: 280 },
-        { name: 'Apr', total: 450 },
-        { name: 'May', total: 520 },
-        { name: 'Jun', total: 680 }
-    ];
 
     if (loading) {
         return <div className="flex items-center justify-center h-screen">Loading dashboard...</div>;
@@ -80,6 +154,22 @@ const DashboardPage = () => {
                     <div className="card-header">
                         <div className="metric-icon products">
                             <Package size={26} />
+                        </div>
+                        <p className="card-title">Total Projects</p>
+                    </div>
+                    <div className="card-body">
+                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">{metrics.totalProjects}</p>
+                        <span className="trend-badge positive">
+                            <TrendingUp size={18} />
+                            8%
+                        </span>
+                    </div>
+                </div>
+
+                <div className="metric-card hover-bounce">
+                    <div className="card-header">
+                        <div className="metric-icon orders">
+                            <Briefcase size={26} />
                         </div>
                         <p className="card-title">Active Projects</p>
                     </div>
@@ -97,12 +187,12 @@ const DashboardPage = () => {
                         <div className="metric-icon orders">
                             <DollarSign size={26} />
                         </div>
-                        <p className="card-title">Total Revenue</p>
+                        <p className="card-title">Net Revenue</p>
                     </div>
                     <div className="card-body">
-                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">${metrics.totalRevenue}M</p>
-                        <span className="trend-badge positive">
-                            <TrendingUp size={18} />
+                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">${metrics.netRevenue}M</p>
+                        <span className={`trend-badge ${parseFloat(metrics.netRevenue) >= 0 ? 'positive' : 'negative'}`}>
+                            {parseFloat(metrics.netRevenue) >= 0 ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
                             15%
                         </span>
                     </div>
@@ -113,29 +203,13 @@ const DashboardPage = () => {
                         <div className="metric-icon customers">
                             <Users size={26} />
                         </div>
-                        <p className="card-title">Active Workers</p>
+                        <p className="card-title">Employees</p>
                     </div>
                     <div className="card-body">
-                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">{metrics.activeWorkers}</p>
+                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">{metrics.numberOfEmployees}</p>
                         <span className="trend-badge positive">
                             <TrendingUp size={18} />
                             6%
-                        </span>
-                    </div>
-                </div>
-                
-                <div className="metric-card hover-bounce">
-                    <div className="card-header">
-                        <div className="metric-icon sales">
-                            <CreditCard size={26} />
-                        </div>
-                        <p className="card-title">Completed Projects</p>
-                    </div>
-                    <div className="card-body">
-                        <p className="text-3xl font-bold text-slate-900 transition-colors dark:text-white">{metrics.completedProjects}</p>
-                        <span className="trend-badge positive">
-                            <TrendingUp size={18} />
-                            12%
                         </span>
                     </div>
                 </div>
@@ -145,25 +219,25 @@ const DashboardPage = () => {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-7">
                 <div className="card col-span-1 md:col-span-2 lg:col-span-4 shadow-gold hover-bounce">
                     <div className="card-header">
-                        <p className="card-title text-lg gradient-text">Project Revenue Overview</p>
+                        <p className="card-title text-lg gradient-text">Income vs Expenses Overview</p>
                     </div>
                     <div className="card-body p-0">
                         <ResponsiveContainer width="100%" height={300}>
                             <AreaChart
                                 data={overviewData}
-                                margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                             >
                                 <defs>
-                                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#FAAD00" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#FFC746" stopOpacity={0.1} />
+                                    <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.1} />
+                                    </linearGradient>
+                                    <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0.1} />
                                     </linearGradient>
                                 </defs>
-                                <Tooltip
-                                    cursor={false}
-                                    formatter={(value) => [`$${value}K`, 'Revenue']}
-                                    labelFormatter={(label) => `Month: ${label}`}
-                                />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                                 <XAxis
                                     dataKey="name"
                                     strokeWidth={0}
@@ -178,13 +252,42 @@ const DashboardPage = () => {
                                     tickMargin={8}
                                     fontSize={12}
                                 />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: '#1F2937',
+                                        border: '1px solid #374151',
+                                        borderRadius: '8px',
+                                        color: '#fff'
+                                    }}
+                                    formatter={(value, name) => {
+                                        const label = name === 'income' ? 'Income' : 'Expenses';
+                                        return [`$${value}K`, label];
+                                    }}
+                                    labelFormatter={(label) => `Month: ${label}`}
+                                />
+                                <Legend
+                                    wrapperStyle={{
+                                        paddingTop: '10px'
+                                    }}
+                                    formatter={(value) => {
+                                        return value === 'income' ? 'Income' : 'Expenses';
+                                    }}
+                                />
                                 <Area
                                     type="monotone"
-                                    dataKey="total"
-                                    stroke="#FAAD00"
-                                    strokeWidth={3}
+                                    dataKey="income"
+                                    stroke="#10B981"
+                                    strokeWidth={2}
                                     fillOpacity={1}
-                                    fill="url(#colorTotal)"
+                                    fill="url(#colorIncome)"
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="expenses"
+                                    stroke="#EF4444"
+                                    strokeWidth={2}
+                                    fillOpacity={1}
+                                    fill="url(#colorExpenses)"
                                 />
                             </AreaChart>
                         </ResponsiveContainer>

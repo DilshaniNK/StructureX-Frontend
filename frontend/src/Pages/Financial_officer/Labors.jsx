@@ -39,12 +39,18 @@ export default function LaborCharges() {
 
     const fetchAttendance = async () => {
       try {
+        const formattedDate = selectedDate;
         const responses = await Promise.all(
           projectIds.map((id) =>
-            axios.get(`http://localhost:8086/api/v1/financial_officer/attendance/${id}/date?date=${selectedDate}`),
+            axios.get(`http://localhost:8086/api/v1/financial_officer/attendance/${id}/date?date=${formattedDate}`)
+            .then(response => response.data)
+            .catch(error => {
+              console.error(`Error fetching attendance for project ${id}:`, error);
+              return [];
+            })
           ),
         );
-        const allAttendance = responses.flatMap((r) => (Array.isArray(r.data) ? r.data : []));
+        const allAttendance = responses.flat();
 
         // Normalize with flags and salaryId
         const normalized = allAttendance.map((w) => ({
@@ -56,6 +62,7 @@ export default function LaborCharges() {
         }));
 
         setAttendance(normalized);
+        console.log('Fetched attendance:', normalized);
       } catch (error) {
         console.error('Error fetching attendance:', error);
       }
@@ -136,6 +143,7 @@ export default function LaborCharges() {
             attendanceId: w.id,
             laborRate: w.rate,
             projectId: w.project_id,
+            cost: (w.count || 0) * (w.rate || 0),
           }));
 
         if (updatePayload.length > 0) {
@@ -149,6 +157,7 @@ export default function LaborCharges() {
           attendanceId: w.id,
           laborRate: w.rate,
           projectId: w.project_id,
+          cost: (w.count || 0) * (w.rate || 0),
         }));
 
         await axios.post('http://localhost:8086/api/v1/financial_officer/labor_salary', createPayload);

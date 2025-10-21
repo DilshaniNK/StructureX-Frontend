@@ -56,6 +56,110 @@ export default function Labors() {
     fetchSites();
     fetchRecords();
   }, []);
+  const [formErrors, setFormErrors] = useState({});
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Ensure date is not in the future — if user picks future date, reset to today and notify
+  useEffect(() => {
+    if (!date) return;
+    const selected = new Date(date);
+    const today = new Date(todayStr);
+    // compare only date parts to avoid timezone issues
+    selected.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+
+    if (selected > today) {
+      // reset to today and show error
+      setSelectedDate(todayStr);
+      setFormErrors(prev => ({ ...prev, date: 'Date cannot be in the future.' }));
+      // showNotification is defined later but the effect will run after render so it's safe
+      showNotification('Date cannot be in the future. Reset to today.', 'error');
+    } else {
+      setFormErrors(prev => { const next = { ...prev }; delete next.date; return next; });
+    }
+  }, [date, todayStr]);
+
+  // Clamp negative values in direct attendance to 0 automatically and show notification
+  useEffect(() => {
+    if (!attendance || Object.keys(attendance).length === 0) return;
+
+    const corrected = {};
+    let changed = false;
+
+    Object.entries(attendance).forEach(([k, v]) => {
+      // if value is empty string ignore; if number and negative, reset
+      const num = Number(v);
+      if (!Number.isNaN(num) && num < 0) {
+        corrected[k] = 0;
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      setAttendance(prev => ({ ...prev, ...corrected }));
+      setFormErrors(prev => ({ ...prev, attendance: 'Attendance values cannot be negative.' }));
+      showNotification('Attendance values cannot be negative. Negative values were reset to 0.', 'error');
+      // clear the attendance error after a short time
+      setTimeout(() => {
+        setFormErrors(prev => { const next = { ...prev }; delete next.attendance; return next; });
+      }, 3000);
+    }
+  }, [attendance]);
+
+  // Clamp negative values in 3rd party attendance to 0 automatically and show notification
+  useEffect(() => {
+    if (!thirdPartyAttendance || Object.keys(thirdPartyAttendance).length === 0) return;
+
+    const corrected = {};
+    let changed = false;
+
+    Object.entries(thirdPartyAttendance).forEach(([k, v]) => {
+      const num = Number(v);
+      if (!Number.isNaN(num) && num < 0) {
+        corrected[k] = 0;
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      setThirdPartyAttendance(prev => ({ ...prev, ...corrected }));
+      setFormErrors(prev => ({ ...prev, thirdPartyAttendance: '3rd party attendance cannot be negative.' }));
+      showNotification('3rd party attendance cannot be negative. Negative values were reset to 0.', 'error');
+      setTimeout(() => {
+        setFormErrors(prev => { const next = { ...prev }; delete next.thirdPartyAttendance; return next; });
+      }, 3000);
+    }
+  }, [thirdPartyAttendance]);
+
+  // Utility validator that other devs can call if they want explicit validation before submit/update
+  const validateForm = () => {
+    const errors = {};
+
+    // site required
+    if (!selectedSite) errors.site = 'Please select a site.';
+
+    // date not future
+    const sel = new Date(date);
+    const today = new Date(todayStr);
+    sel.setHours(0,0,0,0); today.setHours(0,0,0,0);
+    if (sel > today) errors.date = 'Date cannot be in the future.';
+
+    // no negative attendance
+    const anyNegativeDirect = Object.values(attendance).some(v => Number(v) < 0);
+    const anyNegativeThird = Object.values(thirdPartyAttendance).some(v => Number(v) < 0);
+    if (anyNegativeDirect) errors.attendance = 'Attendance cannot be negative.';
+    if (anyNegativeThird) errors.thirdPartyAttendance = '3rd party attendance cannot be negative.';
+
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const first = Object.values(errors)[0];
+      showNotification(first, 'error');
+      return false;
+    }
+    return true;
+  };
 
   const fetchSites = async () => {
     try {
